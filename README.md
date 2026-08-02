@@ -48,3 +48,5 @@ Do not add `@voyant-travel/cli` as a dependency. The lane supplies its own
 pinned copy, and depending on it pulls the operator runtime into the theme.
 
 The lane verifies the uploaded artifact against its recorded size.
+
+Artifacts are verified against their recorded size and digest.
