@@ -1,0 +1,17 @@
+---
+import Layout from "../layouts/Layout.astro"
+import { resolveThemeContext } from "virtual:voyant-theme"
+
+// Context is resolved per request. On a published hostname it comes from the
+// immutable publication snapshot bound to this Worker; locally it falls back to
+// the fixtures in theme.config.ts. A partially configured runtime fails closed
+// rather than serving fixtures publicly.
+const context = await resolveThemeContext(Astro.url)
+if (context.kind === "notFound") Astro.response.status = 404
+---
+
+<Layout context={context}>
+  <h1>{context.title}</h1>
+  {context.kind === "content" && <p>{context.body}</p>}
+  {context.kind === "notFound" && <p>{context.message}</p>}
+</Layout>
