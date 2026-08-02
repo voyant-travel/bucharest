@@ -6,6 +6,9 @@ interface Props {
 }
 
 const { context } = Astro.props
+// Content pages carry a summary; use it as the meta description so published
+// storefront pages are not indexed without one.
+const description = context.kind === "content" ? context.summary : undefined
 ---
 
 <!doctype html>
@@ -16,6 +19,7 @@ const { context } = Astro.props
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
     <title>{context.title}</title>
+    {description && <meta name="description" content={description} />}
   </head>
   <body>
     <header>
