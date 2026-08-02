@@ -36,3 +36,13 @@ theme without one cannot be built.
 Bucharest is published to the Voyant theme catalog as a public theme, so every
 operator can select it without connecting a repository of their own. Git is the
 theme author's concern, not the operator's.
+
+## Version pinning
+
+`@voyant-travel/theme` is pinned to an exact version, not a range. The platform
+build lane selects one SDK version and rejects any theme that does not pin the
+same one, because a range would let two builds of the same commit resolve
+different SDKs. Bump it deliberately, in step with the platform.
+
+Do not add `@voyant-travel/cli` as a dependency. The lane supplies its own
+pinned copy, and depending on it pulls the operator runtime into the theme.
