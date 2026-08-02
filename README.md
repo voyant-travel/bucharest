@@ -33,6 +33,6 @@ theme without one cannot be built.
 
 ## Publishing
 
-Bucharest is published to the Voyant theme catalog as a public theme, so any
+Bucharest is published to the Voyant theme catalog as a public theme, so every
 operator can select it without connecting a repository of their own. Git is the
 theme author's concern, not the operator's.
