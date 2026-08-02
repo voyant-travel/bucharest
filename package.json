@@ -6,9 +6,9 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "voyant theme dev",
-    "theme:check": "voyant theme check",
-    "build": "voyant theme build",
+    "dev": "npx --yes @voyant-travel/cli@1.1.0 theme dev",
+    "theme:check": "npx --yes @voyant-travel/cli@1.1.0 theme check",
+    "build": "npx --yes @voyant-travel/cli@1.1.0 theme build",
     "preview": "astro preview"
   },
   "dependencies": {
@@ -17,8 +17,5 @@
     "@voyant-travel/theme": "0.1.0-alpha.2",
     "astro": "^7.1.6"
   },
-  "private": true,
-  "devDependencies": {
-    "@voyant-travel/cli": "1.1.0"
-  }
+  "private": true
 }
