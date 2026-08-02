@@ -30,3 +30,9 @@ server entrypoint and `voyant theme build` rejects the artifact.
 `package-lock.json` is committed deliberately: the platform build lane detects
 the package manager from the lockfile and installs with a frozen lockfile, so a
 theme without one cannot be built.
+
+## Publishing
+
+Bucharest is published to the Voyant theme catalog as a public theme, so any
+operator can select it without connecting a repository of their own. Git is the
+theme author's concern, not the operator's.
