@@ -60,3 +60,5 @@ Releases are immutable once recorded.
 A release records the exact commit, SDK and artifact digest.
 
 The publish lane deploys each release into the dispatch namespaces.
+
+Each release is deployed under the same worker name in both namespaces.
