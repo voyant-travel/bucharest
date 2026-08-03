@@ -54,3 +54,5 @@ Artifacts are verified against their recorded size and digest.
 Build evidence is written alongside the artifact.
 
 The build lane records provenance for every release.
+
+Releases are immutable once recorded.
