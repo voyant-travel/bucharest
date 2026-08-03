@@ -58,3 +58,5 @@ The build lane records provenance for every release.
 Releases are immutable once recorded.
 
 A release records the exact commit, SDK and artifact digest.
+
+The publish lane deploys each release into the dispatch namespaces.
