@@ -9,6 +9,48 @@ const { context } = Astro.props
 // Content pages carry a summary; use it as the meta description so published
 // storefront pages are not indexed without one.
 const description = context.kind === "content" ? context.summary : undefined
+
+/**
+ * Operator-chosen presentation, resolved to CSS custom properties.
+ *
+ * Every value is looked up against a table the theme owns rather than being
+ * written into the page. `settings` is operator input reaching a style
+ * attribute, so an unrecognized palette falls back instead of becoming CSS.
+ * The one free-text value, the accent colour, is matched against a strict
+ * colour pattern for the same reason.
+ */
+const PALETTES = {
+  forest: { background: "#fbfaf7", text: "#12211a", accent: "#0b3d2e" },
+  ocean: { background: "#f8fbfd", text: "#0f1d28", accent: "#12506e" },
+  sand: { background: "#fdfbf6", text: "#241c11", accent: "#8a5a1f" },
+  ink: { background: "#ffffff", text: "#111111", accent: "#1a1a1a" },
+} as const
+
+const WIDTHS = {
+  narrow: "34rem",
+  regular: "44rem",
+  wide: "60rem",
+} as const
+
+function chosen<T extends Record<string, unknown>>(
+  table: T,
+  value: unknown,
+  fallback: keyof T,
+): T[keyof T] {
+  return typeof value === "string" && value in table
+    ? table[value as keyof T]
+    : table[fallback]
+}
+
+const palette = chosen(PALETTES, context.settings.palette, "forest")
+const contentWidth = chosen(WIDTHS, context.settings["content-width"], "regular")
+
+const requestedAccent = context.settings["accent-color"]
+const accent =
+  typeof requestedAccent === "string" &&
+  /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(requestedAccent.trim())
+    ? requestedAccent.trim()
+    : palette.accent
 ---
 
 <!doctype html>
@@ -21,7 +63,9 @@ const description = context.kind === "content" ? context.summary : undefined
     <title>{context.title}</title>
     {description && <meta name="description" content={description} />}
   </head>
-  <body>
+  <body
+    style={`--page-background:${palette.background};--page-text:${palette.text};--page-accent:${accent};--content-width:${contentWidth}`}
+  >
     <header>
       <a class="wordmark" href="/">{context.site.name}</a>
       <nav>
@@ -45,26 +89,35 @@ const description = context.kind === "content" ? context.summary : undefined
     width: 100%;
     font-family: system-ui, sans-serif;
     line-height: 1.55;
+    background: var(--page-background, #fbfaf7);
+    color: var(--page-text, #12211a);
   }
   header {
     display: flex;
     align-items: baseline;
     gap: 2rem;
     padding: 1.25rem 2rem;
-    border-bottom: 1px solid #e5e5e5;
+    border-bottom: 1px solid color-mix(in srgb, var(--page-text, #12211a) 12%, transparent);
   }
   .wordmark {
     font-weight: 600;
     text-decoration: none;
-    color: inherit;
+    color: var(--page-accent, #0b3d2e);
   }
   nav {
     display: flex;
     gap: 1rem;
   }
+  nav a {
+    color: inherit;
+    text-decoration-color: color-mix(in srgb, var(--page-accent, #0b3d2e) 45%, transparent);
+  }
   main {
-    max-width: 44rem;
+    max-width: var(--content-width, 44rem);
     margin: 0 auto;
     padding: 3rem 2rem;
+  }
+  main :global(a) {
+    color: var(--page-accent, #0b3d2e);
   }
 </style>
