@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.7",
-    "@voyant-travel/astro": "0.1.0-alpha.2",
-    "@voyant-travel/theme": "0.1.0-alpha.3",
+    "@voyant-travel/astro": "0.1.0-alpha.4",
+    "@voyant-travel/theme": "0.1.0-alpha.4",
     "astro": "^7.1.6"
   },
   "private": true
