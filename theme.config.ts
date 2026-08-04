@@ -11,7 +11,38 @@ export default defineTheme({
       { id: "content", pattern: "/[...path]", context: "content" },
       { id: "not-found", pattern: "/404", context: "notFound" },
     ],
-    settings: [],
+    // Declared in the order an operator should meet them, because the editor
+    // renders this list as written rather than sorting it.
+    settings: [
+      {
+        id: "palette",
+        label: "Colour palette",
+        type: "select",
+        default: "forest",
+        options: [
+          { label: "Forest", value: "forest" },
+          { label: "Ocean", value: "ocean" },
+          { label: "Sand", value: "sand" },
+          { label: "Ink", value: "ink" },
+        ],
+      },
+      {
+        id: "accent-color",
+        label: "Accent colour",
+        type: "text",
+      },
+      {
+        id: "content-width",
+        label: "Content width",
+        type: "select",
+        default: "regular",
+        options: [
+          { label: "Narrow", value: "narrow" },
+          { label: "Regular", value: "regular" },
+          { label: "Wide", value: "wide" },
+        ],
+      },
+    ],
     sections: [],
   },
   // Fixtures back local development and the deterministic build. They are never
