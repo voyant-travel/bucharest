@@ -1,7 +1,7 @@
 import { defineTheme } from "@voyant-travel/theme"
 
 export default defineTheme({
-  contractVersion: "v1alpha1",
+  contractVersion: "v1alpha2",
   manifest: {
     id: "bucharest",
     name: "Bucharest",
@@ -29,6 +29,7 @@ export default defineTheme({
       ],
       settings: {},
       title: "Bucharest",
+      seo: { title: "Bucharest" },
       sections: [],
     },
     content: [
@@ -44,6 +45,7 @@ export default defineTheme({
         ],
         settings: {},
         title: "About",
+        seo: { title: "About", description: "A fixture-backed content page." },
         summary: "A fixture-backed content page.",
         body: "Replace this copy from the Voyant editor once the site is live.",
       },
@@ -56,6 +58,7 @@ export default defineTheme({
       navigation: [{ label: "Home", href: "/" }],
       settings: {},
       title: "Page not found",
+      seo: { title: "Page not found", noIndex: true },
       message: "The requested page does not exist.",
     },
   },
