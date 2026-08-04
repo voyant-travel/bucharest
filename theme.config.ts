@@ -5,7 +5,7 @@ export default defineTheme({
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.2.2",
+    version: "0.2.3",
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/[...path]", context: "content" },
