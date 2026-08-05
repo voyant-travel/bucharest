@@ -1,5 +1,7 @@
 ---
+import CollectionValue from "../components/CollectionValue.astro"
 import Layout from "../layouts/Layout.astro"
+import { classifyCollectionValue, entryFields } from "../lib/collection-values"
 import { resolveThemeContext } from "virtual:voyant-theme"
 
 // Context is resolved per request. On a published hostname it comes from the
@@ -8,10 +10,111 @@ import { resolveThemeContext } from "virtual:voyant-theme"
 // rather than serving fixtures publicly.
 const context = await resolveThemeContext(Astro.url)
 if (context.kind === "notFound") Astro.response.status = 404
+
+// A listing shows the first text a reader can scan, so an index is not a wall
+// of bare titles. Sorted for the same reason the detail page sorts: `values` is
+// a record and carries no order an operator chose.
+function teaser(values: Record<string, unknown>): string | null {
+  for (const id of Object.keys(values).sort()) {
+    const value = classifyCollectionValue(values[id])
+    if (value?.kind === "text") return value.text
+  }
+  return null
+}
 ---
 
 <Layout context={context}>
   <h1>{context.title}</h1>
   {context.kind === "content" && <p>{context.body}</p>}
   {context.kind === "notFound" && <p>{context.message}</p>}
+
+  {
+    context.kind === "collectionIndex" &&
+      (context.entries.length === 0 ? (
+        <p class="empty">Nothing published here yet.</p>
+      ) : (
+        <ul class="collection-index">
+          {context.entries.map((entry) => {
+            const summary = teaser(entry.values)
+            return (
+              <li>
+                <h2>
+                  {entry.path ? (
+                    <a href={entry.path}>{entry.title}</a>
+                  ) : (
+                    entry.title
+                  )}
+                </h2>
+                {summary && <p>{summary}</p>}
+              </li>
+            )
+          })}
+        </ul>
+      ))
+  }
+
+  {
+    context.kind === "collectionEntry" && (
+      <>
+        <dl class="entry-fields">
+          {entryFields(context.entry.values).map((field) => (
+            <>
+              <dt>{field.label}</dt>
+              <dd>
+                <CollectionValue value={field.value} />
+              </dd>
+            </>
+          ))}
+        </dl>
+        <p class="back">
+          <a href={context.path.slice(0, context.path.lastIndexOf("/")) || "/"}>
+            Back to {context.collection.name}
+          </a>
+        </p>
+      </>
+    )
+  }
 </Layout>
+
+<style>
+  .collection-index {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2rem;
+  }
+  .collection-index h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.25rem;
+  }
+  .collection-index h2 a {
+    text-decoration-color: color-mix(
+      in srgb,
+      var(--page-accent, #0b3d2e) 45%,
+      transparent
+    );
+  }
+  .collection-index p {
+    margin: 0;
+  }
+  .entry-fields {
+    display: grid;
+    grid-template-columns: minmax(6rem, 12rem) 1fr;
+    gap: 0.75rem 1.5rem;
+    margin: 0 0 2.5rem;
+  }
+  .entry-fields dt {
+    font-weight: 600;
+    color: color-mix(in srgb, var(--page-text, #12211a) 70%, transparent);
+  }
+  .entry-fields dd {
+    margin: 0;
+  }
+  .empty {
+    color: color-mix(in srgb, var(--page-text, #12211a) 65%, transparent);
+  }
+  .back {
+    margin: 0;
+  }
+</style>
