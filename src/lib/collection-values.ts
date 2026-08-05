@@ -138,3 +138,32 @@ export function entryFields(
       .flatMap((id) => present(id, fieldLabel(id))),
   ]
 }
+
+/**
+ * The short description to show for an entry, whichever way the site supplies it.
+ *
+ * A bound site answers through the theme's own slot, so the operator's field id
+ * never reaches here. An unbound one has no mapping at all, and the best that
+ * can be done is the first readable text in declared order — which is what this
+ * theme did before bindings existed and must keep doing, because a theme cannot
+ * require a mapping that predates it.
+ */
+export function entryBlurb(
+  entry: { values: Record<string, unknown>; binding?: Record<string, unknown> },
+  fields?: readonly CollectionFieldDefinition[],
+): string | null {
+  const bound = classifyCollectionValue(entry.binding?.blurb)
+  if (bound?.kind === "text") return bound.text
+
+  for (const field of entryFields(entry.values, fields)) {
+    if (field.value.kind === "text") return field.value.text
+  }
+  return null
+}
+
+/** The byline to show, or null when the site maps none. */
+export function entryByline(entry: {
+  binding?: Record<string, unknown>
+}): CollectionValue | null {
+  return classifyCollectionValue(entry.binding?.byline)
+}

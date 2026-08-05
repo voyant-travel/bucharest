@@ -44,6 +44,30 @@ export default defineTheme({
       },
     ],
     sections: [],
+    /**
+     * The collection shape this theme renders, named in ITS OWN terms.
+     *
+     * An operator maps their fields onto these once; the theme then reads
+     * `entry.binding.blurb` and never learns whether the site called that
+     * field `summary`, `abstract` or `kurzfassung`.
+     *
+     * Nothing is required, deliberately. A required slot would refuse to
+     * publish any site that has not drawn the mapping yet, including every
+     * site already running this theme, so the listing falls back to the
+     * operator's own fields when a binding is absent.
+     */
+    contentBindings: [
+      {
+        id: "guides",
+        name: "Guides",
+        description:
+          "A collection of articles to list on the site. Map the fields you want shown.",
+        fields: [
+          { id: "blurb", label: "Short description", type: "text" },
+          { id: "byline", label: "Author", type: "reference" },
+        ],
+      },
+    ],
   },
   // Fixtures back local development and the deterministic build. They are never
   // served on a published hostname: the runtime resolves real content from the
