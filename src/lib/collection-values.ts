@@ -93,20 +93,48 @@ export function fieldLabel(id: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
+/** A field definition as the platform publishes it alongside the values. */
+export type CollectionFieldDefinition = {
+  id: string
+  label: string
+}
+
 /**
- * The fields of an entry in a stable order, absences dropped.
+ * The fields of an entry to display, in the order to display them.
  *
- * Declaration order is not recoverable from `values`, which is a record, so
- * this sorts by field id. A theme that showed fields in whatever order the
- * serializer produced would reorder a page for no reason an operator could see.
+ * When the collection publishes its declared fields, that is the answer: the
+ * operator's own labels, in the order they arranged them. Everything else is a
+ * fallback for a publication materialized before those definitions existed,
+ * where `values` is all there is — the id humanized, the keys sorted, because
+ * showing them in whatever order the serializer produced would reorder a page
+ * for no reason an operator could see.
+ *
+ * Values with no matching definition are still shown, after the declared ones.
+ * A field removed from the collection leaves its authored values behind, and an
+ * entry that silently stopped rendering half its content would be worse than
+ * one that shows a field the operator has stopped maintaining.
  */
 export function entryFields(
   values: Record<string, unknown>,
+  fields?: readonly CollectionFieldDefinition[],
 ): Array<{ id: string; label: string; value: CollectionValue }> {
-  return Object.keys(values)
-    .sort()
-    .flatMap((id) => {
-      const value = classifyCollectionValue(values[id])
-      return value === null ? [] : [{ id, label: fieldLabel(id), value }]
-    })
+  const present = (id: string, label: string) => {
+    const value = classifyCollectionValue(values[id])
+    return value === null ? [] : [{ id, label, value }]
+  }
+
+  if (!fields || fields.length === 0) {
+    return Object.keys(values)
+      .sort()
+      .flatMap((id) => present(id, fieldLabel(id)))
+  }
+
+  const declared = new Set(fields.map((field) => field.id))
+  return [
+    ...fields.flatMap((field) => present(field.id, field.label)),
+    ...Object.keys(values)
+      .filter((id) => !declared.has(id))
+      .sort()
+      .flatMap((id) => present(id, fieldLabel(id))),
+  ]
 }

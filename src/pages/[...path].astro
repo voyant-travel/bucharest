@@ -1,7 +1,7 @@
 ---
 import CollectionValue from "../components/CollectionValue.astro"
 import Layout from "../layouts/Layout.astro"
-import { classifyCollectionValue, entryFields } from "../lib/collection-values"
+import { entryFields } from "../lib/collection-values"
 import { resolveThemeContext } from "virtual:voyant-theme"
 
 // Context is resolved per request. On a published hostname it comes from the
@@ -12,12 +12,16 @@ const context = await resolveThemeContext(Astro.url)
 if (context.kind === "notFound") Astro.response.status = 404
 
 // A listing shows the first text a reader can scan, so an index is not a wall
-// of bare titles. Sorted for the same reason the detail page sorts: `values` is
-// a record and carries no order an operator chose.
-function teaser(values: Record<string, unknown>): string | null {
-  for (const id of Object.keys(values).sort()) {
-    const value = classifyCollectionValue(values[id])
-    if (value?.kind === "text") return value.text
+// of bare titles. "First" follows the operator's declared order when the
+// collection publishes one, so the summary they put at the top is the summary
+// that appears; otherwise it falls back to sorted keys, which is the best
+// `values` alone can offer.
+function teaser(
+  values: Record<string, unknown>,
+  fields?: readonly { id: string; label: string }[],
+): string | null {
+  for (const field of entryFields(values, fields)) {
+    if (field.value.kind === "text") return field.value.text
   }
   return null
 }
@@ -35,7 +39,7 @@ function teaser(values: Record<string, unknown>): string | null {
       ) : (
         <ul class="collection-index">
           {context.entries.map((entry) => {
-            const summary = teaser(entry.values)
+            const summary = teaser(entry.values, context.collection.fields)
             return (
               <li>
                 <h2>
@@ -57,7 +61,7 @@ function teaser(values: Record<string, unknown>): string | null {
     context.kind === "collectionEntry" && (
       <>
         <dl class="entry-fields">
-          {entryFields(context.entry.values).map((field) => (
+          {entryFields(context.entry.values, context.collection.fields).map((field) => (
             <>
               <dt>{field.label}</dt>
               <dd>
