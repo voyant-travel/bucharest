@@ -6,9 +6,13 @@ interface Props {
 }
 
 const { context } = Astro.props
-// Content pages carry a summary; use it as the meta description so published
-// storefront pages are not indexed without one.
-const description = context.kind === "content" ? context.summary : undefined
+// Authored SEO wins, because it is the one description an operator wrote on
+// purpose. A content page falls back to its own summary so a published page is
+// never indexed without one; a collection page has no equivalent prose to
+// borrow, and an invented description would be worse than none.
+const description =
+  context.seo.description ??
+  (context.kind === "content" ? context.summary : undefined)
 
 /**
  * Operator-chosen presentation, resolved to CSS custom properties.
