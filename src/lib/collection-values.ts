@@ -1,0 +1,112 @@
+/**
+ * Presentation for operator-defined collection fields.
+ *
+ * A theme receives these fields with no schema attached. The context carries
+ * `values` keyed by field id and a collection identity, and nothing that says
+ * what any field is, so a theme cannot ask whether `hero` is an image or a
+ * sentence. Presentation is therefore inferred from the value itself.
+ *
+ * That is sound rather than a guess: the platform validates every value against
+ * its declared type before publishing, so an image is always `{ src, alt }`
+ * with an https source, a resolved reference always carries the entry it names,
+ * and a date is always a real calendar date. What reaches here has already been
+ * proven to match one of these shapes.
+ */
+
+/** A reference the platform resolved to the entry it names, one hop deep. */
+type ResolvedReference = {
+  title: string
+  path?: string
+}
+
+type ImageValue = {
+  src: string
+  alt: string
+}
+
+export type CollectionValue =
+  | { kind: "reference"; reference: ResolvedReference }
+  | { kind: "image"; image: ImageValue }
+  | { kind: "text"; text: string }
+  | { kind: "list"; items: CollectionValue[] }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+/**
+ * Classifies one published value, or returns null for an absence.
+ *
+ * An unresolvable reference is left as the bare id by the platform rather than
+ * dropped, so it arrives here as a string and renders as text. That is the
+ * intended outcome: showing the id is worse than showing the title and better
+ * than silently showing nothing.
+ */
+export function classifyCollectionValue(value: unknown): CollectionValue | null {
+  if (value === null || value === undefined || value === "") return null
+
+  if (Array.isArray(value)) {
+    const items = value
+      .map(classifyCollectionValue)
+      .filter((item): item is CollectionValue => item !== null)
+    return items.length > 0 ? { kind: "list", items } : null
+  }
+
+  if (isRecord(value)) {
+    // Checked before the reference, because only an image carries `src`.
+    if (typeof value.src === "string" && typeof value.alt === "string") {
+      return { kind: "image", image: { src: value.src, alt: value.alt } }
+    }
+    if (typeof value.title === "string") {
+      return {
+        kind: "reference",
+        reference: {
+          title: value.title,
+          ...(typeof value.path === "string" ? { path: value.path } : {}),
+        },
+      }
+    }
+    return null
+  }
+
+  if (typeof value === "boolean") {
+    return { kind: "text", text: value ? "Yes" : "No" }
+  }
+  if (typeof value === "number" || typeof value === "string") {
+    return { kind: "text", text: String(value) }
+  }
+  return null
+}
+
+/**
+ * A readable label for a field id.
+ *
+ * Field ids are lowercase and hyphenated by the document contract, and the
+ * operator's own label never reaches a theme, so this is the best name
+ * available. It restores spacing and a leading capital and changes nothing
+ * else, because inventing wording for someone else's field would be worse than
+ * showing their id plainly.
+ */
+export function fieldLabel(id: string): string {
+  const spaced = id.replace(/[-_]+/g, " ").trim()
+  if (spaced === "") return id
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
+/**
+ * The fields of an entry in a stable order, absences dropped.
+ *
+ * Declaration order is not recoverable from `values`, which is a record, so
+ * this sorts by field id. A theme that showed fields in whatever order the
+ * serializer produced would reorder a page for no reason an operator could see.
+ */
+export function entryFields(
+  values: Record<string, unknown>,
+): Array<{ id: string; label: string; value: CollectionValue }> {
+  return Object.keys(values)
+    .sort()
+    .flatMap((id) => {
+      const value = classifyCollectionValue(values[id])
+      return value === null ? [] : [{ id, label: fieldLabel(id), value }]
+    })
+}
