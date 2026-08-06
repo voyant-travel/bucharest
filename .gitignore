@@ -28,3 +28,11 @@ pnpm-debug.log*
 
 # wrangler local state
 .wrangler/
+
+# This is an npm project: the builder detects its package manager from the
+# lockfile it finds, so a stray pnpm-lock.yaml silently moves the whole theme
+# build onto a different toolchain. That happened once and cost two failed
+# releases, with an error about supply-chain policy that named packages nobody
+# had touched.
+pnpm-lock.yaml
+yarn.lock
