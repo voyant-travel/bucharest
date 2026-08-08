@@ -1,15 +1,27 @@
 import { defineTheme } from "@voyant-travel/theme"
 
 export default defineTheme({
-  contractVersion: "v1alpha3",
+  contractVersion: "v1alpha4",
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.3.0",
+    version: "0.4.0",
     routes: [
       { id: "home", pattern: "/", context: "home" },
-      { id: "content", pattern: "/[...path]", context: "content" },
+      { id: "content", pattern: "/pages/[...path]", context: "content" },
+      { id: "tours", pattern: "/tours", context: "tourIndex" },
+      { id: "tour-detail", pattern: "/tours/[slug]", context: "tourDetail" },
       { id: "not-found", pattern: "/404", context: "notFound" },
+    ],
+    capabilities: [
+      { id: "catalog.search.v1" },
+      { id: "catalog.product-detail.v1" },
+      { id: "catalog.pricing.v1" },
+      { id: "catalog.availability.v1" },
+      { id: "catalog.requirements.v1" },
+      { id: "catalog.markets.v1" },
+      { id: "booking.session.v1" },
+      { id: "checkout.v1" },
     ],
     // Declared in the order an operator should meet them, because the editor
     // renders this list as written rather than sorting it.
@@ -141,7 +153,7 @@ export default defineTheme({
             blocks: [
               {
                 type: "link",
-                settings: { label: "Explore", page: "/about", style: "solid" },
+                settings: { label: "Explore", page: "/pages/about", style: "solid" },
               },
             ],
           },
@@ -246,7 +258,7 @@ export default defineTheme({
               body: "<p>Close with one useful invitation rather than another menu.</p>",
               heading: "Ready for the next chapter?",
               label: "Learn more",
-              page: "/about",
+              page: "/pages/about",
             },
           },
         ],
@@ -289,7 +301,7 @@ export default defineTheme({
       site: { name: "Bucharest" },
       navigation: [
         { label: "Home", href: "/" },
-        { label: "About", href: "/about" },
+        { label: "About", href: "/pages/about" },
       ],
       settings: {},
       title: "Bucharest",
@@ -318,7 +330,7 @@ export default defineTheme({
               {
                 id: "home-hero-about",
                 type: "link",
-                settings: { label: "About this theme", page: "/about", style: "solid" },
+                settings: { label: "About this theme", page: "/pages/about", style: "solid" },
               },
             ],
           },
@@ -370,7 +382,7 @@ export default defineTheme({
               body: "<p>The same templates render fixture content locally and immutable publication contexts in production.</p>",
               heading: "One theme, authored many ways",
               label: "Read about the theme",
-              page: "/about",
+              page: "/pages/about",
             },
             blocks: [],
           },
@@ -380,19 +392,173 @@ export default defineTheme({
     content: [
       {
         kind: "content",
-        path: "/about",
+        path: "/pages/about",
         slug: "about",
         locale: "en",
         site: { name: "Bucharest" },
         navigation: [
           { label: "Home", href: "/" },
-          { label: "About", href: "/about" },
+          { label: "About", href: "/pages/about" },
         ],
         settings: {},
         title: "About",
         seo: { title: "About", description: "A fixture-backed content page." },
         summary: "A fixture-backed content page.",
         body: "Replace this copy from the Voyant editor once the site is live.",
+      },
+    ],
+    tourIndex: {
+      kind: "tourIndex",
+      path: "/tours",
+      locale: "en",
+      site: { name: "Bucharest" },
+      navigation: [
+        { label: "Home", href: "/" },
+        { label: "Tours", href: "/tours" },
+      ],
+      settings: {},
+      title: "Tours",
+      seo: {
+        title: "Small-group tours",
+        description: "Thoughtful journeys with time to look around.",
+      },
+      products: [
+        {
+          id: "prod_transylvania",
+          slug: "transylvania-on-foot",
+          name: "Transylvania on foot",
+          shortDescription:
+            "Seven unhurried days between Saxon villages and the Carpathian foothills.",
+          bookingMode: "itinerary",
+          capacityMode: "limited",
+          categories: [
+            {
+              id: "cat_walking",
+              name: "Walking",
+              slug: "walking",
+            },
+          ],
+          tags: [{ id: "tag_small_group", name: "Small group" }],
+          destinations: [
+            {
+              id: "dest_transylvania",
+              name: "Transylvania",
+              slug: "transylvania",
+            },
+          ],
+          locations: [],
+          media: [],
+          features: [],
+          faqs: [],
+        },
+      ],
+      live: {
+        capabilities: [
+          {
+            id: "catalog.search.v1",
+            available: true,
+            methods: ["GET"],
+            endpoint: "/v1/public/theme/catalog/search",
+          },
+        ],
+      },
+    },
+    tourDetail: [
+      {
+        kind: "tourDetail",
+        path: "/tours/transylvania-on-foot",
+        slug: "transylvania-on-foot",
+        locale: "en",
+        site: { name: "Bucharest" },
+        navigation: [
+          { label: "Home", href: "/" },
+          { label: "Tours", href: "/tours" },
+        ],
+        settings: {},
+        title: "Transylvania on foot",
+        seo: {
+          title: "Transylvania on foot",
+          description:
+            "A seven-day small-group walking tour through Transylvania.",
+        },
+        product: {
+          id: "prod_transylvania",
+          slug: "transylvania-on-foot",
+          name: "Transylvania on foot",
+          shortDescription:
+            "Seven unhurried days between Saxon villages and the Carpathian foothills.",
+          descriptionHtml:
+            "<p>Walk old shepherd paths, stay in village guesthouses, and leave enough room in every day for a long lunch.</p>",
+          bookingMode: "itinerary",
+          capacityMode: "limited",
+          categories: [
+            {
+              id: "cat_walking",
+              name: "Walking",
+              slug: "walking",
+            },
+          ],
+          tags: [{ id: "tag_small_group", name: "Small group" }],
+          destinations: [
+            {
+              id: "dest_transylvania",
+              name: "Transylvania",
+              slug: "transylvania",
+            },
+          ],
+          locations: [],
+          media: [],
+          features: [
+            {
+              id: "feature_pace",
+              featureType: "pace",
+              title: "An unhurried pace",
+              description: "Daily walks leave time for villages and meals.",
+            },
+          ],
+          faqs: [],
+          itinerary: {
+            id: "itinerary_transylvania",
+            name: "Seven days in Transylvania",
+            days: [
+              {
+                id: "day_one",
+                dayNumber: 1,
+                title: "Brașov to the hills",
+                description: "Meet the group and take the first short walk.",
+                services: [],
+              },
+            ],
+          },
+        },
+        live: {
+          capabilities: [
+            {
+              id: "catalog.pricing.v1",
+              available: true,
+              methods: ["POST"],
+              endpoint: "/v1/public/theme/catalog/pricing",
+            },
+            {
+              id: "catalog.availability.v1",
+              available: true,
+              methods: ["POST"],
+              endpoint: "/v1/public/theme/catalog/availability",
+            },
+            {
+              id: "booking.session.v1",
+              available: true,
+              methods: ["POST", "PATCH"],
+              endpoint: "/v1/public/theme/booking/session",
+            },
+            {
+              id: "checkout.v1",
+              available: true,
+              methods: ["POST"],
+              endpoint: "/v1/public/theme/checkout",
+            },
+          ],
+        },
       },
     ],
     notFound: {
