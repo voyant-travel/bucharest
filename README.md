@@ -19,6 +19,12 @@ editorial product identity and presentation are immutable page context, while
 search, dates, prices, booking sessions, and checkout use platform-generated
 same-origin capabilities. No provider endpoint or credential reaches the theme.
 
+Bucharest is presentation-only. Its booking controls retain opaque session and
+revision handles in memory for the current page attempt, then hand payment and
+account journeys to managed platform capabilities. The theme does not persist
+customer identity, profiles, booking or payment state, and it does not call an
+engine or provider API directly.
+
 ## Validate
 
 ```sh
