@@ -1,6 +1,8 @@
 ---
 import CollectionValue from "../components/CollectionValue.astro"
 import HomeSections from "../components/sections/HomeSections.astro"
+import TourDetail from "../components/TourDetail.astro"
+import TourIndex from "../components/TourIndex.astro"
 import Layout from "../layouts/Layout.astro"
 import {
   entryBlurb,
@@ -32,13 +34,17 @@ const homeSections =
 ---
 
 <Layout context={context} authoredHome={homeSections.length > 0}>
-  {context.kind === "home" && homeSections.length > 0 ? (
+  {context.kind === "home" && homeSections.length > 0 && (
     <HomeSections sections={homeSections} />
-  ) : (
-    <h1>{context.title}</h1>
   )}
+  {context.kind === "home" && homeSections.length === 0 && <h1>{context.title}</h1>}
+  {["content", "notFound", "collectionIndex", "collectionEntry"].includes(
+    context.kind,
+  ) && <h1>{context.title}</h1>}
   {context.kind === "content" && <p>{context.body}</p>}
   {context.kind === "notFound" && <p>{context.message}</p>}
+  {context.kind === "tourIndex" && <TourIndex context={context} />}
+  {context.kind === "tourDetail" && <TourDetail context={context} />}
 
   {
     /*

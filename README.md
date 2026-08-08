@@ -14,6 +14,11 @@ npm run dev
 site resolves page context from an immutable publication snapshot instead,
 through the same `resolveThemeContext` call.
 
+The `/tours` and `/tours/:slug` fixtures demonstrate the v1alpha4 split:
+editorial product identity and presentation are immutable page context, while
+search, dates, prices, booking sessions, and checkout use platform-generated
+same-origin capabilities. No provider endpoint or credential reaches the theme.
+
 ## Validate
 
 ```sh
