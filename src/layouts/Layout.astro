@@ -1,11 +1,12 @@
 ---
-import type { ThemePageContext } from "@voyant-travel/theme"
+import { cleanStega, type ThemePageContext } from "@voyant-travel/theme"
 
 interface Props {
   context: ThemePageContext
+  authoredHome?: boolean
 }
 
-const { context } = Astro.props
+const { context, authoredHome = false } = Astro.props
 // Authored SEO wins, because it is the one description an operator wrote on
 // purpose. A content page falls back to its own summary so a published page is
 // never indexed without one; a collection page has no equivalent prose to
@@ -13,6 +14,17 @@ const { context } = Astro.props
 const description =
   context.seo.description ??
   (context.kind === "content" ? context.summary : undefined)
+const documentTitle = cleanStega(context.seo.title)
+const metadataDescription = description ? cleanStega(description) : undefined
+const openGraphTitle = context.openGraph?.title
+  ? cleanStega(context.openGraph.title)
+  : undefined
+const openGraphDescription = context.openGraph?.description
+  ? cleanStega(context.openGraph.description)
+  : undefined
+const openGraphImageAlt = context.openGraph?.image?.alt
+  ? cleanStega(context.openGraph.image.alt)
+  : undefined
 
 /**
  * Operator-chosen presentation, resolved to CSS custom properties.
@@ -64,8 +76,31 @@ const accent =
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
-    <title>{context.title}</title>
-    {description && <meta name="description" content={description} />}
+    <title>{documentTitle}</title>
+    {metadataDescription && (
+      <meta name="description" content={metadataDescription} />
+    )}
+    {context.seo.noIndex && <meta name="robots" content="noindex, nofollow" />}
+    {openGraphTitle && <meta property="og:title" content={openGraphTitle} />}
+    {openGraphDescription && (
+      <meta property="og:description" content={openGraphDescription} />
+    )}
+    {context.openGraph?.image && (
+      <meta property="og:image" content={context.openGraph.image.src} />
+    )}
+    {openGraphImageAlt && <meta property="og:image:alt" content={openGraphImageAlt} />}
+    {context.openGraph?.image?.width && (
+      <meta
+        property="og:image:width"
+        content={String(context.openGraph.image.width)}
+      />
+    )}
+    {context.openGraph?.image?.height && (
+      <meta
+        property="og:image:height"
+        content={String(context.openGraph.image.height)}
+      />
+    )}
   </head>
   <body
     style={`--page-background:${palette.background};--page-text:${palette.text};--page-accent:${accent};--content-width:${contentWidth}`}
@@ -80,7 +115,7 @@ const accent =
         }
       </nav>
     </header>
-    <main>
+    <main class:list={{ "authored-home": authoredHome }}>
       <slot />
     </main>
   </body>
@@ -120,6 +155,10 @@ const accent =
     max-width: var(--content-width, 44rem);
     margin: 0 auto;
     padding: 3rem 2rem;
+  }
+  main.authored-home {
+    max-width: none;
+    padding: 0;
   }
   main :global(a) {
     color: var(--page-accent, #0b3d2e);

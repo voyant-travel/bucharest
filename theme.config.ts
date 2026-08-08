@@ -5,7 +5,7 @@ export default defineTheme({
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.2.10",
+    version: "0.3.0",
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/[...path]", context: "content" },
@@ -43,7 +43,216 @@ export default defineTheme({
         ],
       },
     ],
-    sections: [],
+    sections: [
+      {
+        id: "hero",
+        name: "Hero",
+        description: "A lead story with optional calls to action.",
+        settings: [
+          {
+            id: "eyebrow",
+            label: "Eyebrow",
+            type: "text",
+            placeholder: "A short introduction",
+          },
+          {
+            id: "heading",
+            label: "Heading",
+            type: "inline_richtext",
+            required: true,
+          },
+          {
+            id: "body",
+            label: "Body",
+            type: "richtext",
+          },
+          {
+            id: "image",
+            label: "Image",
+            type: "image_picker",
+          },
+          {
+            id: "image-alt",
+            label: "Image description",
+            type: "text",
+            info: "Describe the image for people using assistive technology.",
+          },
+          {
+            id: "alignment",
+            label: "Text alignment",
+            type: "text_alignment",
+            default: "left",
+            options: [
+              { label: "Left", value: "left" },
+              { label: "Centre", value: "center" },
+            ],
+          },
+          {
+            id: "color-scheme",
+            label: "Colour scheme",
+            type: "color_scheme",
+            default: "light",
+          },
+          {
+            id: "height",
+            label: "Minimum height",
+            type: "range",
+            min: 360,
+            max: 720,
+            step: 40,
+            unit: "px",
+            default: 520,
+          },
+        ],
+        blocks: [
+          {
+            type: "link",
+            name: "Link",
+            limit: 2,
+            settings: [
+              { id: "label", label: "Label", type: "text", required: true },
+              { id: "page", label: "Destination", type: "page", required: true },
+              {
+                id: "style",
+                label: "Style",
+                type: "radio",
+                default: "solid",
+                options: [
+                  { label: "Solid", value: "solid" },
+                  { label: "Outline", value: "outline" },
+                ],
+              },
+            ],
+          },
+        ],
+        max_blocks: 2,
+        limit: 1,
+        presets: [
+          {
+            name: "Editorial hero",
+            settings: {
+              alignment: "left",
+              body: "<p>Introduce the place, idea, or collection this page opens.</p>",
+              "color-scheme": "light",
+              eyebrow: "A considered introduction",
+              heading: "Make the first story memorable",
+              height: 520,
+            },
+            blocks: [
+              {
+                type: "link",
+                settings: { label: "Explore", page: "/about", style: "solid" },
+              },
+            ],
+          },
+        ],
+        templates: ["home"],
+      },
+      {
+        id: "feature-grid",
+        name: "Feature grid",
+        description: "A flexible group of short, linked highlights.",
+        settings: [
+          { id: "heading", label: "Heading", type: "inline_richtext" },
+          {
+            id: "introduction",
+            label: "Introduction",
+            type: "textarea",
+            placeholder: "Explain what connects these features.",
+          },
+          {
+            id: "columns",
+            label: "Columns",
+            type: "range",
+            min: 2,
+            max: 4,
+            step: 1,
+            default: 3,
+          },
+          {
+            id: "show-dividers",
+            label: "Show dividers",
+            type: "checkbox",
+            default: true,
+          },
+        ],
+        blocks: [
+          {
+            type: "feature",
+            name: "Feature",
+            settings: [
+              { id: "title", label: "Title", type: "text", required: true },
+              { id: "description", label: "Description", type: "textarea" },
+              { id: "image", label: "Image", type: "image_picker" },
+              { id: "image-alt", label: "Image description", type: "text" },
+              { id: "label", label: "Link label", type: "text" },
+              { id: "page", label: "Link destination", type: "page" },
+            ],
+          },
+        ],
+        max_blocks: 12,
+        presets: [
+          {
+            name: "Three highlights",
+            settings: {
+              columns: 3,
+              heading: "Places to begin",
+              introduction: "A few useful routes into the story.",
+              "show-dividers": true,
+            },
+            blocks: [
+              {
+                type: "feature",
+                settings: {
+                  description: "Give readers a concise reason to continue.",
+                  title: "First highlight",
+                },
+              },
+              {
+                type: "feature",
+                settings: {
+                  description: "Keep each card focused on one clear idea.",
+                  title: "Second highlight",
+                },
+              },
+              {
+                type: "feature",
+                settings: {
+                  description: "Add a link only when there is a useful next step.",
+                  title: "Third highlight",
+                },
+              },
+            ],
+          },
+        ],
+        templates: ["home"],
+      },
+      {
+        id: "callout",
+        name: "Callout",
+        description: "A compact message and optional destination.",
+        settings: [
+          { id: "heading", label: "Heading", type: "inline_richtext", required: true },
+          { id: "body", label: "Body", type: "richtext" },
+          { id: "label", label: "Link label", type: "text" },
+          { id: "page", label: "Link destination", type: "page" },
+          { id: "background", label: "Background colour", type: "color", default: "#e7efe9" },
+        ],
+        presets: [
+          {
+            name: "Simple callout",
+            settings: {
+              background: "#e7efe9",
+              body: "<p>Close with one useful invitation rather than another menu.</p>",
+              heading: "Ready for the next chapter?",
+              label: "Learn more",
+              page: "/about",
+            },
+          },
+        ],
+        templates: ["home"],
+      },
+    ],
     /**
      * The collection shape this theme renders, named in ITS OWN terms.
      *
@@ -84,8 +293,89 @@ export default defineTheme({
       ],
       settings: {},
       title: "Bucharest",
-      seo: { title: "Bucharest" },
-      sections: [],
+      seo: {
+        title: "Bucharest",
+        description: "A calm, fixture-backed introduction to the Bucharest theme.",
+      },
+      openGraph: {
+        title: "Bucharest",
+        description: "A calm, fixture-backed introduction to the Bucharest theme.",
+      },
+      sections: [
+        {
+          type: "hero",
+          data: {
+            id: "home-hero",
+            settings: {
+              alignment: "left",
+              body: "<p>A flexible reference theme for stories, collections, and carefully composed pages.</p>",
+              "color-scheme": "light",
+              eyebrow: "Voyant reference theme",
+              heading: "Travel stories, given room to breathe",
+              height: 520,
+            },
+            blocks: [
+              {
+                id: "home-hero-about",
+                type: "link",
+                settings: { label: "About this theme", page: "/about", style: "solid" },
+              },
+            ],
+          },
+        },
+        {
+          type: "feature-grid",
+          data: {
+            id: "home-features",
+            settings: {
+              columns: 3,
+              heading: "Built for useful beginnings",
+              introduction: "Start with a clear hierarchy, then let the published content do the talking.",
+              "show-dividers": true,
+            },
+            blocks: [
+              {
+                id: "home-feature-sections",
+                type: "feature",
+                settings: {
+                  description: "Compose a homepage from reusable, operator-authored sections.",
+                  title: "Flexible sections",
+                },
+              },
+              {
+                id: "home-feature-content",
+                type: "feature",
+                settings: {
+                  description: "Present content without binding the theme to one site's field names.",
+                  title: "Portable content",
+                },
+              },
+              {
+                id: "home-feature-presentation",
+                type: "feature",
+                settings: {
+                  description: "Keep presentation choices bounded, predictable, and accessible.",
+                  title: "Considered defaults",
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: "callout",
+          data: {
+            id: "home-callout",
+            settings: {
+              background: "#e7efe9",
+              body: "<p>The same templates render fixture content locally and immutable publication contexts in production.</p>",
+              heading: "One theme, authored many ways",
+              label: "Read about the theme",
+              page: "/about",
+            },
+            blocks: [],
+          },
+        },
+      ],
     },
     content: [
       {
