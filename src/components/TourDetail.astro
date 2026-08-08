@@ -1,6 +1,7 @@
 ---
 import type { TourDetailContext } from "@voyant-travel/theme"
 import { availableCapability } from "../lib/tour-capabilities"
+import BookingJourney from "./BookingJourney.astro"
 
 interface Props {
   context: TourDetailContext
@@ -10,6 +11,8 @@ const { context } = Astro.props
 const { product } = context
 const availability = availableCapability(context.live, "catalog.availability.v1")
 const pricing = availableCapability(context.live, "catalog.pricing.v1")
+const booking = availableCapability(context.live, "booking.session.v1")
+const checkout = availableCapability(context.live, "checkout.v1")
 ---
 
 <article class="tour-detail">
@@ -81,6 +84,15 @@ const pricing = availableCapability(context.live, "catalog.pricing.v1")
     </section>
   )}
 
+  {booking && (
+    <BookingJourney
+      productId={product.id}
+      locale={context.locale}
+      bookingEndpoint={booking.endpoint}
+      checkoutEndpoint={checkout?.endpoint}
+    />
+  )}
+
   <p class="back"><a href="/tours">Back to all tours</a></p>
 </article>
 
@@ -130,7 +142,20 @@ const pricing = availableCapability(context.live, "catalog.pricing.v1")
         const item = document.createElement("li")
         const date = rowText(row, "startsAt", "dateLocal", "startDate") ?? "Date to be confirmed"
         const remaining = typeof row.remainingPax === "number" ? `${row.remainingPax} places` : undefined
-        item.textContent = remaining ? `${date} · ${remaining}` : date
+        const copy = document.createElement("span")
+        copy.textContent = remaining ? `${date} · ${remaining}` : date
+        item.append(copy)
+        const departureSlotId = rowText(row, "id", "slotId", "departureSlotId")
+        if (departureSlotId) {
+          const choose = document.createElement("button")
+          choose.type = "button"
+          choose.className = "secondary choose-date"
+          choose.textContent = "Choose"
+          choose.addEventListener("click", () => {
+            document.dispatchEvent(new CustomEvent("voyant:departure-selected", { detail: { departureSlotId } }))
+          })
+          item.append(choose)
+        }
         list.append(item)
       }
       result.append(list)
@@ -172,6 +197,8 @@ const pricing = availableCapability(context.live, "catalog.pricing.v1")
   .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; }
   button { background: var(--page-accent); border: 1px solid var(--page-accent); color: white; cursor: pointer; font: inherit; font-weight: 650; padding: 0.7rem 1rem; }
   button.secondary { background: transparent; color: var(--page-accent); }
+  :global(.live-options li) { align-items: center; display: flex; gap: 0.75rem; justify-content: space-between; }
+  :global(.live-options .choose-date) { padding: 0.4rem 0.65rem; }
   pre { background: var(--page-background); max-width: 100%; overflow: auto; padding: 1rem; }
   .back { margin-top: 4rem; }
 </style>
