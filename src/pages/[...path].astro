@@ -1,11 +1,12 @@
 ---
 import CollectionValue from "../components/CollectionValue.astro"
+import HomeSections from "../components/sections/HomeSections.astro"
 import Layout from "../layouts/Layout.astro"
 import {
   entryBlurb,
-  entryByline,
   entryFields,
 } from "../lib/collection-values"
+import { sectionInstances } from "../lib/sections"
 import { resolveThemeContext } from "virtual:voyant-theme"
 
 // Context is resolved per request. On a published hostname it comes from the
@@ -15,6 +16,13 @@ import { resolveThemeContext } from "virtual:voyant-theme"
 const context = await resolveThemeContext(Astro.url)
 if (context.kind === "notFound") Astro.response.status = 404
 
+const homeSections =
+  context.kind === "home"
+    ? sectionInstances(context.sections).filter((section) =>
+        ["hero", "feature-grid", "callout"].includes(section.type),
+      )
+    : []
+
 // A listing shows the first text a reader can scan, so an index is not a wall
 // of bare titles. "First" follows the operator's declared order when the
 // collection publishes one, so the summary they put at the top is the summary
@@ -23,8 +31,12 @@ if (context.kind === "notFound") Astro.response.status = 404
 
 ---
 
-<Layout context={context}>
-  <h1>{context.title}</h1>
+<Layout context={context} authoredHome={homeSections.length > 0}>
+  {context.kind === "home" && homeSections.length > 0 ? (
+    <HomeSections sections={homeSections} />
+  ) : (
+    <h1>{context.title}</h1>
+  )}
   {context.kind === "content" && <p>{context.body}</p>}
   {context.kind === "notFound" && <p>{context.message}</p>}
 
