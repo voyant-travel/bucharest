@@ -1,13 +1,24 @@
 ---
 import { messagesFor } from "../lib/shopping.mjs"
+import BookingJourney from "./BookingJourney.astro"
 
 interface Props {
   locale: string
   searchEndpoint?: string
   tripsEndpoint?: string
+  tripBookingEndpoint?: string
+  bookingEndpoint?: string
+  checkoutEndpoint?: string
 }
 
-const { locale, searchEndpoint, tripsEndpoint } = Astro.props
+const {
+  locale,
+  searchEndpoint,
+  tripsEndpoint,
+  tripBookingEndpoint,
+  bookingEndpoint,
+  checkoutEndpoint,
+} = Astro.props
 const copy = messagesFor(locale)
 ---
 
@@ -17,6 +28,7 @@ const copy = messagesFor(locale)
   data-locale={locale}
   data-search-endpoint={searchEndpoint}
   data-trips-endpoint={tripsEndpoint}
+  data-trip-booking-endpoint={tripBookingEndpoint}
   aria-labelledby="shopping-heading"
 >
   <header class="shopping-intro">
@@ -180,6 +192,17 @@ const copy = messagesFor(locale)
       <p class="trip-status" data-trip-status role="status" aria-live="polite"></p>
       <ol data-trip-items></ol>
       <p data-trip-empty data-i18n="emptyTrip">{copy.emptyTrip}</p>
+      <button type="button" data-trip-book disabled={!tripBookingEndpoint || !bookingEndpoint}>
+        <span data-i18n="bookItinerary">{copy.bookItinerary}</span>
+      </button>
+      {bookingEndpoint && (
+        <BookingJourney
+          mode="itinerary"
+          locale={locale}
+          bookingEndpoint={bookingEndpoint}
+          checkoutEndpoint={checkoutEndpoint}
+        />
+      )}
     </aside>
   </div>
 </section>
@@ -229,6 +252,7 @@ const copy = messagesFor(locale)
   :global(.trip-item p) { font-weight: 650; margin: 0 0 0.6rem; text-transform: capitalize; }
   :global(.trip-actions) { display: flex; flex-wrap: wrap; gap: 0.35rem; }
   :global(.trip-actions button) { background: transparent; color: var(--page-accent); font-size: 0.8rem; padding: 0.35rem 0.5rem; }
+  :global(.trip .booking-journey) { margin-top: 1.25rem; }
   .visually-hidden { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
   @media (max-width: 48rem) {
     .workspace { grid-template-columns: 1fr; }

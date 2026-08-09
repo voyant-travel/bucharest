@@ -1,12 +1,20 @@
 ---
 interface Props {
-  productId: string
+  productId?: string
   locale: string
   bookingEndpoint: string
   checkoutEndpoint?: string
+  mode?: "product" | "itinerary"
 }
 
-const { productId, locale, bookingEndpoint, checkoutEndpoint } = Astro.props
+const {
+  productId,
+  locale,
+  bookingEndpoint,
+  checkoutEndpoint,
+  mode = "product",
+} = Astro.props
+const itinerary = mode === "itinerary"
 ---
 
 <section
@@ -16,10 +24,12 @@ const { productId, locale, bookingEndpoint, checkoutEndpoint } = Astro.props
   data-locale={locale}
   data-booking-endpoint={bookingEndpoint}
   data-checkout-endpoint={checkoutEndpoint}
+  data-booking-mode={mode}
+  hidden={itinerary}
   aria-labelledby="booking-heading"
 >
-  <p class="eyebrow">Secure live booking</p>
-  <h2 id="booking-heading">Build your booking</h2>
+  <p class="eyebrow">{itinerary ? "Secure itinerary booking" : "Secure live booking"}</p>
+  <h2 id="booking-heading">{itinerary ? "Book everything together" : "Build your booking"}</h2>
   <p>
     Dates, prices, holds, and checkout are resolved live. They are not stored in
     this published page.
@@ -27,11 +37,13 @@ const { productId, locale, bookingEndpoint, checkoutEndpoint } = Astro.props
 
   <form data-booking-form>
     <div class="fields">
-      <label>
-        Departure reference
-        <input name="departureSlotId" autocomplete="off" required />
-        <span>Choose a live date above or enter its reference.</span>
-      </label>
+      {!itinerary && (
+        <label>
+          Departure reference
+          <input name="departureSlotId" autocomplete="off" required />
+          <span>Choose a live date above or enter its reference.</span>
+        </label>
+      )}
       <label>
         Adults
         <input name="adults" type="number" min="1" max="20" value="1" required />
@@ -51,7 +63,7 @@ const { productId, locale, bookingEndpoint, checkoutEndpoint } = Astro.props
     </div>
 
     <div class="actions" aria-label="Booking steps">
-      <button type="submit" data-action="create">Start booking</button>
+      {!itinerary && <button type="submit" data-action="create">Start booking</button>}
       <button type="button" class="secondary" data-action="update" disabled>Update details</button>
       <button type="button" class="secondary" data-action="quote" disabled>Get binding quote</button>
       <button type="button" class="secondary" data-action="hold" disabled>Hold one place</button>
@@ -96,8 +108,8 @@ const { productId, locale, bookingEndpoint, checkoutEndpoint } = Astro.props
     selectionFromForm,
   } from "../lib/booking-journey.mjs"
 
-  const root = document.querySelector("[data-booking-journey]")
-  if (root instanceof HTMLElement) {
+  for (const root of document.querySelectorAll("[data-booking-journey]")) {
+    if (!(root instanceof HTMLElement)) continue
     const form = root.querySelector("[data-booking-form]")
     const status = root.querySelector("[data-booking-status]")
     const error = root.querySelector("[data-booking-error]")
@@ -109,12 +121,14 @@ const { productId, locale, bookingEndpoint, checkoutEndpoint } = Astro.props
     const handoffLink = root.querySelector("[data-checkout-link]")
     const bookingEndpoint = root.dataset.bookingEndpoint
     const productId = root.dataset.productId
-    if (form instanceof HTMLFormElement && bookingEndpoint && productId) {
-      const journey = createBookingJourney({
-        endpoint: bookingEndpoint,
-        checkoutEndpoint: root.dataset.checkoutEndpoint,
-        productId,
-      })
+    if (form instanceof HTMLFormElement && bookingEndpoint) {
+      let journey = productId
+        ? createBookingJourney({
+            endpoint: bookingEndpoint,
+            checkoutEndpoint: root.dataset.checkoutEndpoint,
+            productId,
+          })
+        : undefined
       let lastPayload
       let inFlight = false
 
@@ -151,7 +165,12 @@ const { productId, locale, bookingEndpoint, checkoutEndpoint } = Astro.props
       }
 
       const run = async (action) => {
-        if (inFlight || !(status instanceof HTMLElement) || !(error instanceof HTMLElement)) return
+        if (
+          inFlight ||
+          !journey ||
+          !(status instanceof HTMLElement) ||
+          !(error instanceof HTMLElement)
+        ) return
         inFlight = true
         error.hidden = true
         status.textContent = `${readableCode(action)} in progress…`
@@ -199,7 +218,7 @@ const { productId, locale, bookingEndpoint, checkoutEndpoint } = Astro.props
 
       form.addEventListener("submit", (event) => {
         event.preventDefault()
-        void run("create")
+        if (journey) void run("create")
       })
       for (const control of root.querySelectorAll("[data-action]")) {
         if (!(control instanceof HTMLButtonElement) || control.type === "submit") continue
@@ -212,6 +231,30 @@ const { productId, locale, bookingEndpoint, checkoutEndpoint } = Astro.props
           input.value = departure
           input.focus()
           if (status instanceof HTMLElement) status.textContent = "Departure selected. Add traveler details to start."
+        }
+      })
+      root.addEventListener("voyant:itinerary-session-created", (event) => {
+        if (!(event instanceof CustomEvent) || root.dataset.bookingMode !== "itinerary") return
+        const outcome = event.detail?.outcome
+        try {
+          journey = createBookingJourney({
+            endpoint: bookingEndpoint,
+            checkoutEndpoint: root.dataset.checkoutEndpoint,
+            initialOutcome: outcome,
+            capability: event.detail?.bookingSessionCapability,
+          })
+          root.hidden = false
+          render(journey.state())
+          if (status instanceof HTMLElement) {
+            status.textContent = "Itinerary session created. Review traveler details, then get a binding quote."
+          }
+        } catch (caught) {
+          if (error instanceof HTMLElement) {
+            error.textContent = caught instanceof Error
+              ? caught.message
+              : "The managed itinerary session was invalid."
+            error.hidden = false
+          }
         }
       })
     }

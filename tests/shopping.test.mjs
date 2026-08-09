@@ -189,6 +189,118 @@ test("fails closed on a CAS conflict instead of replaying a stale mutation", asy
   assert.equal(calls, 2)
 })
 
+test("books the exact Trip revision and reuses one idempotency key after transport failure", async () => {
+  const calls = []
+  let attempt = 0
+  const client = createShoppingClient({
+    tripsEndpoint: "/trips",
+    bookEndpoint: "/trips/book",
+    locale: "en-GB",
+    origin: "https://shop.example",
+    randomUUID: () => "00000000-0000-4000-8000-000000000001",
+    fetchImpl: async (url, init) => {
+      const body = JSON.parse(init.body)
+      calls.push({ url, method: init.method, body })
+      if (url.endsWith("/trips")) return response({ data: {
+        selectionRef: "opaque-selection-ref-1234",
+        revision: 7,
+        scope: scope(),
+        items: [{ itemRef: "opaque-item-flight-1234", kind: "flight", quantity: 1 }],
+      } }, 201)
+      attempt += 1
+      if (attempt === 1) throw new TypeError("network unavailable")
+      return response({ data: {
+        bookingSessionCapability: `bcap_${"a".repeat(43)}`,
+        outcome: {
+          kind: "session_created",
+          session: {
+            id: "bses_trip_1",
+            revision: 1,
+            target: { kind: "managed_itinerary" },
+          },
+        },
+      } })
+    },
+  })
+
+  await client.add("flight", "opaque-flight-offer-1234")
+  await assert.rejects(client.book(), /network unavailable/)
+  const retryKey = client.bookRetryKey()
+  const booked = await client.book()
+
+  assert.equal(calls[1].body.idempotencyKey, calls[2].body.idempotencyKey)
+  assert.equal(calls[1].body.idempotencyKey, retryKey)
+  assert.deepEqual(calls[1].body, {
+    selectionRef: "opaque-selection-ref-1234",
+    expectedRevision: 7,
+    idempotencyKey: "theme-book-itinerary-00000000-0000-4000-8000-000000000001",
+  })
+  assert.equal(booked.outcome.session.target.kind, "managed_itinerary")
+  assert.equal(client.bookRetryKey(), undefined)
+})
+
+test("fails closed when a Trip booking capability is stale or expired", async () => {
+  for (const status of [403, 409]) {
+    let calls = 0
+    const client = createShoppingClient({
+      tripsEndpoint: "/trips",
+      bookEndpoint: "/trips/book",
+      locale: "en-GB",
+      origin: "https://shop.example",
+      randomUUID: () => "00000000-0000-4000-8000-000000000001",
+      fetchImpl: async () => {
+        calls += 1
+        if (calls === 1) return response({ data: {
+          selectionRef: "opaque-selection-ref-1234",
+          revision: 2,
+          scope: scope(),
+          items: [{ itemRef: "opaque-item-stay-1234", kind: "stay", quantity: 1 }],
+        } }, 201)
+        return response({ error: status === 409
+          ? "trip_selection_revision_conflict"
+          : "storefront_trip_selection_not_found" }, status)
+      },
+    })
+    await client.add("stay", "opaque-stay-offer-1234")
+    await assert.rejects(client.book(), (error) => {
+      assert.ok(error instanceof ShoppingHttpError)
+      assert.equal(error.status, status)
+      return true
+    })
+    assert.equal(client.trip(), undefined)
+    assert.equal(client.bookRetryKey(), undefined)
+  }
+})
+
+test("keeps an unpriced Trip retryable without changing its exact request", async () => {
+  const bodies = []
+  let calls = 0
+  const client = createShoppingClient({
+    tripsEndpoint: "/trips",
+    bookEndpoint: "/trips/book",
+    locale: "en-GB",
+    origin: "https://shop.example",
+    randomUUID: () => "00000000-0000-4000-8000-000000000001",
+    fetchImpl: async (_url, init) => {
+      calls += 1
+      const body = JSON.parse(init.body)
+      if (calls === 1) return response({ data: {
+        selectionRef: "opaque-selection-ref-1234",
+        revision: 4,
+        scope: scope(),
+        items: [{ itemRef: "opaque-item-product-1234", kind: "product", quantity: 1 }],
+      } }, 201)
+      bodies.push(body)
+      return response({ error: "storefront_trip_booking_pricing_unavailable" }, 400)
+    },
+  })
+  await client.add("product", "opaque-product-offer-1234")
+  await assert.rejects(client.book())
+  await assert.rejects(client.book())
+  assert.ok(client.trip())
+  assert.deepEqual(bodies[0], bodies[1])
+})
+
 test("refuses a provider-origin endpoint and keeps authority on the storefront", async () => {
   let called = false
   const client = createShoppingClient({

@@ -46,6 +46,12 @@ const DICTIONARIES = {
       "This trip changed somewhere else. Its stale copy was cleared; search again to rebuild it safely.",
     added: "Added to your trip.",
     updated: "Trip updated.",
+    bookItinerary: "Book itinerary",
+    bookingItinerary: "Preparing your secure itinerary booking…",
+    itineraryReady: "Your itinerary is ready to quote and book.",
+    itineraryExpired: "This itinerary expired. Search again to build a fresh trip.",
+    itineraryPricingUnavailable: "One or more itinerary items cannot be priced. Review the trip and try again.",
+    itineraryRejected: "Voyant could not start this itinerary booking. Nothing was booked.",
     retry: "Shopping is temporarily unavailable. Please try again.",
     from: "From",
     perTrip: "for this option",
@@ -101,6 +107,12 @@ const DICTIONARIES = {
       "Călătoria s-a schimbat în altă parte. Copia veche a fost eliminată; caută din nou pentru a o reconstrui în siguranță.",
     added: "Opțiunea a fost adăugată.",
     updated: "Călătoria a fost actualizată.",
+    bookItinerary: "Rezervă itinerarul",
+    bookingItinerary: "Pregătim rezervarea securizată a itinerarului…",
+    itineraryReady: "Itinerarul este pregătit pentru ofertare și rezervare.",
+    itineraryExpired: "Acest itinerar a expirat. Caută din nou pentru a crea o călătorie nouă.",
+    itineraryPricingUnavailable: "Unul sau mai multe elemente nu pot fi evaluate. Verifică itinerarul și încearcă din nou.",
+    itineraryRejected: "Voyant nu a putut porni rezervarea itinerarului. Nu s-a rezervat nimic.",
     retry: "Căutarea este momentan indisponibilă. Încearcă din nou.",
     from: "De la",
     perTrip: "pentru această opțiune",
@@ -127,6 +139,11 @@ const DICTIONARIES = {
     unavailable: "La recherche gérée n’est pas encore disponible.", partial: "Certaines sources n’ont pas répondu.",
     conflict: "Ce voyage a changé ailleurs. La copie périmée a été effacée ; recherchez à nouveau.",
     added: "Ajouté à votre voyage.", updated: "Voyage mis à jour.", retry: "Recherche indisponible. Réessayez.",
+    bookItinerary: "Réserver l’itinéraire", bookingItinerary: "Préparation de votre réservation sécurisée…",
+    itineraryReady: "Votre itinéraire est prêt à être chiffré et réservé.",
+    itineraryExpired: "Cet itinéraire a expiré. Recherchez à nouveau pour créer un nouveau voyage.",
+    itineraryPricingUnavailable: "Un ou plusieurs éléments ne peuvent pas être chiffrés. Vérifiez le voyage et réessayez.",
+    itineraryRejected: "Voyant n’a pas pu démarrer cette réservation. Rien n’a été réservé.",
     from: "À partir de", perTrip: "pour cette option", economy: "Économique",
     premium_economy: "Économique premium", business: "Affaires", first: "Première",
   },
@@ -146,6 +163,11 @@ const DICTIONARIES = {
     unavailable: "Verwaltete Suche ist noch nicht verfügbar.", partial: "Einige Quellen haben nicht geantwortet.",
     conflict: "Diese Reise wurde anderswo geändert. Die veraltete Kopie wurde gelöscht; suchen Sie erneut.",
     added: "Zur Reise hinzugefügt.", updated: "Reise aktualisiert.", retry: "Suche derzeit nicht verfügbar.",
+    bookItinerary: "Reiseplan buchen", bookingItinerary: "Ihre sichere Reisebuchung wird vorbereitet…",
+    itineraryReady: "Ihr Reiseplan kann jetzt angeboten und gebucht werden.",
+    itineraryExpired: "Dieser Reiseplan ist abgelaufen. Suchen Sie erneut und erstellen Sie eine neue Reise.",
+    itineraryPricingUnavailable: "Mindestens ein Element kann nicht bepreist werden. Prüfen Sie die Reise und versuchen Sie es erneut.",
+    itineraryRejected: "Voyant konnte diese Reisebuchung nicht starten. Es wurde nichts gebucht.",
     from: "Ab", perTrip: "für diese Option", economy: "Economy", premium_economy: "Premium Economy",
     business: "Business", first: "First",
   },
@@ -165,6 +187,11 @@ const DICTIONARIES = {
     unavailable: "La búsqueda gestionada aún no está disponible.", partial: "Algunas fuentes no respondieron.",
     conflict: "Este viaje cambió en otro lugar. Se borró la copia obsoleta; vuelve a buscar.",
     added: "Añadido al viaje.", updated: "Viaje actualizado.", retry: "La búsqueda no está disponible. Reinténtalo.",
+    bookItinerary: "Reservar itinerario", bookingItinerary: "Preparando la reserva segura de tu itinerario…",
+    itineraryReady: "Tu itinerario está listo para cotizar y reservar.",
+    itineraryExpired: "Este itinerario ha caducado. Busca de nuevo para crear otro viaje.",
+    itineraryPricingUnavailable: "No se puede calcular el precio de uno o más elementos. Revisa el viaje e inténtalo de nuevo.",
+    itineraryRejected: "Voyant no pudo iniciar esta reserva. No se reservó nada.",
     from: "Desde", perTrip: "para esta opción", economy: "Turista", premium_economy: "Turista premium",
     business: "Business", first: "Primera",
   },
@@ -184,6 +211,11 @@ const DICTIONARIES = {
     unavailable: "La ricerca gestita non è ancora disponibile.", partial: "Alcune fonti non hanno risposto.",
     conflict: "Questo viaggio è cambiato altrove. La copia obsoleta è stata rimossa; cerca di nuovo.",
     added: "Aggiunto al viaggio.", updated: "Viaggio aggiornato.", retry: "Ricerca non disponibile. Riprova.",
+    bookItinerary: "Prenota itinerario", bookingItinerary: "Preparazione della prenotazione sicura…",
+    itineraryReady: "Il tuo itinerario è pronto per il preventivo e la prenotazione.",
+    itineraryExpired: "Questo itinerario è scaduto. Cerca di nuovo per creare un nuovo viaggio.",
+    itineraryPricingUnavailable: "Uno o più elementi non possono essere prezzati. Controlla il viaggio e riprova.",
+    itineraryRejected: "Voyant non ha potuto avviare questa prenotazione. Non è stato prenotato nulla.",
     from: "Da", perTrip: "per questa opzione", economy: "Economy", premium_economy: "Premium economy",
     business: "Business", first: "Prima",
   },
@@ -280,6 +312,22 @@ function validateTrip(data) {
   return data
 }
 
+function validateTripBooking(data) {
+  const outcome = record(data.outcome)
+  const session = record(outcome?.session)
+  const target = record(session?.target)
+  if (
+    outcome?.kind !== "session_created" ||
+    typeof session?.id !== "string" ||
+    !Number.isInteger(session.revision) ||
+    target?.kind !== "managed_itinerary" ||
+    (data.bookingSessionCapability !== undefined &&
+      (typeof data.bookingSessionCapability !== "string" ||
+        !/^bcap_[A-Za-z0-9_-]{43,}$/.test(data.bookingSessionCapability)))
+  ) throw new Error("Managed Trips returned an invalid booking session")
+  return data
+}
+
 function requestedScope(scope) {
   return {
     ...(typeof scope.marketId === "string" ? { marketId: scope.marketId } : {}),
@@ -318,6 +366,8 @@ export function createShoppingClient(options) {
   if (!origin) throw new Error("A storefront origin is required")
   let scope = { locale: options.locale }
   let trip
+  let booking
+  let pendingBook
 
   async function request(endpoint, method, body) {
     const response = await fetchImpl(safeEndpoint(endpoint, origin), {
@@ -331,6 +381,7 @@ export function createShoppingClient(options) {
   return {
     scope: () => ({ ...scope }),
     trip: () => trip,
+    booking: () => booking,
     chooseScope(next) {
       scope = {
         ...(scope.marketId ? { marketId: scope.marketId } : {}),
@@ -393,6 +444,36 @@ export function createShoppingClient(options) {
         throw error
       }
     },
+    async book() {
+      if (!trip) throw new Error("Start a Trip before booking it")
+      const requestFingerprint = `${trip.selectionRef}:${trip.revision}`
+      if (!pendingBook || pendingBook.fingerprint !== requestFingerprint) {
+        const randomUUID = options.randomUUID ?? (() => globalThis.crypto.randomUUID())
+        pendingBook = {
+          fingerprint: requestFingerprint,
+          key: `theme-book-itinerary-${randomUUID()}`.slice(0, 128),
+        }
+      }
+      try {
+        booking = validateTripBooking(envelopeData(await request(options.bookEndpoint, "POST", {
+          selectionRef: trip.selectionRef,
+          expectedRevision: trip.revision,
+          idempotencyKey: pendingBook.key,
+        })))
+        pendingBook = undefined
+        return booking
+      } catch (error) {
+        if (
+          error instanceof ShoppingHttpError &&
+          (error.status === 403 || error.status === 409)
+        ) {
+          trip = undefined
+          pendingBook = undefined
+        }
+        throw error
+      }
+    },
+    bookRetryKey: () => pendingBook?.key,
   }
 }
 

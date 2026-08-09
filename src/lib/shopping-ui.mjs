@@ -183,6 +183,7 @@ function renderResults(container, result, client, messages, onAdd) {
 
 function renderTrip(root, client, messages, onMutation) {
   const trip = client.trip()
+  const booked = Boolean(client.booking())
   const list = root.querySelector("[data-trip-items]")
   const empty = element(root, "[data-trip-empty]")
   if (!(list instanceof HTMLOListElement) || !empty) return
@@ -211,21 +212,29 @@ function renderTrip(root, client, messages, onMutation) {
       const refs = items.map((candidate) => candidate.itemRef).filter((value) => typeof value === "string")
       if (typeof item.itemRef === "string") {
         actions.append(
-          mutationButton(messages.moveUp, index === 0, {
+          mutationButton(messages.moveUp, booked || index === 0, {
             kind: "reorder",
             itemRefs: index === 0 ? refs : refs.toSpliced(index - 1, 2, refs[index], refs[index - 1]),
           }),
-          mutationButton(messages.moveDown, index === items.length - 1, {
+          mutationButton(messages.moveDown, booked || index === items.length - 1, {
             kind: "reorder",
             itemRefs: index === items.length - 1 ? refs : refs.toSpliced(index, 2, refs[index + 1], refs[index]),
           }),
-          mutationButton(messages.remove, false, { kind: "remove", itemRef: item.itemRef }),
+          mutationButton(messages.remove, booked, { kind: "remove", itemRef: item.itemRef }),
         )
       }
       row.append(actions)
       return row
     }),
   )
+  const book = root.querySelector("[data-trip-book]")
+  if (book instanceof HTMLButtonElement) {
+    book.disabled =
+      items.length === 0 ||
+      booked ||
+      !root.dataset.tripBookingEndpoint ||
+      !root.querySelector("[data-booking-journey]")
+  }
 }
 
 export function mountShopping(root) {
@@ -235,6 +244,7 @@ export function mountShopping(root) {
   const currencyControl = select(root, "[data-shopping-currency]")
   const status = element(root, "[data-shopping-status]")
   const tripStatus = element(root, "[data-trip-status]")
+  const bookButton = root.querySelector("[data-trip-book]")
   if (!(form instanceof HTMLFormElement) || !kind || !localeControl || !currencyControl || !status || !tripStatus) return
 
   let messages = translated(root, root.dataset.locale ?? "en")
@@ -243,6 +253,7 @@ export function mountShopping(root) {
   const client = createShoppingClient({
     searchEndpoint: root.dataset.searchEndpoint,
     tripsEndpoint: root.dataset.tripsEndpoint,
+    bookEndpoint: root.dataset.tripBookingEndpoint,
     locale: root.dataset.locale ?? "en",
     origin: window.location.origin,
   })
@@ -316,7 +327,40 @@ export function mountShopping(root) {
     }
   }
 
+  async function bookItinerary() {
+    if (!(bookButton instanceof HTMLButtonElement)) return
+    bookButton.disabled = true
+    tripStatus.textContent = messages.bookingItinerary
+    try {
+      const booking = await client.book()
+      renderTrip(root, client, messages, mutateTrip)
+      tripStatus.textContent = messages.itineraryReady
+      const bookingRoot = root.querySelector("[data-booking-journey]")
+      bookingRoot?.dispatchEvent(new CustomEvent("voyant:itinerary-session-created", {
+        detail: booking,
+      }))
+    } catch (error) {
+      renderTrip(root, client, messages, mutateTrip)
+      if (error instanceof ShoppingHttpError) {
+        if (error.status === 403 || error.status === 409) {
+          tripStatus.textContent = error.status === 409
+            ? messages.conflict
+            : messages.itineraryExpired
+        } else if (error.code === "storefront_trip_booking_pricing_unavailable") {
+          tripStatus.textContent = messages.itineraryPricingUnavailable
+        } else {
+          tripStatus.textContent = messages.itineraryRejected
+        }
+      } else {
+        tripStatus.textContent = error instanceof Error ? error.message : messages.itineraryRejected
+      }
+    }
+  }
+
   kind.addEventListener("change", switchIntent)
+  if (bookButton instanceof HTMLButtonElement) {
+    bookButton.addEventListener("click", () => void bookItinerary())
+  }
   form.addEventListener("submit", (event) => {
     event.preventDefault()
     void runSearch()

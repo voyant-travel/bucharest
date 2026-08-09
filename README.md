@@ -25,6 +25,13 @@ account journeys to managed platform capabilities. The theme does not persist
 customer identity, profiles, booking or payment state, and it does not call an
 engine or provider API directly.
 
+On the home page, an operator-enabled `shopping.trip-booking.v1` capability can
+freeze the exact opaque Trip revision into one managed itinerary Booking
+Session. Bucharest submits only the selection capability, expected revision,
+and a retry-stable idempotency key, then reuses `booking.session.v1` and
+`checkout.v1` for quote, hold, commit, and secure checkout. It never receives
+Trip, provider, source, connection, payment, or FX authority.
+
 ## Validate
 
 ```sh

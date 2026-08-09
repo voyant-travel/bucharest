@@ -37,6 +37,13 @@ const shoppingTripsEndpoint = capabilityEndpoint(
   "shopping.trip-selections.v1",
   "PATCH",
 )
+const shoppingTripBookingEndpoint = capabilityEndpoint(
+  live,
+  "shopping.trip-booking.v1",
+  "POST",
+)
+const bookingEndpoint = capabilityEndpoint(live, "booking.session.v1", "PATCH")
+const checkoutEndpoint = capabilityEndpoint(live, "checkout.v1", "POST")
 
 // A listing shows the first text a reader can scan, so an index is not a wall
 // of bare titles. "First" follows the operator's declared order when the
@@ -56,6 +63,9 @@ const shoppingTripsEndpoint = capabilityEndpoint(
       locale={context.locale}
       searchEndpoint={shoppingSearchEndpoint}
       tripsEndpoint={shoppingTripsEndpoint}
+      tripBookingEndpoint={shoppingTripBookingEndpoint}
+      bookingEndpoint={bookingEndpoint}
+      checkoutEndpoint={checkoutEndpoint}
     />
   )}
   {["content", "notFound", "collectionIndex", "collectionEntry"].includes(
