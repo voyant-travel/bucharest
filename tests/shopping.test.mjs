@@ -210,6 +210,15 @@ test("localizes common operator languages and falls back without changing result
   assert.equal(messagesFor("ja-JP").search, "Search")
 })
 
+test("gives the global locale and currency controls stable form identities", async () => {
+  const source = await readFile(
+    new URL("../src/components/ShoppingExperience.astro", import.meta.url),
+    "utf8",
+  )
+  assert.match(source, /id="shopping-locale" name="shoppingLocale"/)
+  assert.match(source, /id="shopping-currency" name="shoppingCurrency"/)
+})
+
 test("browser code has no account, payment, provider selector, FX math, or opaque-ref persistence", async () => {
   const source = await readFile(new URL("../src/lib/shopping.mjs", import.meta.url), "utf8")
   assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|indexedDB/)

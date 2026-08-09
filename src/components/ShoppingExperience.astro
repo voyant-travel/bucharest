@@ -28,13 +28,13 @@ const copy = messagesFor(locale)
   <div class="scope" aria-label="Shopping preferences">
     <label>
       <span data-i18n="language">{copy.language}</span>
-      <select data-shopping-locale aria-describedby="shopping-scope-status">
+      <select id="shopping-locale" name="shoppingLocale" data-shopping-locale aria-describedby="shopping-scope-status">
         <option value={locale}>{locale}</option>
       </select>
     </label>
     <label>
       <span data-i18n="currency">{copy.currency}</span>
-      <select data-shopping-currency aria-describedby="shopping-scope-status" disabled>
+      <select id="shopping-currency" name="shoppingCurrency" data-shopping-currency aria-describedby="shopping-scope-status" disabled>
         <option value="">—</option>
       </select>
     </label>
