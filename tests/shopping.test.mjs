@@ -152,7 +152,7 @@ test("creates and mutates one opaque Trip with compare-and-swap revisions", asyn
 
   assert.deepEqual(calls.map(({ method }) => method), ["POST", "PATCH", "PATCH", "PATCH"])
   assert.deepEqual(calls[0].body, {
-    scope: { marketId: "ro-public", locale: "en-GB", currency: "GBP" },
+    scope: { locale: "en-GB" },
     offers: [{ kind: "flight", offerRef: "opaque-flight-offer-1234" }],
   })
   assert.deepEqual(calls.slice(1).map(({ body }) => body.expectedRevision), [0, 1, 2])
