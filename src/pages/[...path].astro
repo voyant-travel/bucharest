@@ -1,6 +1,7 @@
 ---
 import CollectionValue from "../components/CollectionValue.astro"
 import HomeSections from "../components/sections/HomeSections.astro"
+import ShoppingExperience from "../components/ShoppingExperience.astro"
 import TourDetail from "../components/TourDetail.astro"
 import TourIndex from "../components/TourIndex.astro"
 import Layout from "../layouts/Layout.astro"
@@ -9,6 +10,7 @@ import {
   entryFields,
 } from "../lib/collection-values"
 import { sectionInstances } from "../lib/sections"
+import { capabilityEndpoint } from "../lib/shopping.mjs"
 import { resolveThemeContext } from "virtual:voyant-theme"
 
 // Context is resolved per request. On a published hostname it comes from the
@@ -24,6 +26,17 @@ const homeSections =
         ["hero", "feature-grid", "callout"].includes(section.type),
       )
     : []
+const live = "live" in context ? context.live : undefined
+const shoppingSearchEndpoint = capabilityEndpoint(
+  live,
+  "shopping.search.v1",
+  "POST",
+)
+const shoppingTripsEndpoint = capabilityEndpoint(
+  live,
+  "shopping.trip-selections.v1",
+  "PATCH",
+)
 
 // A listing shows the first text a reader can scan, so an index is not a wall
 // of bare titles. "First" follows the operator's declared order when the
@@ -38,6 +51,13 @@ const homeSections =
     <HomeSections sections={homeSections} />
   )}
   {context.kind === "home" && homeSections.length === 0 && <h1>{context.title}</h1>}
+  {context.kind === "home" && (
+    <ShoppingExperience
+      locale={context.locale}
+      searchEndpoint={shoppingSearchEndpoint}
+      tripsEndpoint={shoppingTripsEndpoint}
+    />
+  )}
   {["content", "notFound", "collectionIndex", "collectionEntry"].includes(
     context.kind,
   ) && <h1>{context.title}</h1>}
