@@ -261,7 +261,6 @@ export function mountShopping(root) {
     replaceOptions(localeControl, available?.locales, scope.locale, scope.locale, "language")
     replaceOptions(currencyControl, available?.currencies, scope.currency, scope.locale, "currency")
     messages = translated(root, scope.locale)
-    document.documentElement.lang = scope.locale
     const scopeStatus = element(root, "[data-scope-status]")
     if (scopeStatus) scopeStatus.textContent = `${scope.locale}, ${scope.currency}`
   }
@@ -323,6 +322,7 @@ export function mountShopping(root) {
   localeControl.addEventListener("change", () => {
     client.chooseScope({ locale: localeControl.value, currency: currencyControl.value })
     messages = translated(root, localeControl.value)
+    renderTrip(root, client, messages, mutateTrip)
     if (lastIntent) void runSearch(lastIntent)
   })
   currencyControl.addEventListener("change", () => {
