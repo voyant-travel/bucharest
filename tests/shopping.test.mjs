@@ -160,6 +160,81 @@ test("creates and mutates one opaque Trip with compare-and-swap revisions", asyn
   assert.equal(calls.some(({ body }) => "providerId" in body || "bookingId" in body), false)
 })
 
+test("serializes concurrent adds so only one Trip is created and later adds use its revision", async () => {
+  const calls = []
+  let releaseCreate
+  const createGate = new Promise((resolve) => { releaseCreate = resolve })
+  const client = createShoppingClient({
+    tripsEndpoint: "/trips",
+    locale: "en-GB",
+    origin: "https://shop.example",
+    fetchImpl: async (_url, init) => {
+      const body = JSON.parse(init.body)
+      calls.push({ method: init.method, body })
+      if (init.method === "POST") {
+        await createGate
+        return response({ data: {
+          selectionRef: "opaque-selection-ref-1234", revision: 0, scope: scope(),
+          items: [{ itemRef: "opaque-item-flight-1234", kind: "flight", quantity: 1 }],
+        } }, 201)
+      }
+      return response({ data: {
+        selectionRef: "opaque-selection-ref-1234", revision: 1, scope: scope(),
+        items: [
+          { itemRef: "opaque-item-flight-1234", kind: "flight", quantity: 1 },
+          { itemRef: "opaque-item-stay-12345", kind: "stay", quantity: 1 },
+        ],
+      } })
+    },
+  })
+
+  const first = client.add("flight", "opaque-flight-offer-1234")
+  const second = client.add("stay", "opaque-stay-offer-12345")
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.equal(calls.length, 1)
+  releaseCreate()
+  await Promise.all([first, second])
+
+  assert.deepEqual(calls.map(({ method }) => method), ["POST", "PATCH"])
+  assert.equal(calls[1].body.selectionRef, "opaque-selection-ref-1234")
+  assert.equal(calls[1].body.expectedRevision, 0)
+  assert.equal(client.trip().revision, 1)
+})
+
+test("does not let a delayed search response revert a newer scope choice", async () => {
+  let releaseSearch
+  const gate = new Promise((resolve) => { releaseSearch = resolve })
+  const requestedScopes = []
+  const client = createShoppingClient({
+    searchEndpoint: "/search",
+    locale: "en-GB",
+    origin: "https://shop.example",
+    fetchImpl: async (_url, init) => {
+      const body = JSON.parse(init.body)
+      requestedScopes.push(body.scope)
+      if (requestedScopes.length === 1) await gate
+      return response({ data: {
+        kind: "indexed-inspiration",
+        scope: requestedScopes.length === 1 ? scope("GBP") : {
+          ...scope("RON"), locale: "ro-RO",
+        },
+        groups: [], coverage: { status: "complete", succeeded: 1, failed: 0, timedOut: 0 },
+      } })
+    },
+  })
+
+  const stale = client.search({ kind: "indexed-inspiration", groups: [] })
+  client.chooseScope({ locale: "ro-RO", currency: "RON" })
+  releaseSearch()
+  await stale
+  assert.deepEqual(client.scope(), { locale: "ro-RO", currency: "RON" })
+  await client.search({ kind: "indexed-inspiration", groups: [] })
+  assert.deepEqual(requestedScopes, [
+    { locale: "en-GB" },
+    { locale: "ro-RO", currency: "RON" },
+  ])
+})
+
 test("fails closed on a CAS conflict instead of replaying a stale mutation", async () => {
   let calls = 0
   const client = createShoppingClient({
@@ -237,6 +312,17 @@ test("books the exact Trip revision and reuses one idempotency key after transpo
   })
   assert.equal(booked.outcome.session.target.kind, "managed_itinerary")
   assert.equal(client.bookRetryKey(), undefined)
+  await assert.rejects(
+    client.add("stay", "opaque-stay-offer-after-booking"),
+    /already been booked/,
+  )
+})
+
+test("disables every result-card Trip mutation after booking succeeds", async () => {
+  const source = await readFile(new URL("../src/lib/shopping-ui.mjs", import.meta.url), "utf8")
+  assert.match(source, /button\.dataset\.addToTrip = ""/)
+  assert.match(source, /for \(const button of root\.querySelectorAll\("\[data-add-to-trip\]"\)\)/)
+  assert.match(source, /const booking = await client\.book\(\)\s+disableResultMutations\(root\)/)
 })
 
 test("fails closed when a Trip booking capability is stale or expired", async () => {

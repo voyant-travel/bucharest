@@ -135,6 +135,7 @@ function card(row, kind, locale, messages, canAdd, onAdd) {
   if (reference) {
     const button = document.createElement("button")
     button.type = "button"
+    button.dataset.addToTrip = ""
     button.textContent = messages.addToTrip
     button.disabled = !canAdd
     button.addEventListener("click", async () => {
@@ -237,6 +238,12 @@ function renderTrip(root, client, messages, onMutation) {
   }
 }
 
+function disableResultMutations(root) {
+  for (const button of root.querySelectorAll("[data-add-to-trip]")) {
+    if (button instanceof HTMLButtonElement) button.disabled = true
+  }
+}
+
 export function mountShopping(root) {
   const form = root.querySelector("[data-shopping-form]")
   const kind = select(root, "[data-shopping-kind]")
@@ -250,6 +257,7 @@ export function mountShopping(root) {
   let messages = translated(root, root.dataset.locale ?? "en")
   let lastIntent
   let busy = false
+  let queuedIntent
   const client = createShoppingClient({
     searchEndpoint: root.dataset.searchEndpoint,
     tripsEndpoint: root.dataset.tripsEndpoint,
@@ -277,7 +285,11 @@ export function mountShopping(root) {
   }
 
   async function runSearch(intent = intentFromForm(form)) {
-    if (busy || !root.dataset.searchEndpoint) return
+    if (!root.dataset.searchEndpoint) return
+    if (busy) {
+      queuedIntent = intent
+      return
+    }
     busy = true
     lastIntent = intent
     status.textContent = messages.searching
@@ -285,15 +297,25 @@ export function mountShopping(root) {
     if (submit instanceof HTMLButtonElement) submit.disabled = true
     try {
       const result = await client.search(intent)
-      applyScope(result.scope)
-      const count = renderResults(root, result, client, messages, addToTrip)
-      const coverage = record(result.coverage)
-      status.textContent = count === 0 ? messages.noResults : coverage?.status === "partial" ? messages.partial : ""
+      // A scope change made while this request was in flight has precedence.
+      // Skip painting the stale response; the finally block runs the latest
+      // queued intent with the latest client scope.
+      if (!queuedIntent) {
+        applyScope(result.scope)
+        const count = renderResults(root, result, client, messages, addToTrip)
+        const coverage = record(result.coverage)
+        status.textContent = count === 0 ? messages.noResults : coverage?.status === "partial" ? messages.partial : ""
+      }
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : messages.retry
     } finally {
       busy = false
       if (submit instanceof HTMLButtonElement) submit.disabled = false
+      if (queuedIntent) {
+        const nextIntent = queuedIntent
+        queuedIntent = undefined
+        void runSearch(nextIntent)
+      }
     }
   }
 
@@ -333,6 +355,7 @@ export function mountShopping(root) {
     tripStatus.textContent = messages.bookingItinerary
     try {
       const booking = await client.book()
+      disableResultMutations(root)
       renderTrip(root, client, messages, mutateTrip)
       tripStatus.textContent = messages.itineraryReady
       const bookingRoot = root.querySelector("[data-booking-journey]")

@@ -368,6 +368,8 @@ export function createShoppingClient(options) {
   let trip
   let booking
   let pendingBook
+  let tripMutationQueue = Promise.resolve()
+  let scopeVersion = 0
 
   async function request(endpoint, method, body) {
     const response = await fetchImpl(safeEndpoint(endpoint, origin), {
@@ -383,6 +385,7 @@ export function createShoppingClient(options) {
     trip: () => trip,
     booking: () => booking,
     chooseScope(next) {
+      scopeVersion += 1
       scope = {
         ...(scope.marketId ? { marketId: scope.marketId } : {}),
         ...(next.locale ? { locale: next.locale } : {}),
@@ -390,35 +393,44 @@ export function createShoppingClient(options) {
       }
     },
     async search(intent) {
+      const requestedVersion = scopeVersion
       const data = validateSearchResult(
         envelopeData(await request(options.searchEndpoint, "POST", {
           scope: requestedScope(scope),
           intent,
         })),
       )
-      scope = data.scope
+      // A response for an older preference must not undo a newer locale or
+      // currency choice. The UI schedules a follow-up search for that choice.
+      if (scopeVersion === requestedVersion) scope = data.scope
       return data
     },
-    async add(kind, offerRef) {
-      try {
-        if (!trip) {
-          trip = validateTrip(envelopeData(await request(options.tripsEndpoint, "POST", {
-            scope: requestedScope(scope),
-            offers: [{ kind, offerRef }],
-          })))
-        } else {
-          trip = validateTrip(envelopeData(await request(options.tripsEndpoint, "PATCH", {
-            selectionRef: trip.selectionRef,
-            expectedRevision: trip.revision,
-            mutation: { kind: "add", offer: { kind, offerRef } },
-          })))
+    add(kind, offerRef) {
+      const mutate = async () => {
+        if (booking) throw new Error("This Trip has already been booked")
+        try {
+          if (!trip) {
+            trip = validateTrip(envelopeData(await request(options.tripsEndpoint, "POST", {
+              scope: requestedScope(scope),
+              offers: [{ kind, offerRef }],
+            })))
+          } else {
+            trip = validateTrip(envelopeData(await request(options.tripsEndpoint, "PATCH", {
+              selectionRef: trip.selectionRef,
+              expectedRevision: trip.revision,
+              mutation: { kind: "add", offer: { kind, offerRef } },
+            })))
+          }
+          scope = trip.scope
+          return trip
+        } catch (error) {
+          if (error instanceof ShoppingHttpError && error.status === 409) trip = undefined
+          throw error
         }
-        scope = trip.scope
-        return trip
-      } catch (error) {
-        if (error instanceof ShoppingHttpError && error.status === 409) trip = undefined
-        throw error
       }
+      const result = tripMutationQueue.then(mutate, mutate)
+      tripMutationQueue = result.then(() => undefined, () => undefined)
+      return result
     },
     async remove(itemRef) {
       return this.mutate({ kind: "remove", itemRef })
@@ -426,23 +438,29 @@ export function createShoppingClient(options) {
     async reorder(itemRefs) {
       return this.mutate({ kind: "reorder", itemRefs })
     },
-    async mutate(mutation) {
-      if (!trip) throw new Error("Start a Trip before updating it")
-      try {
-        trip = validateTrip(envelopeData(await request(options.tripsEndpoint, "PATCH", {
-          selectionRef: trip.selectionRef,
-          expectedRevision: trip.revision,
-          mutation,
-        })))
-        scope = trip.scope
-        return trip
-      } catch (error) {
-        // A 409 proves this browser's revision is stale. The public contract
-        // deliberately exposes no read-by-reference endpoint, so replaying is
-        // unsafe. Clear the stale capability and require fresh search refs.
-        if (error instanceof ShoppingHttpError && error.status === 409) trip = undefined
-        throw error
+    mutate(mutation) {
+      const mutate = async () => {
+        if (booking) throw new Error("This Trip has already been booked")
+        if (!trip) throw new Error("Start a Trip before updating it")
+        try {
+          trip = validateTrip(envelopeData(await request(options.tripsEndpoint, "PATCH", {
+            selectionRef: trip.selectionRef,
+            expectedRevision: trip.revision,
+            mutation,
+          })))
+          scope = trip.scope
+          return trip
+        } catch (error) {
+          // A 409 proves this browser's revision is stale. The public contract
+          // deliberately exposes no read-by-reference endpoint, so replaying is
+          // unsafe. Clear the stale capability and require fresh search refs.
+          if (error instanceof ShoppingHttpError && error.status === 409) trip = undefined
+          throw error
+        }
       }
+      const result = tripMutationQueue.then(mutate, mutate)
+      tripMutationQueue = result.then(() => undefined, () => undefined)
+      return result
     },
     async book() {
       if (!trip) throw new Error("Start a Trip before booking it")
