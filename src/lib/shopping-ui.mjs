@@ -139,8 +139,8 @@ function card(row, kind, locale, messages, canAdd, onAdd) {
     button.disabled = !canAdd
     button.addEventListener("click", async () => {
       button.disabled = true
-      await onAdd(kind, reference)
-      button.disabled = !canAdd
+      const added = await onAdd(kind, reference)
+      button.disabled = added || !canAdd
     })
     item.append(button)
   }
@@ -292,11 +292,13 @@ export function mountShopping(root) {
       await client.add(offerKind, offerRef)
       renderTrip(root, client, messages, mutateTrip)
       tripStatus.textContent = messages.added
+      return true
     } catch (error) {
       renderTrip(root, client, messages, mutateTrip)
       tripStatus.textContent = error instanceof ShoppingHttpError && error.status === 409
         ? messages.conflict
         : error instanceof Error ? error.message : messages.retry
+      return false
     }
   }
 
