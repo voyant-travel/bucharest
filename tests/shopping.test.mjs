@@ -331,6 +331,16 @@ test("gives the global locale and currency controls stable form identities", asy
   assert.match(source, /id="shopping-currency" name="shoppingCurrency"/)
 })
 
+test("declares the published managed shopping capability routes", async () => {
+  const source = await readFile(new URL("../theme.config.ts", import.meta.url), "utf8")
+  assert.match(source, /\{ id: "shopping\.search\.v1" \}/)
+  assert.match(source, /\{ id: "shopping\.trip-selections\.v1" \}/)
+  assert.match(source, /\{ id: "shopping\.trip-booking\.v1" \}/)
+  assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/search"/)
+  assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/trip-selections"/)
+  assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/trip-selections\/book"/)
+})
+
 test("browser code has no account, payment, provider selector, FX math, or opaque-ref persistence", async () => {
   const source = await readFile(new URL("../src/lib/shopping.mjs", import.meta.url), "utf8")
   assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|indexedDB/)
