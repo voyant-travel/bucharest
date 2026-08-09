@@ -321,6 +321,7 @@ test("books the exact Trip revision and reuses one idempotency key after transpo
 test("disables every result-card Trip mutation after booking succeeds", async () => {
   const source = await readFile(new URL("../src/lib/shopping-ui.mjs", import.meta.url), "utf8")
   assert.match(source, /button\.dataset\.addToTrip = ""/)
+  assert.match(source, /Boolean\(container\.dataset\.tripsEndpoint\) && !client\.booking\(\)/)
   assert.match(source, /for \(const button of root\.querySelectorAll\("\[data-add-to-trip\]"\)\)/)
   assert.match(source, /const booking = await client\.book\(\)\s+disableResultMutations\(root\)/)
 })

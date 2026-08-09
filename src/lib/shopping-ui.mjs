@@ -169,7 +169,7 @@ function renderResults(container, result, client, messages, onAdd) {
           group.kind,
           result.scope.locale,
           messages,
-          Boolean(container.dataset.tripsEndpoint),
+          Boolean(container.dataset.tripsEndpoint) && !client.booking(),
           onAdd,
         )),
       )
