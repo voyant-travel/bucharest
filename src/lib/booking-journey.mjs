@@ -125,6 +125,8 @@ export function createBookingJourney({
   endpoint,
   checkoutEndpoint,
   productId,
+  initialOutcome,
+  capability,
   fetchImpl = globalThis.fetch,
   randomUUID = () => globalThis.crypto.randomUUID(),
   origin = globalThis.location?.origin,
@@ -133,7 +135,12 @@ export function createBookingJourney({
   // account. The managed runtime remains authoritative; a reload intentionally
   // forgets these opaque handles and no identity, payment, or session data is
   // written to browser storage.
-  let state = { productId }
+  if (capability !== undefined && !/^bcap_[A-Za-z0-9_-]{43,}$/.test(capability)) {
+    throw new Error("The managed booking capability is invalid")
+  }
+  let state = initialOutcome
+    ? reduceBookingState(productId ? { productId } : {}, initialOutcome)
+    : productId ? { productId } : {}
   const pendingKeys = new Map()
   const storefrontOrigin = origin ? new URL(origin).origin : undefined
 
@@ -161,6 +168,7 @@ export function createBookingJourney({
     let method = "PATCH"
     let body
     if (action === "create") {
+      if (!productId) throw new Error("This booking session is already managed")
       method = "POST"
       body = {
         idempotencyKey,
@@ -207,6 +215,9 @@ export function createBookingJourney({
         Accept: "application/json",
         "Content-Type": "application/json",
         "Idempotency-Key": idempotencyKey,
+        ...(capability && targetEndpoint === endpoint
+          ? { "Voyant-Booking-Session-Capability": capability }
+          : {}),
       },
       body: JSON.stringify(body),
     })

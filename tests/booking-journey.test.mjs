@@ -97,6 +97,52 @@ test("keeps an idempotency key after a transport failure and rotates it after su
   assert.equal(keys[0], keys[1])
 })
 
+test("adopts a managed itinerary session and presents its ephemeral capability", async () => {
+  const calls = []
+  const capability = `bcap_${"a".repeat(43)}`
+  const journey = createBookingJourney({
+    endpoint: "/booking",
+    initialOutcome: {
+      kind: "session_created",
+      session: {
+        id: "bses_itinerary_1",
+        revision: 1,
+        state: "active",
+        target: { kind: "managed_itinerary" },
+      },
+    },
+    capability,
+    randomUUID: () => "00000000-0000-4000-8000-000000000001",
+    fetchImpl: async (url, init) => {
+      calls.push({ url, headers: new Headers(init.headers), body: JSON.parse(init.body) })
+      return response({
+        kind: "quote_created",
+        session: { id: "bses_itinerary_1", revision: 2, state: "active" },
+        quote: { id: "bqte_trip_1", requirementsFingerprint: "rqf_trip_1" },
+      })
+    },
+  })
+
+  assert.equal(journey.state().sessionId, "bses_itinerary_1")
+  await journey.perform("quote")
+  assert.equal(calls[0].headers.get("voyant-booking-session-capability"), capability)
+  assert.deepEqual(calls[0].body, {
+    sessionId: "bses_itinerary_1",
+    action: "quote",
+    revision: 1,
+    idempotencyKey: "theme-quote-00000000-0000-4000-8000-000000000001",
+  })
+  assert.equal("selectionRef" in calls[0].body, false)
+})
+
+test("refuses a malformed itinerary booking capability before making a request", () => {
+  assert.throws(() => createBookingJourney({
+    endpoint: "/booking",
+    initialOutcome: { kind: "session_created", session: { id: "bses_1", revision: 1 } },
+    capability: "bcap_short",
+  }), /capability is invalid/)
+})
+
 test("hands a payment-required session to the managed checkout capability", async () => {
   const calls = []
   const replies = [

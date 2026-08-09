@@ -1,11 +1,11 @@
 import { defineTheme } from "@voyant-travel/theme"
 
 export default defineTheme({
-  contractVersion: "v1alpha4",
+  contractVersion: "v1alpha5",
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.5.0",
+    version: "0.6.0",
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/pages/[...path]", context: "content" },
@@ -20,6 +20,9 @@ export default defineTheme({
       { id: "catalog.availability.v1" },
       { id: "catalog.requirements.v1" },
       { id: "catalog.markets.v1" },
+      { id: "shopping.search.v1" },
+      { id: "shopping.trip-selections.v1" },
+      { id: "shopping.trip-booking.v1" },
       { id: "booking.session.v1" },
       { id: "checkout.v1" },
     ],
@@ -388,6 +391,40 @@ export default defineTheme({
           },
         },
       ],
+      live: {
+        capabilities: [
+          {
+            id: "shopping.search.v1",
+            available: true,
+            methods: ["POST"],
+            endpoint: "/v1/public/theme/shopping/search",
+          },
+          {
+            id: "shopping.trip-selections.v1",
+            available: true,
+            methods: ["POST", "PATCH"],
+            endpoint: "/v1/public/theme/shopping/trip-selections",
+          },
+          {
+            id: "shopping.trip-booking.v1",
+            available: true,
+            methods: ["POST"],
+            endpoint: "/v1/public/theme/shopping/trip-selections/book",
+          },
+          {
+            id: "booking.session.v1",
+            available: true,
+            methods: ["POST", "PATCH"],
+            endpoint: "/v1/public/theme/booking/session",
+          },
+          {
+            id: "checkout.v1",
+            available: true,
+            methods: ["POST"],
+            endpoint: "/v1/public/theme/checkout",
+          },
+        ],
+      },
     },
     content: [
       {
