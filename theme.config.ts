@@ -5,7 +5,7 @@ export default defineTheme({
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.6.0",
+    version: "0.6.1",
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/pages/[...path]", context: "content" },
@@ -300,7 +300,7 @@ export default defineTheme({
     home: {
       kind: "home",
       path: "/",
-      locale: "en",
+      locale: "und",
       site: { name: "Bucharest" },
       navigation: [
         { label: "Home", href: "/" },
@@ -431,7 +431,7 @@ export default defineTheme({
         kind: "content",
         path: "/pages/about",
         slug: "about",
-        locale: "en",
+        locale: "und",
         site: { name: "Bucharest" },
         navigation: [
           { label: "Home", href: "/" },
@@ -447,7 +447,7 @@ export default defineTheme({
     tourIndex: {
       kind: "tourIndex",
       path: "/tours",
-      locale: "en",
+      locale: "und",
       site: { name: "Bucharest" },
       navigation: [
         { label: "Home", href: "/" },
@@ -505,7 +505,7 @@ export default defineTheme({
         kind: "tourDetail",
         path: "/tours/transylvania-on-foot",
         slug: "transylvania-on-foot",
-        locale: "en",
+        locale: "und",
         site: { name: "Bucharest" },
         navigation: [
           { label: "Home", href: "/" },
@@ -601,7 +601,7 @@ export default defineTheme({
     notFound: {
       kind: "notFound",
       path: "/404",
-      locale: "en",
+      locale: "und",
       site: { name: "Bucharest" },
       navigation: [{ label: "Home", href: "/" }],
       settings: {},

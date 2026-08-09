@@ -428,6 +428,12 @@ test("declares the published managed shopping capability routes", async () => {
   assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/trip-selections\/book"/)
 })
 
+test("keeps the theme locale-agnostic for operator-configured languages", async () => {
+  const source = await readFile(new URL("../theme.config.ts", import.meta.url), "utf8")
+  assert.equal([...source.matchAll(/locale: "und"/g)].length, 5)
+  assert.doesNotMatch(source, /locale: "en"/)
+})
+
 test("browser code has no account, payment, provider selector, FX math, or opaque-ref persistence", async () => {
   const source = await readFile(new URL("../src/lib/shopping.mjs", import.meta.url), "utf8")
   assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|indexedDB/)
