@@ -3,7 +3,7 @@ const DICTIONARIES = {
     shoppingEyebrow: "Plan with live Voyant inventory",
     shoppingHeading: "Search the whole journey",
     shoppingIntro:
-      "Compare experiences, stays, flights, and flight + stay packages, then arrange them into one trip.",
+      "Compare experiences, stays, flights, packages, and cruises, then arrange them into one trip.",
     language: "Language",
     currency: "Currency",
     productType: "What are you looking for?",
@@ -11,6 +11,7 @@ const DICTIONARIES = {
     stays: "Stays",
     flights: "Flights",
     packages: "Flight + stay",
+    cruises: "Cruises",
     tours: "Tours",
     excursions: "Excursions",
     experiences: "Experiences",
@@ -25,6 +26,13 @@ const DICTIONARIES = {
     checkIn: "Check in",
     checkOut: "Check out",
     adults: "Adults",
+    children: "Children",
+    cruiseType: "Cruise type",
+    anyCruiseType: "Any cruise type",
+    oceanCruise: "Ocean",
+    riverCruise: "River",
+    expeditionCruise: "Expedition",
+    coastalCruise: "Coastal",
     cabin: "Cabin",
     directOnly: "Direct flights only",
     nightsMin: "Minimum nights",
@@ -64,7 +72,7 @@ const DICTIONARIES = {
     shoppingEyebrow: "Planifică folosind inventarul live Voyant",
     shoppingHeading: "Caută întreaga călătorie",
     shoppingIntro:
-      "Compară experiențe, cazări, zboruri și pachete zbor + cazare, apoi aranjează-le într-o singură călătorie.",
+      "Compară experiențe, cazări, zboruri, pachete și croaziere, apoi aranjează-le într-o singură călătorie.",
     language: "Limbă",
     currency: "Monedă",
     productType: "Ce cauți?",
@@ -72,6 +80,7 @@ const DICTIONARIES = {
     stays: "Cazări",
     flights: "Zboruri",
     packages: "Zbor + cazare",
+    cruises: "Croaziere",
     tours: "Tururi",
     excursions: "Excursii",
     experiences: "Experiențe",
@@ -86,6 +95,13 @@ const DICTIONARIES = {
     checkIn: "Check-in",
     checkOut: "Check-out",
     adults: "Adulți",
+    children: "Copii",
+    cruiseType: "Tipul croazierei",
+    anyCruiseType: "Orice tip",
+    oceanCruise: "Oceanică",
+    riverCruise: "Fluvială",
+    expeditionCruise: "Expediție",
+    coastalCruise: "De coastă",
     cabin: "Clasă",
     directOnly: "Doar zboruri directe",
     nightsMin: "Număr minim de nopți",
@@ -126,11 +142,12 @@ const DICTIONARIES = {
     shoppingHeading: "Recherchez tout le voyage",
     shoppingIntro: "Comparez expériences, séjours, vols et forfaits, puis composez un seul voyage.",
     language: "Langue", currency: "Devise", productType: "Que recherchez-vous ?",
-    explore: "Circuits et expériences", stays: "Séjours", flights: "Vols", packages: "Vol + séjour",
+    explore: "Circuits et expériences", stays: "Séjours", flights: "Vols", packages: "Vol + séjour", cruises: "Croisières",
     tours: "Circuits", excursions: "Excursions", experiences: "Expériences", activities: "Activités",
     keywords: "Envies ou mots-clés", destination: "Destination", origin: "Départ (code aéroport)",
     flightDestination: "Arrivée (code aéroport)", fromDate: "Date de début", toDate: "Date de fin",
-    departureDate: "Date de départ", checkIn: "Arrivée", checkOut: "Départ", adults: "Adultes",
+    departureDate: "Date de départ", checkIn: "Arrivée", checkOut: "Départ", adults: "Adultes", children: "Enfants",
+    cruiseType: "Type de croisière", anyCruiseType: "Tous les types", oceanCruise: "Océan", riverCruise: "Fluviale", expeditionCruise: "Expédition", coastalCruise: "Côtière",
     cabin: "Cabine", directOnly: "Vols directs uniquement", nightsMin: "Nuits minimum",
     nightsMax: "Nuits maximum", search: "Rechercher", searching: "Recherche en direct…",
     noResults: "Aucune option correspondante.", results: "Résultats", addToTrip: "Ajouter au voyage",
@@ -151,11 +168,11 @@ const DICTIONARIES = {
     shoppingEyebrow: "Mit live Voyant-Inventar planen", shoppingHeading: "Die ganze Reise durchsuchen",
     shoppingIntro: "Erlebnisse, Unterkünfte, Flüge und Pakete vergleichen und zu einer Reise zusammenstellen.",
     language: "Sprache", currency: "Währung", productType: "Was suchen Sie?", explore: "Touren & Erlebnisse",
-    stays: "Unterkünfte", flights: "Flüge", packages: "Flug + Unterkunft", tours: "Touren",
+    stays: "Unterkünfte", flights: "Flüge", packages: "Flug + Unterkunft", cruises: "Kreuzfahrten", tours: "Touren",
     excursions: "Ausflüge", experiences: "Erlebnisse", activities: "Aktivitäten", keywords: "Interessen oder Stichwörter",
     destination: "Reiseziel", origin: "Von (Flughafencode)", flightDestination: "Nach (Flughafencode)",
     fromDate: "Von", toDate: "Bis", departureDate: "Abflugdatum", checkIn: "Anreise", checkOut: "Abreise",
-    adults: "Erwachsene", cabin: "Kabine", directOnly: "Nur Direktflüge", nightsMin: "Minimale Nächte",
+    adults: "Erwachsene", children: "Kinder", cruiseType: "Kreuzfahrtart", anyCruiseType: "Alle Arten", oceanCruise: "Hochsee", riverCruise: "Fluss", expeditionCruise: "Expedition", coastalCruise: "Küste", cabin: "Kabine", directOnly: "Nur Direktflüge", nightsMin: "Minimale Nächte",
     nightsMax: "Maximale Nächte", search: "Suchen", searching: "Live-Inventar wird durchsucht…",
     noResults: "Keine passenden Optionen gefunden.", results: "Suchergebnisse", addToTrip: "Zur Reise hinzufügen",
     tripHeading: "Ihre Reise", tripIntro: "Optionen hier ordnen. Voyant verwaltet Reiseplan und Buchungsstatus.",
@@ -175,11 +192,11 @@ const DICTIONARIES = {
     shoppingEyebrow: "Planifica con inventario Voyant en directo", shoppingHeading: "Busca el viaje completo",
     shoppingIntro: "Compara experiencias, alojamientos, vuelos y paquetes, y organízalos en un solo viaje.",
     language: "Idioma", currency: "Moneda", productType: "¿Qué buscas?", explore: "Circuitos y experiencias",
-    stays: "Alojamientos", flights: "Vuelos", packages: "Vuelo + alojamiento", tours: "Circuitos",
+    stays: "Alojamientos", flights: "Vuelos", packages: "Vuelo + alojamiento", cruises: "Cruceros", tours: "Circuitos",
     excursions: "Excursiones", experiences: "Experiencias", activities: "Actividades", keywords: "Intereses o palabras clave",
     destination: "Destino", origin: "Desde (código de aeropuerto)", flightDestination: "Hasta (código de aeropuerto)",
     fromDate: "Desde", toDate: "Hasta", departureDate: "Fecha de salida", checkIn: "Entrada", checkOut: "Salida",
-    adults: "Adultos", cabin: "Cabina", directOnly: "Solo vuelos directos", nightsMin: "Noches mínimas",
+    adults: "Adultos", children: "Niños", cruiseType: "Tipo de crucero", anyCruiseType: "Cualquier tipo", oceanCruise: "Oceánico", riverCruise: "Fluvial", expeditionCruise: "Expedición", coastalCruise: "Costero", cabin: "Cabina", directOnly: "Solo vuelos directos", nightsMin: "Noches mínimas",
     nightsMax: "Noches máximas", search: "Buscar", searching: "Buscando inventario en directo…",
     noResults: "No hay opciones coincidentes.", results: "Resultados", addToTrip: "Añadir al viaje",
     tripHeading: "Tu viaje", tripIntro: "Ordena aquí las opciones. Voyant conserva el itinerario y la reserva.",
@@ -199,11 +216,11 @@ const DICTIONARIES = {
     shoppingEyebrow: "Pianifica con l’inventario Voyant in tempo reale", shoppingHeading: "Cerca l’intero viaggio",
     shoppingIntro: "Confronta esperienze, soggiorni, voli e pacchetti, poi organizzali in un unico viaggio.",
     language: "Lingua", currency: "Valuta", productType: "Cosa cerchi?", explore: "Tour ed esperienze",
-    stays: "Soggiorni", flights: "Voli", packages: "Volo + soggiorno", tours: "Tour",
+    stays: "Soggiorni", flights: "Voli", packages: "Volo + soggiorno", cruises: "Crociere", tours: "Tour",
     excursions: "Escursioni", experiences: "Esperienze", activities: "Attività", keywords: "Interessi o parole chiave",
     destination: "Destinazione", origin: "Da (codice aeroporto)", flightDestination: "A (codice aeroporto)",
     fromDate: "Dal", toDate: "Al", departureDate: "Data di partenza", checkIn: "Check-in", checkOut: "Check-out",
-    adults: "Adulti", cabin: "Cabina", directOnly: "Solo voli diretti", nightsMin: "Notti minime",
+    adults: "Adulti", children: "Bambini", cruiseType: "Tipo di crociera", anyCruiseType: "Qualsiasi tipo", oceanCruise: "Oceanica", riverCruise: "Fluviale", expeditionCruise: "Spedizione", coastalCruise: "Costiera", cabin: "Cabina", directOnly: "Solo voli diretti", nightsMin: "Notti minime",
     nightsMax: "Notti massime", search: "Cerca", searching: "Ricerca nell’inventario live…",
     noResults: "Nessuna opzione corrispondente.", results: "Risultati", addToTrip: "Aggiungi al viaggio",
     tripHeading: "Il tuo viaggio", tripIntro: "Ordina qui le opzioni. Voyant conserva itinerario e prenotazione.",
@@ -287,7 +304,7 @@ function presentedMoney(value, expectedCurrency) {
 }
 
 function validateSearchResult(data) {
-  if (!["indexed-inspiration", "flight", "stay", "package"].includes(data.kind)) {
+  if (!["indexed-inspiration", "flight", "stay", "package", "cruise"].includes(data.kind)) {
     throw new Error("Managed shopping returned an unknown result kind")
   }
   const scope = parsedScope(data.scope)
@@ -563,6 +580,25 @@ export function intentFromForm(form) {
       checkOut: text(form, "checkOut"),
       rooms: [{ adults: integer(form, "stayAdults") }],
       pagination: { limit: 20 },
+    }
+  }
+  if (kind === "cruise") {
+    const query = text(form, "cruiseQuery")
+    const departureDateFrom = text(form, "cruiseFrom")
+    const departureDateTo = text(form, "cruiseTo")
+    const cruiseType = text(form, "cruiseType")
+    const children = integer(form, "cruiseChildren", 0)
+    return {
+      kind,
+      ...(query ? { query } : {}),
+      ...(departureDateFrom ? { departureDateFrom } : {}),
+      ...(departureDateTo ? { departureDateTo } : {}),
+      travelers: {
+        adults: integer(form, "cruiseAdults", 2),
+        ...(children > 0 ? { children } : {}),
+      },
+      ...(cruiseType ? { cruiseTypes: [cruiseType] } : {}),
+      limit: 20,
     }
   }
   return {

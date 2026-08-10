@@ -5,12 +5,16 @@ export default defineTheme({
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.6.5",
+    version: "0.7.0",
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/pages/[...path]", context: "content" },
       { id: "tours", pattern: "/tours", context: "tourIndex" },
       { id: "tour-detail", pattern: "/tours/[slug]", context: "tourDetail" },
+      { id: "cruises", pattern: "/cruises", context: "cruiseIndex" },
+      { id: "cruise-detail", pattern: "/cruises/[slug]", context: "cruiseDetail" },
+      { id: "ship-detail", pattern: "/ships/[slug]", context: "shipDetail" },
+      { id: "sailing-detail", pattern: "/sailings/[slug]", context: "sailingDetail" },
       { id: "not-found", pattern: "/404", context: "notFound" },
     ],
     capabilities: [
@@ -23,6 +27,7 @@ export default defineTheme({
       { id: "shopping.search.v1" },
       { id: "shopping.trip-selections.v1" },
       { id: "shopping.trip-booking.v1" },
+      { id: "cruise.search.v1" },
       { id: "booking.session.v1" },
       { id: "checkout.v1" },
     ],
@@ -596,6 +601,127 @@ export default defineTheme({
             },
           ],
         },
+      },
+    ],
+    cruiseIndex: {
+      kind: "cruiseIndex",
+      path: "/cruises",
+      locale: "und",
+      site: { name: "Bucharest" },
+      navigation: [
+        { label: "Home", href: "/" },
+        { label: "Tours", href: "/tours" },
+        { label: "Cruises", href: "/cruises" },
+      ],
+      settings: {},
+      title: "Cruises",
+      seo: {
+        title: "Voyages by sea and river",
+        description: "Published cruise stories with live sailing search and managed itinerary booking.",
+      },
+      cruises: [
+        {
+          id: "cruise_danube",
+          slug: "danube-cities",
+          name: "Danube cities",
+          shortDescription: "A week between historic capitals, quiet bends, and vineyard towns.",
+          descriptionHtml: "<p>Travel the Danube at an unhurried pace, with long port calls and evenings on deck.</p>",
+          media: [],
+          ports: [
+            { id: "port_budapest", slug: "budapest", name: "Budapest", countryCode: "HU", media: [] },
+            { id: "port_vienna", slug: "vienna", name: "Vienna", countryCode: "AT", media: [] },
+          ],
+          ships: [
+            {
+              id: "ship_aurora",
+              slug: "aurora",
+              name: "Aurora",
+              cruiseLine: "Voyant River",
+              launchedYear: 2025,
+              deckCount: 4,
+              media: [],
+              cabinCategories: [
+                { id: "cabin_panorama", slug: "panorama", name: "Panorama suite", maxOccupancy: 2, deckNames: ["Upper deck"], media: [] },
+              ],
+            },
+          ],
+          sailings: [
+            {
+              id: "sailing_danube_september",
+              slug: "danube-september",
+              name: "Danube cities in September",
+              cruiseId: "cruise_danube",
+              shipId: "ship_aurora",
+              departure: {
+                startsOn: "2026-09-12",
+                endsOn: "2026-09-19",
+                durationNights: 7,
+                embarkationPort: { id: "port_budapest", slug: "budapest", name: "Budapest", countryCode: "HU", media: [] },
+                disembarkationPort: { id: "port_vienna", slug: "vienna", name: "Vienna", countryCode: "AT", media: [] },
+              },
+              itinerary: {
+                id: "itinerary_danube",
+                name: "Seven nights on the Danube",
+                days: [
+                  { dayNumber: 1, title: "Budapest", ports: [{ id: "port_budapest", slug: "budapest", name: "Budapest", countryCode: "HU", media: [] }], atSea: false },
+                  { dayNumber: 2, title: "Along the Danube Bend", ports: [], atSea: true },
+                ],
+              },
+              cabinCategories: [
+                { id: "cabin_panorama", slug: "panorama", name: "Panorama suite", maxOccupancy: 2, deckNames: ["Upper deck"], media: [] },
+              ],
+            },
+          ],
+        },
+      ],
+      live: {
+        capabilities: [
+          { id: "cruise.search.v1", available: true, methods: ["GET"], endpoint: "/v1/public/theme/cruise/search" },
+          { id: "shopping.search.v1", available: true, methods: ["POST"], endpoint: "/v1/public/theme/shopping/search" },
+          { id: "shopping.trip-selections.v1", available: true, methods: ["POST", "PATCH"], endpoint: "/v1/public/theme/shopping/trip-selections" },
+          { id: "shopping.trip-booking.v1", available: true, methods: ["POST"], endpoint: "/v1/public/theme/shopping/trip-selections/book" },
+          { id: "booking.session.v1", available: true, methods: ["POST", "PATCH"], endpoint: "/v1/public/theme/booking/session" },
+          { id: "checkout.v1", available: true, methods: ["POST"], endpoint: "/v1/public/theme/checkout" },
+        ],
+      },
+    },
+    cruiseDetail: [
+      {
+        kind: "cruiseDetail",
+        path: "/cruises/danube-cities",
+        slug: "danube-cities",
+        locale: "und",
+        site: { name: "Bucharest" },
+        navigation: [{ label: "Home", href: "/" }, { label: "Cruises", href: "/cruises" }],
+        settings: {},
+        title: "Danube cities",
+        seo: { title: "Danube cities", description: "A seven-night river voyage from Budapest to Vienna." },
+        cruise: {
+          id: "cruise_danube",
+          slug: "danube-cities",
+          name: "Danube cities",
+          shortDescription: "A week between historic capitals, quiet bends, and vineyard towns.",
+          descriptionHtml: "<p>Travel the Danube at an unhurried pace, with long port calls and evenings on deck.</p>",
+          media: [], ports: [],
+          ships: [{ id: "ship_aurora", slug: "aurora", name: "Aurora", cruiseLine: "Voyant River", launchedYear: 2025, deckCount: 4, media: [], cabinCategories: [{ id: "cabin_panorama", slug: "panorama", name: "Panorama suite", maxOccupancy: 2, deckNames: ["Upper deck"], media: [] }] }],
+          sailings: [{ id: "sailing_danube_september", slug: "danube-september", name: "Danube cities in September", cruiseId: "cruise_danube", shipId: "ship_aurora", departure: { startsOn: "2026-09-12", endsOn: "2026-09-19", durationNights: 7, embarkationPort: { id: "port_budapest", slug: "budapest", name: "Budapest", countryCode: "HU", media: [] }, disembarkationPort: { id: "port_vienna", slug: "vienna", name: "Vienna", countryCode: "AT", media: [] } }, itinerary: { id: "itinerary_danube", name: "Seven nights on the Danube", days: [{ dayNumber: 1, title: "Budapest", ports: [{ id: "port_budapest", slug: "budapest", name: "Budapest", countryCode: "HU", media: [] }], atSea: false }] }, cabinCategories: [{ id: "cabin_panorama", slug: "panorama", name: "Panorama suite", maxOccupancy: 2, deckNames: ["Upper deck"], media: [] }] }],
+        },
+      },
+    ],
+    shipDetail: [
+      {
+        kind: "shipDetail", path: "/ships/aurora", slug: "aurora", locale: "und",
+        site: { name: "Bucharest" }, navigation: [{ label: "Home", href: "/" }, { label: "Cruises", href: "/cruises" }], settings: {}, title: "Aurora",
+        seo: { title: "Aurora", description: "Meet the Aurora river ship." },
+        ship: { id: "ship_aurora", slug: "aurora", name: "Aurora", cruiseLine: "Voyant River", launchedYear: 2025, deckCount: 4, media: [], cabinCategories: [{ id: "cabin_panorama", slug: "panorama", name: "Panorama suite", maxOccupancy: 2, deckNames: ["Upper deck"], media: [] }] },
+      },
+    ],
+    sailingDetail: [
+      {
+        kind: "sailingDetail", path: "/sailings/danube-september", slug: "danube-september", locale: "und",
+        site: { name: "Bucharest" }, navigation: [{ label: "Home", href: "/" }, { label: "Cruises", href: "/cruises" }], settings: {}, title: "Danube cities in September",
+        seo: { title: "Danube cities in September", description: "A published seven-night Danube itinerary." },
+        sailing: { id: "sailing_danube_september", slug: "danube-september", name: "Danube cities in September", cruiseId: "cruise_danube", shipId: "ship_aurora", departure: { startsOn: "2026-09-12", endsOn: "2026-09-19", durationNights: 7, embarkationPort: { id: "port_budapest", slug: "budapest", name: "Budapest", countryCode: "HU", media: [] }, disembarkationPort: { id: "port_vienna", slug: "vienna", name: "Vienna", countryCode: "AT", media: [] } }, itinerary: { id: "itinerary_danube", name: "Seven nights on the Danube", days: [{ dayNumber: 1, title: "Budapest", ports: [{ id: "port_budapest", slug: "budapest", name: "Budapest", countryCode: "HU", media: [] }], atSea: false }, { dayNumber: 2, title: "Along the Danube Bend", ports: [], atSea: true }] }, cabinCategories: [{ id: "cabin_panorama", slug: "panorama", name: "Panorama suite", maxOccupancy: 2, deckNames: ["Upper deck"], media: [] }] },
       },
     ],
     notFound: {
