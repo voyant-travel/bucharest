@@ -1,11 +1,11 @@
 import { defineTheme } from "@voyant-travel/theme"
 
 export default defineTheme({
-  contractVersion: "v1alpha5",
+  contractVersion: "v1",
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.7.1",
+    version: "0.8.0",
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/pages/[...path]", context: "content" },
