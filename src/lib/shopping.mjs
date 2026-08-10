@@ -386,11 +386,11 @@ export function createShoppingClient(options) {
     booking: () => booking,
     chooseScope(next) {
       scopeVersion += 1
-      scope = {
-        ...(scope.marketId ? { marketId: scope.marketId } : {}),
-        ...(next.locale ? { locale: next.locale } : {}),
-        ...(next.currency ? { currency: next.currency } : {}),
-      }
+      // A market is a server-resolved scope identity, not a browser
+      // preference. Retaining it while locale or currency changes creates an
+      // impossible mixed scope. Only send a market when an explicit market
+      // picker supplies one in this transition.
+      scope = requestedScope(next)
     },
     async search(intent) {
       const requestedVersion = scopeVersion

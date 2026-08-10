@@ -235,6 +235,35 @@ test("does not let a delayed search response revert a newer scope choice", async
   ])
 })
 
+test("drops a server-resolved market when the shopper changes locale or currency", async () => {
+  const requestedScopes = []
+  const client = createShoppingClient({
+    searchEndpoint: "/search",
+    locale: "en",
+    origin: "https://shop.example",
+    fetchImpl: async (_url, init) => {
+      requestedScopes.push(JSON.parse(init.body).scope)
+      return response({ data: {
+        kind: "indexed-inspiration",
+        scope: scope("GBP"),
+        groups: [],
+        coverage: { status: "complete", succeeded: 1, failed: 0, timedOut: 0 },
+      } })
+    },
+  })
+
+  await client.search({ kind: "indexed-inspiration", groups: [] })
+  assert.equal(client.scope().marketId, "ro-public")
+
+  client.chooseScope({ locale: "ro-RO", currency: "RON" })
+  await client.search({ kind: "indexed-inspiration", groups: [] })
+
+  assert.deepEqual(requestedScopes, [
+    { locale: "en" },
+    { locale: "ro-RO", currency: "RON" },
+  ])
+})
+
 test("fails closed on a CAS conflict instead of replaying a stale mutation", async () => {
   let calls = 0
   const client = createShoppingClient({
@@ -416,6 +445,16 @@ test("gives the global locale and currency controls stable form identities", asy
   )
   assert.match(source, /id="shopping-locale" name="shoppingLocale"/)
   assert.match(source, /id="shopping-currency" name="shoppingCurrency"/)
+})
+
+test("resolves each scope-picker change without stale market preferences", async () => {
+  const source = await readFile(new URL("../src/lib/shopping-ui.mjs", import.meta.url), "utf8")
+  assert.match(source, /client\.chooseScope\(\{ locale: localeControl\.value \}\)/)
+  assert.match(source, /client\.chooseScope\(\{ currency: currencyControl\.value \}\)/)
+  assert.doesNotMatch(
+    source,
+    /client\.chooseScope\(\{ locale: localeControl\.value, currency: currencyControl\.value \}\)/,
+  )
 })
 
 test("declares the published managed shopping capability routes", async () => {
