@@ -1,5 +1,6 @@
 ---
 import CollectionValue from "../components/CollectionValue.astro"
+import CruisePage from "../components/CruisePage.astro"
 import HomeSections from "../components/sections/HomeSections.astro"
 import ShoppingExperience from "../components/ShoppingExperience.astro"
 import TourDetail from "../components/TourDetail.astro"
@@ -75,6 +76,23 @@ const checkoutEndpoint = capabilityEndpoint(live, "checkout.v1", "POST")
   {context.kind === "notFound" && <p>{context.message}</p>}
   {context.kind === "tourIndex" && <TourIndex context={context} />}
   {context.kind === "tourDetail" && <TourDetail context={context} />}
+  {(context.kind === "cruiseIndex" ||
+    context.kind === "cruiseDetail" ||
+    context.kind === "shipDetail" ||
+    context.kind === "sailingDetail") && (
+    <CruisePage context={context} />
+  )}
+  {context.kind === "cruiseIndex" && (
+    <ShoppingExperience
+      locale={context.locale}
+      searchEndpoint={shoppingSearchEndpoint}
+      tripsEndpoint={shoppingTripsEndpoint}
+      tripBookingEndpoint={shoppingTripBookingEndpoint}
+      bookingEndpoint={bookingEndpoint}
+      checkoutEndpoint={checkoutEndpoint}
+      initialKind="cruise"
+    />
+  )}
 
   {
     /*

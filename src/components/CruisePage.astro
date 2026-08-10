@@ -1,0 +1,170 @@
+---
+import type {
+  CruiseDetailContext,
+  CruiseIndexContext,
+  SailingDetailContext,
+  ShipDetailContext,
+} from "@voyant-travel/theme"
+
+interface Props {
+  context:
+    | CruiseIndexContext
+    | CruiseDetailContext
+    | ShipDetailContext
+    | SailingDetailContext
+}
+
+const { context } = Astro.props
+const cruise = context.kind === "cruiseDetail" ? context.cruise : undefined
+const ship = context.kind === "shipDetail" ? context.ship : undefined
+const sailing = context.kind === "sailingDetail" ? context.sailing : undefined
+---
+
+<article class="cruise-page">
+  {context.kind === "cruiseIndex" && (
+    <>
+      <p class="eyebrow">Cruises</p>
+      <h1>{context.title}</h1>
+      {context.seo.description && <p class="lede">{context.seo.description}</p>}
+      {context.cruises.length === 0 ? (
+        <p>No cruise stories are published yet. Use the live search below for current sailings.</p>
+      ) : (
+        <ul class="cards">
+          {context.cruises.map((item) => (
+            <li>
+              {item.coverMedia && <img src={item.coverMedia.url} alt={item.coverMedia.altText ?? ""} />}
+              <h2><a href={`/cruises/${encodeURIComponent(item.slug)}`}>{item.name}</a></h2>
+              {item.shortDescription && <p>{item.shortDescription}</p>}
+              <p class="meta">{item.ships.length} ships · {item.sailings.length} published sailings</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  )}
+
+  {cruise && (
+    <>
+      <p class="eyebrow">Cruise</p>
+      <h1>{cruise.name}</h1>
+      {cruise.shortDescription && <p class="lede">{cruise.shortDescription}</p>}
+      {cruise.coverMedia && <img class="cover" src={cruise.coverMedia.url} alt={cruise.coverMedia.altText ?? ""} />}
+      {cruise.descriptionHtml && <section class="prose" set:html={cruise.descriptionHtml} />}
+      {cruise.ships.length > 0 && (
+        <section>
+          <h2>Ships</h2>
+          <ul class="cards compact">
+            {cruise.ships.map((item) => (
+              <li>
+                <h3><a href={`/ships/${encodeURIComponent(item.slug)}`}>{item.name}</a></h3>
+                {item.cruiseLine && <p>{item.cruiseLine}</p>}
+                <p class="meta">{item.cabinCategories.length} cabin categories</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {cruise.sailings.length > 0 && (
+        <section>
+          <h2>Published sailings</h2>
+          <ul class="cards compact">
+            {cruise.sailings.map((item) => (
+              <li>
+                <h3><a href={`/sailings/${encodeURIComponent(item.slug)}`}>{item.name}</a></h3>
+                <p>{item.departure.startsOn} → {item.departure.endsOn}</p>
+                <p class="meta">{item.departure.durationNights} nights · {item.departure.embarkationPort.name}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <p class="back"><a href="/cruises">Back to cruises</a></p>
+    </>
+  )}
+
+  {ship && (
+    <>
+      <p class="eyebrow">{ship.cruiseLine ?? "Ship"}</p>
+      <h1>{ship.name}</h1>
+      {ship.coverMedia && <img class="cover" src={ship.coverMedia.url} alt={ship.coverMedia.altText ?? ""} />}
+      {ship.descriptionHtml && <section class="prose" set:html={ship.descriptionHtml} />}
+      <dl class="facts">
+        {ship.launchedYear && <div><dt>Launched</dt><dd>{ship.launchedYear}</dd></div>}
+        {ship.deckCount && <div><dt>Decks</dt><dd>{ship.deckCount}</dd></div>}
+      </dl>
+      <section>
+        <h2>Cabin categories</h2>
+        {ship.cabinCategories.length === 0 ? <p>Cabin details are coming soon.</p> : (
+          <ul class="cards compact">
+            {ship.cabinCategories.map((cabin) => (
+              <li>
+                <h3>{cabin.name}</h3>
+                {cabin.maxOccupancy && <p>Up to {cabin.maxOccupancy} guests</p>}
+                {cabin.deckNames.length > 0 && <p class="meta">{cabin.deckNames.join(" · ")}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <p class="back"><a href="/cruises">Browse cruises</a></p>
+    </>
+  )}
+
+  {sailing && (
+    <>
+      <p class="eyebrow">Sailing</p>
+      <h1>{sailing.name}</h1>
+      <dl class="facts">
+        <div><dt>Dates</dt><dd>{sailing.departure.startsOn} → {sailing.departure.endsOn}</dd></div>
+        <div><dt>Duration</dt><dd>{sailing.departure.durationNights} nights</dd></div>
+        <div><dt>Embark</dt><dd>{sailing.departure.embarkationPort.name}</dd></div>
+        <div><dt>Disembark</dt><dd>{sailing.departure.disembarkationPort.name}</dd></div>
+      </dl>
+      <section>
+        <h2>{sailing.itinerary.name}</h2>
+        <ol class="itinerary">
+          {sailing.itinerary.days.map((day) => (
+            <li>
+              <p class="eyebrow">Day {day.dayNumber}</p>
+              <h3>{day.title}</h3>
+              {day.descriptionHtml && <div set:html={day.descriptionHtml} />}
+              {day.atSea ? <p class="meta">At sea</p> : day.ports.length > 0 && <p class="meta">{day.ports.map((port) => port.name).join(" · ")}</p>}
+            </li>
+          ))}
+        </ol>
+      </section>
+      <section>
+        <h2>Cabin categories</h2>
+        <ul class="cards compact">
+          {sailing.cabinCategories.map((cabin) => (
+            <li><h3>{cabin.name}</h3>{cabin.maxOccupancy && <p>Up to {cabin.maxOccupancy} guests</p>}</li>
+          ))}
+        </ul>
+      </section>
+      <p class="live-note">Current availability and presentation-currency pricing are resolved in live cruise search and can be added to one managed itinerary without copying supplier state into this page.</p>
+      <p class="back"><a href="/cruises">Find a live sailing</a></p>
+    </>
+  )}
+</article>
+
+<style>
+  .cruise-page { max-width: 72rem; }
+  .cruise-page > h1 { font-size: clamp(2.8rem, 8vw, 6rem); letter-spacing: -0.045em; line-height: 0.92; margin: 0.35rem 0 1.25rem; max-width: 13ch; }
+  .eyebrow, .meta { color: color-mix(in srgb, var(--page-text) 62%, transparent); font-size: 0.78rem; letter-spacing: 0.11em; text-transform: uppercase; }
+  .lede { font-size: 1.3rem; max-width: 42rem; }
+  .cover { aspect-ratio: 16 / 7; margin: 2rem 0; object-fit: cover; width: 100%; }
+  section { margin: 3.5rem 0; }
+  .cards { background: color-mix(in srgb, var(--page-text) 14%, transparent); display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); list-style: none; margin: 2rem 0; padding: 0; }
+  .cards li { background: var(--page-background); padding: 1.4rem; }
+  .cards img { aspect-ratio: 16 / 9; margin: -1.4rem -1.4rem 1rem; object-fit: cover; width: calc(100% + 2.8rem); }
+  .cards h2, .cards h3 { margin: 0.25rem 0 0.75rem; }
+  .compact { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+  .facts { border-block: 1px solid color-mix(in srgb, var(--page-text) 15%, transparent); display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); margin: 2.5rem 0; padding: 1.25rem 0; }
+  .facts div { display: grid; gap: 0.25rem; }
+  dt { color: color-mix(in srgb, var(--page-text) 62%, transparent); font-size: 0.78rem; text-transform: uppercase; }
+  dd { margin: 0; }
+  .itinerary { background: color-mix(in srgb, var(--page-text) 14%, transparent); display: grid; gap: 1px; list-style: none; padding: 0; }
+  .itinerary li { background: var(--page-background); padding: 1.25rem; }
+  .live-note { background: color-mix(in srgb, var(--page-accent) 8%, var(--page-background)); border: 1px solid color-mix(in srgb, var(--page-accent) 28%, transparent); padding: 1.25rem; }
+  .back { margin-top: 4rem; }
+</style>

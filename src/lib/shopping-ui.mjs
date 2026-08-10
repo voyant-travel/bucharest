@@ -96,6 +96,19 @@ function summaryFor(row, kind) {
       .filter((value) => typeof value === "string")
       .join(" · ")
   }
+  if (kind === "cruise") {
+    return [
+      row.lineName,
+      row.shipName,
+      row.cabinName,
+      row.departureDate,
+      row.returnDate,
+      Number.isInteger(row.nights) ? `${row.nights} nights` : undefined,
+      row.embarkPortName,
+    ]
+      .filter((value) => typeof value === "string")
+      .join(" · ")
+  }
   return ""
 }
 

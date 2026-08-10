@@ -89,6 +89,65 @@ test("accepts server-clamped scope and never calculates presentation FX", async 
   assert.equal("customerId" in calls[0].body, false)
 })
 
+test("accepts live cruise offers and adds only their opaque reference to a Trip", async () => {
+  const calls = []
+  const client = createShoppingClient({
+    searchEndpoint: "/v1/public/theme/shopping/search",
+    tripsEndpoint: "/v1/public/theme/shopping/trip-selections",
+    locale: "en-GB",
+    origin: "https://shop.example",
+    fetchImpl: async (url, init) => {
+      const body = JSON.parse(init.body)
+      calls.push({ url, method: init.method, body })
+      if (url.endsWith("/search")) {
+        return response({ data: {
+          kind: "cruise",
+          scope: scope(),
+          offers: [{
+            offerRef: "opaque-cruise-offer-1234",
+            title: "Danube cities",
+            cruiseType: "river",
+            lineName: "Voyant River",
+            shipName: "Aurora",
+            departureDate: "2026-09-12",
+            returnDate: "2026-09-19",
+            nights: 7,
+            cabinName: "Panorama suite",
+            availability: "available",
+            price: {
+              native: { amount: "800.00", currency: "EUR" },
+              presentation: { amount: "710.00", currency: "GBP" },
+              fx: { rate: "0.8875", provider: "voyant-data", quotedAt: "2026-08-10T07:00:00Z" },
+            },
+            expiresAt: "2026-08-10T07:15:00Z",
+          }],
+          coverage: { status: "complete", succeeded: 1, failed: 0, timedOut: 0 },
+        } })
+      }
+      return response({ data: {
+        selectionRef: "opaque-selection-ref-cruise",
+        revision: 0,
+        scope: scope(),
+        items: [{ itemRef: "opaque-item-cruise", kind: "cruise", quantity: 1 }],
+      } }, 201)
+    },
+  })
+
+  const result = await client.search({
+    kind: "cruise",
+    travelers: { adults: 2 },
+    cruiseTypes: ["river"],
+    limit: 20,
+  })
+  await client.add("cruise", result.offers[0].offerRef)
+
+  assert.equal(result.offers[0].price.presentation.amount, "710.00")
+  assert.deepEqual(calls[1].body.offers, [
+    { kind: "cruise", offerRef: "opaque-cruise-offer-1234" },
+  ])
+  assert.doesNotMatch(JSON.stringify(calls), /connectionId|providerId|sourceRef/)
+})
+
 test("rejects money that is not in the server-resolved presentation currency", async () => {
   const client = createShoppingClient({
     searchEndpoint: "/search",
@@ -385,6 +444,21 @@ test("sends a deterministic city destination to managed stay search", async () =
   )
 })
 
+test("builds provider-neutral cruise intent and renders cruise result details", async () => {
+  const shopping = await readFile(
+    new URL("../src/lib/shopping.mjs", import.meta.url),
+    "utf8",
+  )
+  const ui = await readFile(
+    new URL("../src/lib/shopping-ui.mjs", import.meta.url),
+    "utf8",
+  )
+  assert.match(shopping, /if \(kind === "cruise"\)[\s\S]*travelers:[\s\S]*cruiseTypes/)
+  assert.match(shopping, /"indexed-inspiration", "flight", "stay", "package", "cruise"/)
+  assert.match(ui, /row\.lineName,[\s\S]*row\.shipName,[\s\S]*row\.cabinName/)
+  assert.doesNotMatch(shopping, /connectionId|providerId|sourceRef/)
+})
+
 test("fails closed when a Trip booking capability is stale or expired", async () => {
   for (const status of [403, 409]) {
     let calls = 0
@@ -495,11 +569,15 @@ test("declares the published managed shopping capability routes", async () => {
   assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/search"/)
   assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/trip-selections"/)
   assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/trip-selections\/book"/)
+  assert.match(source, /\{ id: "cruise\.search\.v1" \}/)
+  assert.match(source, /pattern: "\/cruises"/)
+  assert.match(source, /pattern: "\/ships\/\[slug\]"/)
+  assert.match(source, /pattern: "\/sailings\/\[slug\]"/)
 })
 
 test("keeps the theme locale-agnostic for operator-configured languages", async () => {
   const source = await readFile(new URL("../theme.config.ts", import.meta.url), "utf8")
-  assert.equal([...source.matchAll(/locale: "und"/g)].length, 5)
+  assert.equal([...source.matchAll(/locale: "und"/g)].length, 9)
   assert.doesNotMatch(source, /locale: "en"/)
 })
 
