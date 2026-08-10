@@ -556,7 +556,9 @@ export function intentFromForm(form) {
   if (kind === "stay") {
     return {
       kind,
-      destination: { query: text(form, "stayDestination") },
+      // The managed Connect stay gateway accepts canonical destination fields;
+      // the visible destination control is a city picker/text entry.
+      destination: { city: text(form, "stayDestination") },
       checkIn: text(form, "checkIn"),
       checkOut: text(form, "checkOut"),
       rooms: [{ adults: integer(form, "stayAdults") }],
@@ -567,9 +569,8 @@ export function intentFromForm(form) {
     kind: "package",
     origin: text(form, "packageOrigin").toUpperCase(),
     // Connect's dynamic-package provider requires an explicit city/country
-    // destination. A free-text `query` is valid for indexed/stay discovery but
-    // is deliberately rejected by package resolution because it cannot be
-    // re-resolved deterministically for quote and booking.
+    // destination so it can be re-resolved deterministically for quote and
+    // booking.
     destination: { city: text(form, "packageDestination") },
     departureDateFrom: text(form, "packageFrom"),
     departureDateTo: text(form, "packageTo"),
