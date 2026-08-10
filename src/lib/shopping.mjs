@@ -566,7 +566,11 @@ export function intentFromForm(form) {
   return {
     kind: "package",
     origin: text(form, "packageOrigin").toUpperCase(),
-    destination: { query: text(form, "packageDestination") },
+    // Connect's dynamic-package provider requires an explicit city/country
+    // destination. A free-text `query` is valid for indexed/stay discovery but
+    // is deliberately rejected by package resolution because it cannot be
+    // re-resolved deterministically for quote and booking.
+    destination: { city: text(form, "packageDestination") },
     departureDateFrom: text(form, "packageFrom"),
     departureDateTo: text(form, "packageTo"),
     nights: { min: integer(form, "nightsMin", 3), max: integer(form, "nightsMax", 7) },

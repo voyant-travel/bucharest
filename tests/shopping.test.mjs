@@ -355,6 +355,21 @@ test("disables every result-card Trip mutation after booking succeeds", async ()
   assert.match(source, /const booking = await client\.book\(\)\s+disableResultMutations\(root\)/)
 })
 
+test("sends a deterministic city destination to managed package search", async () => {
+  const source = await readFile(
+    new URL("../src/lib/shopping.mjs", import.meta.url),
+    "utf8",
+  )
+  assert.match(
+    source,
+    /kind: "package",[\s\S]*destination: \{ city: text\(form, "packageDestination"\) \}/,
+  )
+  assert.doesNotMatch(
+    source,
+    /kind: "package",[\s\S]*destination: \{ query: text\(form, "packageDestination"\) \}/,
+  )
+})
+
 test("fails closed when a Trip booking capability is stale or expired", async () => {
   for (const status of [403, 409]) {
     let calls = 0
