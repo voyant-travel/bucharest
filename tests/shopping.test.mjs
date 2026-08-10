@@ -370,6 +370,21 @@ test("sends a deterministic city destination to managed package search", async (
   )
 })
 
+test("sends a deterministic city destination to managed stay search", async () => {
+  const source = await readFile(
+    new URL("../src/lib/shopping.mjs", import.meta.url),
+    "utf8",
+  )
+  assert.match(
+    source,
+    /if \(kind === "stay"\)[\s\S]*destination: \{ city: text\(form, "stayDestination"\) \}/,
+  )
+  assert.doesNotMatch(
+    source,
+    /if \(kind === "stay"\)[\s\S]*destination: \{ query: text\(form, "stayDestination"\) \}/,
+  )
+})
+
 test("fails closed when a Trip booking capability is stale or expired", async () => {
   for (const status of [403, 409]) {
     let calls = 0
