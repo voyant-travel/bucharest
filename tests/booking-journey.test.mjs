@@ -3,6 +3,7 @@ import test from "node:test"
 import {
   checkoutHandoff,
   createBookingJourney,
+  isContinuableCommitOutcome,
   reduceBookingState,
 } from "../src/lib/booking-journey.mjs"
 
@@ -95,6 +96,120 @@ test("keeps an idempotency key after a transport failure and rotates it after su
   await assert.rejects(journey.perform("create"), /network unavailable/)
   await journey.perform("create")
   assert.equal(keys[0], keys[1])
+})
+
+test("continues a pending component commit with the same idempotency key", async () => {
+  const calls = []
+  const replies = [
+    {
+      kind: "commit_result",
+      outcome: {
+        kind: "component_commit_pending",
+        nextAction: "continue_component_commit",
+        components: [
+          {
+            componentId: "tcmp_1",
+            state: "supplier_pending",
+            supplierOperationId: "suop_1",
+          },
+        ],
+      },
+    },
+    {
+      kind: "commit_result",
+      outcome: {
+        kind: "payment_required",
+        paymentSession: {
+          checkout: { kind: "redirect", url: "https://pay.example/continue" },
+        },
+      },
+    },
+  ]
+  const journey = createBookingJourney({
+    endpoint: "/booking",
+    initialOutcome: {
+      kind: "quote_created",
+      session: { id: "bses_1", revision: 2, state: "active" },
+      quote: { id: "bqte_1", requirementsFingerprint: "rqf_1" },
+      hold: { id: "bhld_1" },
+    },
+    randomUUID: () => "00000000-0000-4000-8000-000000000001",
+    fetchImpl: async (_url, init) => {
+      calls.push(JSON.parse(init.body))
+      return response(replies.shift())
+    },
+  })
+
+  const pending = await journey.perform("commit", { paymentIntent: "card" })
+  assert.equal(pending.state.commitOutcome, "component_commit_pending")
+  assert.match(journey.retryKey("commit"), /^theme-commit-/)
+
+  const completed = await journey.perform("commit", { paymentIntent: "card" })
+  assert.equal(completed.state.commitOutcome, "payment_required")
+  assert.equal(journey.retryKey("commit"), undefined)
+  assert.equal(calls[0].idempotencyKey, calls[1].idempotencyKey)
+  assert.deepEqual(calls.map((call) => call.revision), [2, 2])
+  assert.deepEqual(calls[0], calls[1])
+})
+
+test("rotates a pending commit key after a revision rejection", async () => {
+  const calls = []
+  const replies = [
+    {
+      kind: "commit_result",
+      outcome: {
+        kind: "component_commit_pending",
+        nextAction: "continue_component_commit",
+        components: [{ componentId: "tcmp_1", state: "supplier_pending" }],
+      },
+    },
+    {
+      kind: "rejected",
+      error: { kind: "revision_conflict", actualRevision: 3 },
+    },
+    {
+      kind: "commit_result",
+      outcome: {
+        kind: "payment_required",
+        paymentSession: {
+          checkout: { kind: "redirect", url: "https://pay.example/continue" },
+        },
+      },
+    },
+  ]
+  let keySequence = 0
+  const journey = createBookingJourney({
+    endpoint: "/booking",
+    initialOutcome: {
+      kind: "quote_created",
+      session: { id: "bses_1", revision: 2, state: "active" },
+      quote: { id: "bqte_1", requirementsFingerprint: "rqf_1" },
+    },
+    randomUUID: () => `00000000-0000-4000-8000-00000000000${++keySequence}`,
+    fetchImpl: async (_url, init) => {
+      calls.push(JSON.parse(init.body))
+      return response(replies.shift())
+    },
+  })
+
+  await journey.perform("commit", { paymentIntent: "card" })
+  const rejected = await journey.perform("commit", { paymentIntent: "card" })
+  assert.equal(rejected.state.rejection, "revision_conflict")
+  assert.equal(rejected.state.commitOutcome, undefined)
+  assert.equal(journey.retryKey("commit"), undefined)
+
+  await journey.perform("commit", { paymentIntent: "card" })
+  assert.equal(calls[0].idempotencyKey, calls[1].idempotencyKey)
+  assert.notEqual(calls[1].idempotencyKey, calls[2].idempotencyKey)
+  assert.deepEqual(calls.map((call) => call.revision), [2, 2, 3])
+})
+
+test("classifies only retry-safe commit outcomes as continuable", () => {
+  assert.equal(isContinuableCommitOutcome("component_commit_pending"), true)
+  assert.equal(isContinuableCommitOutcome("supplier_pending"), true)
+  assert.equal(isContinuableCommitOutcome("supplier_in_doubt"), true)
+  assert.equal(isContinuableCommitOutcome("supplier_failed"), false)
+  assert.equal(isContinuableCommitOutcome("committed"), false)
 })
 
 test("adopts a managed itinerary session and presents its ephemeral capability", async () => {

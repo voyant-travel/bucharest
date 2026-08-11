@@ -24,5 +24,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run theme:check
-      - run: npm run build
+      - name: Check theme contract
+        run: >-
+          node --input-type=module -e
+          'const { validateTheme } = await import("@voyant-travel/theme/tooling");
+          const report = await validateTheme({ projectRoot: process.cwd() });
+          if (!report.ok) { console.error(JSON.stringify(report.diagnostics, null, 2)); process.exit(1); }'
+      - name: Build theme
+        run: >-
+          node --input-type=module -e
+          'const { buildTheme } = await import("@voyant-travel/theme/tooling");
+          const report = await buildTheme({ projectRoot: process.cwd(), output: "inherit" });
+          if (!report.ok) { console.error(JSON.stringify(report.diagnostics, null, 2)); process.exit(1); }'
