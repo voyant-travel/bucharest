@@ -3,17 +3,44 @@ import type { SectionInstance } from "../../lib/sections"
 import Callout from "./Callout.astro"
 import FeatureGrid from "./FeatureGrid.astro"
 import Hero from "./Hero.astro"
+import JourneySearch from "./JourneySearch.astro"
 
 interface Props {
   sections: SectionInstance[]
+  locale: string
+  searchEndpoint?: string
+  tripsEndpoint?: string
+  tripBookingEndpoint?: string
+  bookingEndpoint?: string
+  checkoutEndpoint?: string
 }
 
-const { sections } = Astro.props
+const {
+  sections,
+  locale,
+  searchEndpoint,
+  tripsEndpoint,
+  tripBookingEndpoint,
+  bookingEndpoint,
+  checkoutEndpoint,
+} = Astro.props
 ---
 
 {
   sections.map((section) => {
     if (section.type === "hero") return <Hero section={section} />
+    if (section.type === "journey-search")
+      return (
+        <JourneySearch
+          section={section}
+          locale={locale}
+          searchEndpoint={searchEndpoint}
+          tripsEndpoint={tripsEndpoint}
+          tripBookingEndpoint={tripBookingEndpoint}
+          bookingEndpoint={bookingEndpoint}
+          checkoutEndpoint={checkoutEndpoint}
+        />
+      )
     if (section.type === "feature-grid") return <FeatureGrid section={section} />
     if (section.type === "callout") return <Callout section={section} />
     return null

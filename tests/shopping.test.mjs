@@ -579,6 +579,38 @@ test("declares the published managed shopping capability routes", async () => {
   assert.match(source, /pattern: "\/sailings\/\[slug\]"/)
 })
 
+test("declares managed shopping as an authored, ordered home section", async () => {
+  const config = await readFile(new URL("../theme.config.ts", import.meta.url), "utf8")
+  const page = await readFile(
+    new URL("../src/pages/[...path].astro", import.meta.url),
+    "utf8",
+  )
+  const sections = await readFile(
+    new URL("../src/components/sections/HomeSections.astro", import.meta.url),
+    "utf8",
+  )
+
+  assert.match(config, /id: "journey-search"[\s\S]*limit: 1/)
+  assert.match(config, /templates: \["home"\]/)
+  assert.match(sections, /section\.type === "journey-search"/)
+  assert.match(page, /!hasAuthoredJourneySearch/)
+})
+
+test("keeps authored journey copy selectable and locale switching bounded", async () => {
+  const shopping = await readFile(
+    new URL("../src/components/ShoppingExperience.astro", import.meta.url),
+    "utf8",
+  )
+  const section = await readFile(
+    new URL("../src/components/sections/JourneySearch.astro", import.meta.url),
+    "utf8",
+  )
+
+  assert.match(section, /visibleSetting\(settings, "heading"\)/)
+  assert.match(section, /choiceSetting\([\s\S]*"initial-journey"/)
+  assert.match(shopping, /data-i18n=\{heading \? undefined : "shoppingHeading"\}/)
+})
+
 test("keeps the theme locale-agnostic for operator-configured languages", async () => {
   const source = await readFile(new URL("../theme.config.ts", import.meta.url), "utf8")
   assert.equal([...source.matchAll(/locale: "und"/g)].length, 9)
