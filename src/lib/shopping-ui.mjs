@@ -293,6 +293,7 @@ export function mountShopping(root) {
     replaceOptions(localeControl, available?.locales, scope.locale, scope.locale, "language")
     replaceOptions(currencyControl, available?.currencies, scope.currency, scope.locale, "currency")
     messages = translated(root, scope.locale)
+    renderTrip(root, client, messages, mutateTrip)
     const scopeStatus = element(root, "[data-scope-status]")
     if (scopeStatus) scopeStatus.textContent = `${scope.locale}, ${scope.currency}`
   }
@@ -405,7 +406,10 @@ export function mountShopping(root) {
     // Resolve a fresh compatible market/currency for the selected language.
     // Sending the previous currency can form a combination no configured
     // market supports (for example ro-RO with an en-GB market's EUR).
-    client.chooseScope({ locale: localeControl.value })
+    client.chooseScope({
+      locale: localeControl.value,
+      currency: client.scope().currency,
+    })
     messages = translated(root, localeControl.value)
     renderTrip(root, client, messages, mutateTrip)
     if (lastIntent) void runSearch(lastIntent)
@@ -413,7 +417,10 @@ export function mountShopping(root) {
   currencyControl.addEventListener("change", () => {
     // Currency is likewise a preference; managed Voyant chooses and returns
     // the compatible market and locale rather than trusting stale scope IDs.
-    client.chooseScope({ currency: currencyControl.value })
+    client.chooseScope({
+      locale: client.scope().locale,
+      currency: currencyControl.value,
+    })
     if (lastIntent) void runSearch(lastIntent)
   })
   switchIntent()
