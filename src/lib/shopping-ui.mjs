@@ -195,7 +195,7 @@ function renderResults(container, result, client, messages, onAdd) {
   return count
 }
 
-function renderTrip(root, client, messages, onMutation) {
+function renderTrip(root, client, messages, onMutation, actionsPending = false) {
   const trip = client.trip()
   const booked = Boolean(client.booking())
   const list = root.querySelector("[data-trip-items]")
@@ -226,15 +226,15 @@ function renderTrip(root, client, messages, onMutation) {
       const refs = items.map((candidate) => candidate.itemRef).filter((value) => typeof value === "string")
       if (typeof item.itemRef === "string") {
         actions.append(
-          mutationButton(messages.moveUp, booked || index === 0, {
+          mutationButton(messages.moveUp, booked || actionsPending || index === 0, {
             kind: "reorder",
             itemRefs: index === 0 ? refs : refs.toSpliced(index - 1, 2, refs[index], refs[index - 1]),
           }),
-          mutationButton(messages.moveDown, booked || index === items.length - 1, {
+          mutationButton(messages.moveDown, booked || actionsPending || index === items.length - 1, {
             kind: "reorder",
             itemRefs: index === items.length - 1 ? refs : refs.toSpliced(index, 2, refs[index + 1], refs[index]),
           }),
-          mutationButton(messages.remove, booked, { kind: "remove", itemRef: item.itemRef }),
+          mutationButton(messages.remove, booked || actionsPending, { kind: "remove", itemRef: item.itemRef }),
         )
       }
       row.append(actions)
@@ -246,6 +246,7 @@ function renderTrip(root, client, messages, onMutation) {
     book.disabled =
       items.length === 0 ||
       booked ||
+      actionsPending ||
       !root.dataset.tripBookingEndpoint ||
       !root.querySelector("[data-booking-journey]")
   }
@@ -271,6 +272,7 @@ export function mountShopping(root) {
   let lastIntent
   let busy = false
   let queuedIntent
+  let tripActionPending = false
   const client = createShoppingClient({
     searchEndpoint: root.dataset.searchEndpoint,
     tripsEndpoint: root.dataset.tripsEndpoint,
@@ -293,7 +295,7 @@ export function mountShopping(root) {
     replaceOptions(localeControl, available?.locales, scope.locale, scope.locale, "language")
     replaceOptions(currencyControl, available?.currencies, scope.currency, scope.locale, "currency")
     messages = translated(root, scope.locale)
-    renderTrip(root, client, messages, mutateTrip)
+    renderTrip(root, client, messages, mutateTrip, tripActionPending)
     const scopeStatus = element(root, "[data-scope-status]")
     if (scopeStatus) scopeStatus.textContent = `${scope.locale}, ${scope.currency}`
   }
@@ -350,34 +352,37 @@ export function mountShopping(root) {
   }
 
   async function mutateTrip(mutation) {
+    if (tripActionPending) return
+    tripActionPending = true
+    renderTrip(root, client, messages, mutateTrip, true)
     tripStatus.textContent = messages.searching
     try {
       await client.mutate(mutation)
-      renderTrip(root, client, messages, mutateTrip)
       tripStatus.textContent = messages.updated
     } catch (error) {
-      renderTrip(root, client, messages, mutateTrip)
       tripStatus.textContent = error instanceof ShoppingHttpError && error.status === 409
         ? messages.conflict
         : error instanceof Error ? error.message : messages.retry
+    } finally {
+      tripActionPending = false
+      renderTrip(root, client, messages, mutateTrip)
     }
   }
 
   async function bookItinerary() {
-    if (!(bookButton instanceof HTMLButtonElement)) return
-    bookButton.disabled = true
+    if (!(bookButton instanceof HTMLButtonElement) || tripActionPending) return
+    tripActionPending = true
+    renderTrip(root, client, messages, mutateTrip, true)
     tripStatus.textContent = messages.bookingItinerary
     try {
       const booking = await client.book()
       disableResultMutations(root)
-      renderTrip(root, client, messages, mutateTrip)
       tripStatus.textContent = messages.itineraryReady
       const bookingRoot = root.querySelector("[data-booking-journey]")
       bookingRoot?.dispatchEvent(new CustomEvent("voyant:itinerary-session-created", {
         detail: booking,
       }))
     } catch (error) {
-      renderTrip(root, client, messages, mutateTrip)
       if (error instanceof ShoppingHttpError) {
         if (error.status === 403 || error.status === 409) {
           tripStatus.textContent = error.status === 409
@@ -391,6 +396,9 @@ export function mountShopping(root) {
       } else {
         tripStatus.textContent = error instanceof Error ? error.message : messages.itineraryRejected
       }
+    } finally {
+      tripActionPending = false
+      renderTrip(root, client, messages, mutateTrip)
     }
   }
 

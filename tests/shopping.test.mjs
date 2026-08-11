@@ -558,6 +558,13 @@ test("resolves each scope-picker change without losing the other preference", as
   assert.match(source, /messages = translated\(root, scope\.locale\)[\s\S]*renderTrip\(root, client, messages/)
 })
 
+test("keeps Trip controls disabled while a mutation or booking action is pending", async () => {
+  const source = await readFile(new URL("../src/lib/shopping-ui.mjs", import.meta.url), "utf8")
+  assert.match(source, /renderTrip\(root, client, messages, mutateTrip, tripActionPending\)/)
+  assert.match(source, /if \(tripActionPending\) return[\s\S]*tripActionPending = true/)
+  assert.match(source, /finally \{[\s\S]*tripActionPending = false[\s\S]*renderTrip/)
+})
+
 test("declares the published managed shopping capability routes", async () => {
   const source = await readFile(new URL("../theme.config.ts", import.meta.url), "utf8")
   assert.match(source, /\{ id: "shopping\.search\.v1" \}/)
