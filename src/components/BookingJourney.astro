@@ -103,6 +103,7 @@ const itinerary = mode === "itinerary"
 <script>
   import {
     createBookingJourney,
+    isContinuableCommitOutcome,
     offeredPaymentIntents,
     readableCode,
     selectionFromForm,
@@ -142,7 +143,11 @@ const itinerary = mode === "itinerary"
         if (node instanceof HTMLElement) node.textContent = value
       }
       const render = (state) => {
-        const terminal = state.sessionState === "abandoned" || Boolean(state.commitOutcome)
+        const pendingCommit = isContinuableCommitOutcome(state.commitOutcome)
+        const terminal =
+          state.sessionState === "abandoned" ||
+          (Boolean(state.commitOutcome) && !pendingCommit)
+        const bookingLocked = terminal || pendingCommit
         if (stateView instanceof HTMLElement) stateView.hidden = !state.sessionId
         if (tools instanceof HTMLElement) tools.hidden = !state.sessionId || terminal
         setText("[data-state-session]", state.sessionId ?? "Not started")
@@ -151,11 +156,25 @@ const itinerary = mode === "itinerary"
         setText("[data-state-quote]", state.quoteId ?? "—")
         setText("[data-state-hold]", state.holdId ?? "—")
         if (button("create") instanceof HTMLButtonElement) button("create").disabled = Boolean(state.sessionId) && !terminal
-        if (button("update") instanceof HTMLButtonElement) button("update").disabled = !state.sessionId || terminal
-        if (button("quote") instanceof HTMLButtonElement) button("quote").disabled = !state.sessionId || terminal
-        if (button("hold") instanceof HTMLButtonElement) button("hold").disabled = !state.quoteId || terminal
-        if (button("commit") instanceof HTMLButtonElement) button("commit").disabled = !state.quoteId || !state.requirementsFingerprint || terminal
-        if (paymentIntents instanceof HTMLFieldSetElement) paymentIntents.hidden = !state.quoteId || terminal
+        if (button("update") instanceof HTMLButtonElement) button("update").disabled = !state.sessionId || bookingLocked
+        if (button("quote") instanceof HTMLButtonElement) button("quote").disabled = !state.sessionId || bookingLocked
+        if (button("hold") instanceof HTMLButtonElement) button("hold").disabled = !state.quoteId || bookingLocked
+        const commitButton = button("commit")
+        if (commitButton instanceof HTMLButtonElement) {
+          commitButton.disabled = !state.quoteId || !state.requirementsFingerprint || terminal
+          commitButton.textContent = pendingCommit
+            ? "Check booking status"
+            : "Continue to checkout"
+        }
+        if (paymentIntents instanceof HTMLFieldSetElement) {
+          paymentIntents.hidden = !state.quoteId || bookingLocked
+        }
+        if (button("renew") instanceof HTMLButtonElement) {
+          button("renew").disabled = !state.sessionId || bookingLocked
+        }
+        if (button("abandon") instanceof HTMLButtonElement) {
+          button("abandon").disabled = !state.sessionId || bookingLocked
+        }
         if (state.handoff && handoff instanceof HTMLElement && handoffLink instanceof HTMLAnchorElement) {
           handoff.hidden = false
           handoffLink.href = state.handoff.url
@@ -204,7 +223,9 @@ const itinerary = mode === "itinerary"
               ? "The session changed elsewhere. Its latest revision is loaded; review and try again."
               : "Review the live response and adjust your booking."
           } else {
-            status.textContent = `${readableCode(result.state.lastOutcome)}.`
+            status.textContent = isContinuableCommitOutcome(result.state.commitOutcome)
+              ? "Supplier confirmation is still pending. Check booking status again; this safely continues the same booking attempt."
+              : `${readableCode(result.state.lastOutcome)}.`
           }
         } catch (caught) {
           error.textContent = caught instanceof Error ? caught.message : "Live booking is temporarily unavailable."

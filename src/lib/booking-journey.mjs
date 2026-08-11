@@ -10,6 +10,11 @@ const ACTIONS = new Set([
 ])
 
 const PAYMENT_INTENTS = new Set(["card", "bank_transfer", "inquiry"])
+const CONTINUABLE_COMMIT_OUTCOMES = new Set([
+  "component_commit_pending",
+  "supplier_pending",
+  "supplier_in_doubt",
+])
 
 function record(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -29,6 +34,10 @@ export function readableCode(value) {
   return String(value ?? "unexpected_response")
     .replaceAll("_", " ")
     .replace(/^./, (character) => character.toUpperCase())
+}
+
+export function isContinuableCommitOutcome(value) {
+  return CONTINUABLE_COMMIT_OUTCOMES.has(string(value))
 }
 
 export function checkoutHandoff(value) {
@@ -231,8 +240,17 @@ export function createBookingJourney({
     }
     if (!record(payload)) throw new Error("The booking service returned an invalid response")
     state = reduceBookingState(state, payload)
+    if (action === "commit" && state.rejection) {
+      state.commitOutcome = undefined
+    }
     if (action === "checkout") state.lastOutcome = "checkout_ready"
-    pendingKeys.delete(action)
+    if (
+      action !== "commit" ||
+      state.rejection ||
+      !isContinuableCommitOutcome(state.commitOutcome)
+    ) {
+      pendingKeys.delete(action)
+    }
     return { payload, state: { ...state } }
   }
 
