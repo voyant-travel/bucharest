@@ -1,0 +1,50 @@
+---
+import {
+  choiceSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "../../lib/sections"
+import ShoppingExperience from "../ShoppingExperience.astro"
+
+interface Props {
+  section: SectionInstance
+  locale: string
+  searchEndpoint?: string
+  tripsEndpoint?: string
+  tripBookingEndpoint?: string
+  bookingEndpoint?: string
+  checkoutEndpoint?: string
+}
+
+const {
+  section,
+  locale,
+  searchEndpoint,
+  tripsEndpoint,
+  tripBookingEndpoint,
+  bookingEndpoint,
+  checkoutEndpoint,
+} = Astro.props
+const settings = section.data.settings
+const headingId = `shopping-heading-${section.data.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`
+const initialKind = choiceSetting(
+  settings,
+  "initial-journey",
+  ["indexed-inspiration", "stay", "flight", "package", "cruise"],
+  "indexed-inspiration",
+)
+---
+
+<ShoppingExperience
+  locale={locale}
+  searchEndpoint={searchEndpoint}
+  tripsEndpoint={tripsEndpoint}
+  tripBookingEndpoint={tripBookingEndpoint}
+  bookingEndpoint={bookingEndpoint}
+  checkoutEndpoint={checkoutEndpoint}
+  initialKind={initialKind}
+  headingId={headingId}
+  eyebrow={visibleSetting(settings, "eyebrow")}
+  heading={visibleSetting(settings, "heading")}
+  introduction={visibleSetting(settings, "introduction")}
+/>

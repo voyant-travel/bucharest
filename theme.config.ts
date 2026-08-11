@@ -5,7 +5,7 @@ export default defineTheme({
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.8.2",
+    version: "0.9.0",
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/pages/[...path]", context: "content" },
@@ -164,6 +164,49 @@ export default defineTheme({
                 settings: { label: "Explore", page: "/pages/about", style: "solid" },
               },
             ],
+          },
+        ],
+        templates: ["home"],
+      },
+      {
+        id: "journey-search",
+        name: "Journey search",
+        description:
+          "Managed Voyant search, itinerary building and booking across travel verticals.",
+        settings: [
+          { id: "eyebrow", label: "Eyebrow", type: "text" },
+          {
+            id: "heading",
+            label: "Heading",
+            type: "inline_richtext",
+            required: true,
+          },
+          { id: "introduction", label: "Introduction", type: "textarea" },
+          {
+            id: "initial-journey",
+            label: "Open with",
+            type: "select",
+            default: "indexed-inspiration",
+            options: [
+              { label: "Tours and experiences", value: "indexed-inspiration" },
+              { label: "Stays", value: "stay" },
+              { label: "Flights", value: "flight" },
+              { label: "Flight and stay", value: "package" },
+              { label: "Cruises", value: "cruise" },
+            ],
+          },
+        ],
+        limit: 1,
+        presets: [
+          {
+            name: "Search the whole journey",
+            settings: {
+              eyebrow: "Plan with live Voyant inventory",
+              heading: "Search the whole journey",
+              introduction:
+                "Compare experiences, stays, flights, packages, and cruises, then arrange them into one trip.",
+              "initial-journey": "indexed-inspiration",
+            },
           },
         ],
         templates: ["home"],
@@ -341,6 +384,20 @@ export default defineTheme({
                 settings: { label: "About this theme", page: "/pages/about", style: "solid" },
               },
             ],
+          },
+        },
+        {
+          type: "journey-search",
+          data: {
+            id: "home-journey-search",
+            settings: {
+              eyebrow: "Plan with live Voyant inventory",
+              heading: "Search the whole journey",
+              introduction:
+                "Compare experiences, stays, flights, packages, and cruises, then arrange them into one trip.",
+              "initial-journey": "indexed-inspiration",
+            },
+            blocks: [],
           },
         },
         {

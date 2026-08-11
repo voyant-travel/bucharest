@@ -10,6 +10,10 @@ interface Props {
   bookingEndpoint?: string
   checkoutEndpoint?: string
   initialKind?: "indexed-inspiration" | "stay" | "flight" | "package" | "cruise"
+  headingId?: string
+  eyebrow?: string
+  heading?: string
+  introduction?: string
 }
 
 const {
@@ -20,6 +24,10 @@ const {
   bookingEndpoint,
   checkoutEndpoint,
   initialKind = "indexed-inspiration",
+  headingId = "shopping-heading",
+  eyebrow,
+  heading,
+  introduction,
 } = Astro.props
 const copy = messagesFor(locale)
 ---
@@ -31,12 +39,18 @@ const copy = messagesFor(locale)
   data-search-endpoint={searchEndpoint}
   data-trips-endpoint={tripsEndpoint}
   data-trip-booking-endpoint={tripBookingEndpoint}
-  aria-labelledby="shopping-heading"
+  aria-labelledby={headingId}
 >
   <header class="shopping-intro">
-    <p class="eyebrow" data-i18n="shoppingEyebrow">{copy.shoppingEyebrow}</p>
-    <h2 id="shopping-heading" data-i18n="shoppingHeading">{copy.shoppingHeading}</h2>
-    <p data-i18n="shoppingIntro">{copy.shoppingIntro}</p>
+    <p class="eyebrow" data-i18n={eyebrow ? undefined : "shoppingEyebrow"}>
+      {eyebrow ?? copy.shoppingEyebrow}
+    </p>
+    <h2 id={headingId} data-i18n={heading ? undefined : "shoppingHeading"}>
+      <Fragment set:html={heading ?? copy.shoppingHeading} />
+    </h2>
+    <p data-i18n={introduction ? undefined : "shoppingIntro"}>
+      {introduction ?? copy.shoppingIntro}
+    </p>
   </header>
 
   <div class="scope" aria-label="Shopping preferences">
