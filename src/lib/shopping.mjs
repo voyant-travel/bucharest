@@ -404,10 +404,15 @@ export function createShoppingClient(options) {
     chooseScope(next) {
       scopeVersion += 1
       // A market is a server-resolved scope identity, not a browser
-      // preference. Retaining it while locale or currency changes creates an
-      // impossible mixed scope. Only send a market when an explicit market
-      // picker supplies one in this transition.
-      scope = requestedScope(next)
+      // preference. Drop it whenever a shopper preference changes, but retain
+      // the other explicit preference so changing currency cannot silently
+      // reset language (or vice versa). The managed runtime still validates
+      // the pair and returns the authoritative compatible scope.
+      scope = requestedScope({
+        ...(typeof next.marketId === "string" ? { marketId: next.marketId } : {}),
+        locale: next.locale ?? scope.locale,
+        currency: next.currency ?? scope.currency,
+      })
     },
     async search(intent) {
       const requestedVersion = scopeVersion

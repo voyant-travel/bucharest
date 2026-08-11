@@ -294,7 +294,7 @@ test("does not let a delayed search response revert a newer scope choice", async
   ])
 })
 
-test("drops a server-resolved market when the shopper changes locale or currency", async () => {
+test("drops a server-resolved market but preserves the other shopper preference", async () => {
   const requestedScopes = []
   const client = createShoppingClient({
     searchEndpoint: "/search",
@@ -314,12 +314,12 @@ test("drops a server-resolved market when the shopper changes locale or currency
   await client.search({ kind: "indexed-inspiration", groups: [] })
   assert.equal(client.scope().marketId, "ro-public")
 
-  client.chooseScope({ locale: "ro-RO", currency: "RON" })
+  client.chooseScope({ currency: "RON" })
   await client.search({ kind: "indexed-inspiration", groups: [] })
 
   assert.deepEqual(requestedScopes, [
     { locale: "en" },
-    { locale: "ro-RO", currency: "RON" },
+    { locale: "en-GB", currency: "RON" },
   ])
 })
 
@@ -551,14 +551,18 @@ test("gives the global locale and currency controls stable form identities", asy
   assert.match(source, /id="shopping-currency" name="shoppingCurrency"/)
 })
 
-test("resolves each scope-picker change without stale market preferences", async () => {
+test("resolves each scope-picker change without losing the other preference", async () => {
   const source = await readFile(new URL("../src/lib/shopping-ui.mjs", import.meta.url), "utf8")
-  assert.match(source, /client\.chooseScope\(\{ locale: localeControl\.value \}\)/)
-  assert.match(source, /client\.chooseScope\(\{ currency: currencyControl\.value \}\)/)
-  assert.doesNotMatch(
-    source,
-    /client\.chooseScope\(\{ locale: localeControl\.value, currency: currencyControl\.value \}\)/,
-  )
+  assert.match(source, /locale: localeControl\.value,[\s\S]*currency: client\.scope\(\)\.currency/)
+  assert.match(source, /locale: client\.scope\(\)\.locale,[\s\S]*currency: currencyControl\.value/)
+  assert.match(source, /messages = translated\(root, scope\.locale\)[\s\S]*renderTrip\(root, client, messages/)
+})
+
+test("keeps Trip controls disabled while a mutation or booking action is pending", async () => {
+  const source = await readFile(new URL("../src/lib/shopping-ui.mjs", import.meta.url), "utf8")
+  assert.match(source, /renderTrip\(root, client, messages, mutateTrip, tripActionPending\)/)
+  assert.match(source, /if \(tripActionPending\) return[\s\S]*tripActionPending = true/)
+  assert.match(source, /finally \{[\s\S]*tripActionPending = false[\s\S]*renderTrip/)
 })
 
 test("declares the published managed shopping capability routes", async () => {
