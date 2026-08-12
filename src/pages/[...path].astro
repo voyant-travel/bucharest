@@ -1,6 +1,7 @@
 ---
 import CollectionValue from "../components/CollectionValue.astro"
 import CruisePage from "../components/CruisePage.astro"
+import PageLead from "../components/primitives/PageLead.astro"
 import HomeSections from "../components/sections/HomeSections.astro"
 import ShoppingExperience from "../components/ShoppingExperience.astro"
 import TourDetail from "../components/TourDetail.astro"
@@ -10,6 +11,7 @@ import {
   entryBlurb,
   entryFields,
 } from "../lib/collection-values"
+import { fill, messagesFor } from "../lib/messages"
 import { sectionInstances } from "../lib/sections"
 import { isKnownSection, opensFullBleed } from "../lib/section-registry"
 import { capabilityEndpoint } from "../lib/shopping.mjs"
@@ -21,6 +23,19 @@ import { resolveThemeContext } from "virtual:voyant-theme"
 // rather than serving fixtures publicly.
 const context = await resolveThemeContext(Astro.url)
 if (context.kind === "notFound") Astro.response.status = 404
+
+const t = messagesFor(context.locale)
+
+/*
+ * A collection entry belongs somewhere. Its parent path is the listing it was
+ * reached from, which is the only "back" a reader can be offered without the
+ * theme inventing a route the operator has not published.
+ */
+const collection = "collection" in context ? context.collection : undefined
+const entryParent =
+  context.kind === "collectionEntry"
+    ? context.path.slice(0, context.path.lastIndexOf("/")) || "/"
+    : undefined
 
 const homeSections =
   context.kind === "home"
@@ -97,9 +112,45 @@ const hasAuthoredJourneySearch = homeSections.some(
   )}
   {["content", "notFound", "collectionIndex", "collectionEntry"].includes(
     context.kind,
-  ) && <h1>{context.title}</h1>}
-  {context.kind === "content" && <p>{context.body}</p>}
-  {context.kind === "notFound" && <p>{context.message}</p>}
+  ) && (
+    <PageLead
+      title={context.title}
+      eyebrow={context.kind === "collectionIndex" ? collection?.name : undefined}
+      backHref={entryParent}
+      backLabel={
+        collection && entryParent
+          ? fill(t.backTo, { name: collection.name })
+          : undefined
+      }
+    />
+  )}
+  {context.kind === "content" && (
+    <div class="u-shell pb-24 md:pb-32">
+      {context.summary && (
+        <p class="u-serif-body max-w-[42rem] text-[1.25rem] leading-[1.55] text-ink md:text-[1.4375rem]">
+          {context.summary}
+        </p>
+      )}
+      <div class="prose mt-8 max-w-[44rem]">
+        <p>{context.body}</p>
+      </div>
+    </div>
+  )}
+  {context.kind === "notFound" && (
+    <div class="u-shell pb-28 md:pb-40">
+      {context.message && (
+        <p class="u-serif-body max-w-[36rem] text-[1.125rem] leading-[1.6] text-ink-muted">
+          {context.message}
+        </p>
+      )}
+      <a
+        href="/"
+        class="mt-10 inline-flex h-11 items-center rounded-pill bg-accent px-6 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
+      >
+        {fill(t.backTo, { name: context.site.name })}
+      </a>
+    </div>
+  )}
   {context.kind === "tourIndex" && <TourIndex context={context} />}
   {context.kind === "tourDetail" && <TourDetail context={context} />}
   {(context.kind === "cruiseIndex" ||
@@ -128,24 +179,35 @@ const hasAuthoredJourneySearch = homeSections.some(
      */
     "collectionLists" in context &&
       context.collectionLists?.map((list) => (
-        <section class="collection-list">
-          {list.title && <h2>{list.title}</h2>}
+        <section class="u-shell pb-16">
+          {list.title && (
+            <h2 class="u-eyebrow text-ink-subtle">{list.title}</h2>
+          )}
           {list.entries.length === 0 ? (
-            <p class="empty">Nothing published here yet.</p>
+            <p class="mt-6 text-[0.9375rem] text-ink-subtle">{t.nothingPublished}</p>
           ) : (
-            <ul class="collection-index">
+            <ul class="mt-6 border-t border-line">
               {list.entries.map((entry) => {
                 const summary = entryBlurb(entry, list.collection.fields)
                 return (
-                  <li>
-                    <h3>
+                  <li class="border-b border-line py-5">
+                    <h3 class="u-display-sm text-[1.125rem] md:text-[1.25rem]">
                       {entry.path ? (
-                        <a href={entry.path}>{entry.title}</a>
+                        <a
+                          href={entry.path}
+                          class="transition-opacity duration-300 hover:opacity-65"
+                        >
+                          {entry.title}
+                        </a>
                       ) : (
                         entry.title
                       )}
                     </h3>
-                    {summary && <p>{summary}</p>}
+                    {summary && (
+                      <p class="mt-2 max-w-[46rem] text-[0.9375rem] leading-relaxed text-ink-muted">
+                        {summary}
+                      </p>
+                    )}
                   </li>
                 )
               })}
@@ -156,106 +218,69 @@ const hasAuthoredJourneySearch = homeSections.some(
   }
 
   {
-    context.kind === "collectionIndex" &&
-      (context.entries.length === 0 ? (
-        <p class="empty">Nothing published here yet.</p>
-      ) : (
-        <ul class="collection-index">
-          {context.entries.map((entry) => {
-            const summary = entryBlurb(entry, context.collection.fields)
-            return (
-              <li>
-                <h2>
+    context.kind === "collectionIndex" && (
+      <div class="u-shell pb-24 md:pb-32">
+        {context.entries.length === 0 ? (
+          <p class="u-serif-body text-[1.125rem] text-ink-subtle">
+            {t.nothingPublished}
+          </p>
+        ) : (
+          <ul class="border-t border-line">
+            {context.entries.map((entry) => {
+              const summary = entryBlurb(entry, context.collection.fields)
+              return (
+                <li class="border-b border-line">
                   {entry.path ? (
-                    <a href={entry.path}>{entry.title}</a>
+                    <a
+                      href={entry.path}
+                      class="group block py-7 transition-opacity duration-300 hover:opacity-70"
+                    >
+                      <h2 class="u-display-sm text-[1.375rem] md:text-[1.5rem]">
+                        {entry.title}
+                      </h2>
+                      {summary && (
+                        <p class="mt-2.5 max-w-[46rem] text-[0.9375rem] leading-relaxed text-ink-muted">
+                          {summary}
+                        </p>
+                      )}
+                    </a>
                   ) : (
-                    entry.title
+                    <div class="py-7">
+                      <h2 class="u-display-sm text-[1.375rem] md:text-[1.5rem]">
+                        {entry.title}
+                      </h2>
+                      {summary && (
+                        <p class="mt-2.5 max-w-[46rem] text-[0.9375rem] leading-relaxed text-ink-muted">
+                          {summary}
+                        </p>
+                      )}
+                    </div>
                   )}
-                </h2>
-                {summary && <p>{summary}</p>}
-              </li>
-            )
-          })}
-        </ul>
-      ))
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+    )
   }
 
   {
     context.kind === "collectionEntry" && (
-      <>
-        <dl class="entry-fields">
+      <div class="u-shell pb-24 md:pb-32">
+        <dl class="max-w-[52rem] border-t border-line">
           {entryFields(context.entry.values, context.collection.fields).map((field) => (
-            <>
-              <dt>{field.label}</dt>
-              <dd>
+            <div class="grid gap-1.5 border-b border-line py-5 md:grid-cols-12 md:gap-8">
+              <dt class="u-eyebrow text-ink-subtle md:col-span-3 md:pt-1">
+                {field.label}
+              </dt>
+              <dd class="m-0 text-[0.9375rem] leading-relaxed md:col-span-9">
                 <CollectionValue value={field.value} />
               </dd>
-            </>
+            </div>
           ))}
         </dl>
-        <p class="back">
-          <a href={context.path.slice(0, context.path.lastIndexOf("/")) || "/"}>
-            Back to {context.collection.name}
-          </a>
-        </p>
-      </>
+      </div>
     )
   }
 </Layout>
-
-<style>
-  .collection-index {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 2rem;
-  }
-  .collection-index h2 {
-    margin: 0 0 0.35rem;
-    font-size: 1.25rem;
-  }
-  .collection-index h2 a {
-    text-decoration-color: color-mix(
-      in srgb,
-      var(--page-accent, #0b3d2e) 45%,
-      transparent
-    );
-  }
-  .collection-index p {
-    margin: 0;
-  }
-  .entry-fields {
-    display: grid;
-    grid-template-columns: minmax(6rem, 12rem) 1fr;
-    gap: 0.75rem 1.5rem;
-    margin: 0 0 2.5rem;
-  }
-  .entry-fields dt {
-    font-weight: 600;
-    color: color-mix(in srgb, var(--page-text, #12211a) 70%, transparent);
-  }
-  .entry-fields dd {
-    margin: 0;
-  }
-  .collection-list {
-    margin: 2.5rem 0;
-  }
-  .collection-list h2 {
-    font-size: 1.1rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--page-text, #12211a) 60%, transparent);
-    margin: 0 0 1rem;
-  }
-  .collection-list h3 {
-    margin: 0 0 0.35rem;
-    font-size: 1.15rem;
-  }
-  .empty {
-    color: color-mix(in srgb, var(--page-text, #12211a) 65%, transparent);
-  }
-  .back {
-    margin: 0;
-  }
-</style>

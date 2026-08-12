@@ -1,4 +1,22 @@
 ---
+/**
+ * Live shopping: search the whole journey, arrange it into one trip.
+ *
+ * Everything here queries live capabilities — a publication snapshot carries no
+ * price and no availability, so nothing on this panel can be server-rendered
+ * from it. What the reader sees before JavaScript runs is the form itself,
+ * which is why the form is real markup rather than a mounting point.
+ *
+ * The hooks are a contract with `shopping-ui.mjs`: every `data-*` attribute,
+ * every `name`, every `data-i18n` key and the class names on runtime-built
+ * nodes (`result-card`, `trip-item`, …) are read by that module. Restyling is
+ * not a reason to renegotiate any of them, so this file changes how the panel
+ * looks and leaves what it *is* alone.
+ *
+ * Form controls are styled in a scoped block rather than with utilities on
+ * thirty individual inputs: they all want the same treatment, and one rule that
+ * says so is easier to keep honest than thirty copies of it.
+ */
 import { messagesFor } from "../lib/shopping.mjs"
 import BookingJourney from "./BookingJourney.astro"
 
@@ -33,7 +51,7 @@ const copy = messagesFor(locale)
 ---
 
 <section
-  class="shopping"
+  class="shopping u-shell py-16 md:py-24"
   data-shopping
   data-locale={locale}
   data-search-endpoint={searchEndpoint}
@@ -41,19 +59,31 @@ const copy = messagesFor(locale)
   data-trip-booking-endpoint={tripBookingEndpoint}
   aria-labelledby={headingId}
 >
-  <header class="shopping-intro">
-    <p class="eyebrow" data-i18n={eyebrow ? undefined : "shoppingEyebrow"}>
+  <header class="shopping-intro max-w-[46rem]">
+    <p class="u-eyebrow flex items-center gap-3 text-ink-subtle" data-i18n={eyebrow ? undefined : "shoppingEyebrow"}>
+      <span class="h-px w-6 bg-current opacity-45" aria-hidden="true"></span>
       {eyebrow ?? copy.shoppingEyebrow}
     </p>
-    <h2 id={headingId} data-i18n={heading ? undefined : "shoppingHeading"}>
+    <h2
+      id={headingId}
+      class="u-display mt-6 text-[2.25rem] sm:text-[2.75rem] md:text-[3.25rem]"
+      data-i18n={heading ? undefined : "shoppingHeading"}
+    >
       <Fragment set:html={heading ?? copy.shoppingHeading} />
     </h2>
-    <p data-i18n={introduction ? undefined : "shoppingIntro"}>
+    <p
+      class="mt-6 text-[1.0625rem] leading-[1.65] text-ink-muted md:text-[1.125rem]"
+      data-i18n={introduction ? undefined : "shoppingIntro"}
+    >
       {introduction ?? copy.shoppingIntro}
     </p>
   </header>
 
-  <div class="scope" aria-label="Shopping preferences">
+  <div
+    class="scope mt-12 flex flex-wrap items-end gap-x-8 gap-y-4 border-y border-line py-5"
+    role="group"
+    aria-label="Shopping preferences"
+  >
     <label>
       <span data-i18n="language">{copy.language}</span>
       <select id="shopping-locale" name="shoppingLocale" data-shopping-locale aria-describedby="shopping-scope-status">
@@ -69,9 +99,9 @@ const copy = messagesFor(locale)
     <p id="shopping-scope-status" class="visually-hidden" data-scope-status aria-live="polite"></p>
   </div>
 
-  <div class="workspace">
-    <div class="search-panel">
-      <form data-shopping-form>
+  <div class="workspace mt-12 grid gap-12 lg:grid-cols-12 lg:gap-16">
+    <div class="search-panel lg:col-span-8">
+      <form data-shopping-form class="grid gap-6">
         <label class="kind">
           <span data-i18n="productType">{copy.productType}</span>
           <select name="kind" data-shopping-kind>
@@ -227,33 +257,34 @@ const copy = messagesFor(locale)
         </button>
       </form>
 
-      <p class="status" data-shopping-status role="status" aria-live="polite">
+      <p class="status mt-5 text-[0.8125rem] text-ink-subtle" data-shopping-status role="status" aria-live="polite">
         {!searchEndpoint && copy.unavailable}
       </p>
       <section class="results" data-shopping-results hidden aria-labelledby="shopping-results-heading">
-        <h3 id="shopping-results-heading" data-i18n="results">{copy.results}</h3>
+        <h3 id="shopping-results-heading" class="u-eyebrow text-ink-subtle" data-i18n="results">{copy.results}</h3>
         <div data-result-groups></div>
       </section>
     </div>
 
-    <aside class="trip" aria-labelledby="shopping-trip-heading">
-      <p class="eyebrow">Trips</p>
-      <h3 id="shopping-trip-heading" data-i18n="tripHeading">{copy.tripHeading}</h3>
-      <p data-i18n="tripIntro">{copy.tripIntro}</p>
-      <p class="trip-status" data-trip-status role="status" aria-live="polite"></p>
-      <ol data-trip-items></ol>
-      <p data-trip-empty data-i18n="emptyTrip">{copy.emptyTrip}</p>
-      <button type="button" data-trip-book disabled={!tripBookingEndpoint || !bookingEndpoint}>
-        <span data-i18n="bookItinerary">{copy.bookItinerary}</span>
-      </button>
-      {bookingEndpoint && (
-        <BookingJourney
-          mode="itinerary"
-          locale={locale}
-          bookingEndpoint={bookingEndpoint}
-          checkoutEndpoint={checkoutEndpoint}
-        />
-      )}
+    <aside class="trip lg:col-span-4" aria-labelledby="shopping-trip-heading">
+      <div class="rounded-card border border-line bg-surface p-6 lg:sticky lg:top-32">
+        <h3 id="shopping-trip-heading" class="u-display-sm text-[1.375rem]" data-i18n="tripHeading">{copy.tripHeading}</h3>
+        <p class="mt-3 text-[0.875rem] leading-relaxed text-ink-muted" data-i18n="tripIntro">{copy.tripIntro}</p>
+        <p class="trip-status mt-4 text-[0.8125rem] text-ink-subtle empty:hidden" data-trip-status role="status" aria-live="polite"></p>
+        <ol data-trip-items></ol>
+        <p class="mt-4 text-[0.875rem] text-ink-subtle" data-trip-empty data-i18n="emptyTrip">{copy.emptyTrip}</p>
+        <button type="button" class="mt-5" data-trip-book disabled={!tripBookingEndpoint || !bookingEndpoint}>
+          <span data-i18n="bookItinerary">{copy.bookItinerary}</span>
+        </button>
+        {bookingEndpoint && (
+          <BookingJourney
+            mode="itinerary"
+            locale={locale}
+            bookingEndpoint={bookingEndpoint}
+            checkoutEndpoint={checkoutEndpoint}
+          />
+        )}
+      </div>
     </aside>
   </div>
 </section>
@@ -267,48 +298,227 @@ const copy = messagesFor(locale)
 </script>
 
 <style>
-  .shopping { margin: 0 auto; max-width: 76rem; padding: clamp(3rem, 8vw, 7rem) 2rem; }
-  .shopping-intro { max-width: 47rem; }
-  .shopping-intro h2 { font-size: clamp(2.4rem, 6vw, 4.8rem); letter-spacing: -0.045em; line-height: 0.96; margin: 0.4rem 0 1rem; }
-  .shopping-intro > p:last-child { font-size: 1.15rem; max-width: 42rem; }
-  .eyebrow { color: color-mix(in srgb, var(--page-text) 62%, transparent); font-size: 0.76rem; letter-spacing: 0.13em; margin: 0; text-transform: uppercase; }
-  .scope { align-items: end; border-block: 1px solid color-mix(in srgb, var(--page-text) 15%, transparent); display: flex; flex-wrap: wrap; gap: 1rem; margin: 2.5rem 0; padding: 1rem 0; }
-  .scope label { min-width: 10rem; }
-  .workspace { display: grid; gap: clamp(2rem, 5vw, 5rem); grid-template-columns: minmax(0, 2fr) minmax(17rem, 1fr); }
-  form { display: grid; gap: 1.25rem; }
-  label { display: grid; font-size: 0.87rem; font-weight: 650; gap: 0.35rem; }
-  fieldset { border: 0; display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 0; }
-  fieldset[hidden] { display: none; }
-  .wide { grid-column: 1 / -1; }
-  .check { align-items: center; display: flex; font-weight: 500; margin-top: 1.45rem; }
-  input, select { background: var(--page-background); border: 1px solid color-mix(in srgb, var(--page-text) 28%, transparent); border-radius: 0; color: inherit; font: inherit; min-height: 2.85rem; padding: 0.6rem 0.7rem; }
-  .check input { min-height: auto; }
-  button { background: var(--page-accent); border: 1px solid var(--page-accent); color: white; cursor: pointer; font: inherit; font-weight: 650; justify-self: start; padding: 0.72rem 1rem; }
-  button:disabled { cursor: not-allowed; opacity: 0.5; }
-  button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid color-mix(in srgb, var(--page-accent) 38%, transparent); outline-offset: 2px; }
-  .status, .trip-status { min-height: 1.5rem; }
-  .results h3, .trip h3 { font-size: 1.45rem; margin: 0.35rem 0 1rem; }
-  .trip { border-left: 1px solid color-mix(in srgb, var(--page-text) 15%, transparent); padding-left: 1.5rem; }
-  .trip ol { display: grid; gap: 0.75rem; list-style: none; margin: 1rem 0; padding: 0; }
-  :global(.result-group) { margin-top: 2.5rem; }
-  :global(.result-group > h4) { font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; }
-  :global(.result-grid) { display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); list-style: none; margin: 0; padding: 0; background: color-mix(in srgb, var(--page-text) 14%, transparent); }
-  :global(.result-card) { background: var(--page-background); display: flex; flex-direction: column; min-height: 12rem; padding: 1.15rem; }
-  :global(.result-card img) { aspect-ratio: 16 / 9; margin: -1.15rem -1.15rem 1rem; object-fit: cover; width: calc(100% + 2.3rem); }
-  :global(.result-card h5) { font-size: 1.1rem; margin: 0 0 0.5rem; }
-  :global(.result-card p) { margin: 0 0 0.8rem; }
-  :global(.result-card .price) { font-weight: 700; margin-top: auto; }
-  :global(.result-card button) { margin-top: 0.75rem; }
-  :global(.trip-item) { border: 1px solid color-mix(in srgb, var(--page-text) 18%, transparent); padding: 0.8rem; }
-  :global(.trip-item p) { font-weight: 650; margin: 0 0 0.6rem; text-transform: capitalize; }
-  :global(.trip-actions) { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-  :global(.trip-actions button) { background: transparent; color: var(--page-accent); font-size: 0.8rem; padding: 0.35rem 0.5rem; }
-  :global(.trip .booking-journey) { margin-top: 1.25rem; }
-  .visually-hidden { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
+  /* Form controls. One rule, thirty inputs. */
+  .shopping label {
+    color: var(--ink-muted);
+    display: grid;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    gap: 0.45rem;
+    letter-spacing: 0.01em;
+  }
+  .shopping .scope label {
+    min-width: 9rem;
+  }
+  .shopping fieldset {
+    border: 0;
+    display: grid;
+    gap: 1rem 1.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+  }
+  .shopping fieldset[hidden] {
+    display: none;
+  }
+  .shopping .wide {
+    grid-column: 1 / -1;
+  }
+  .shopping .check {
+    align-items: center;
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1.75rem;
+  }
+
+  .shopping input,
+  .shopping select {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--corner);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.9375rem;
+    min-height: 3rem;
+    padding: 0.65rem 0.85rem;
+    transition: border-color 0.3s var(--ease-out-expo);
+    width: 100%;
+  }
+  .shopping input:hover,
+  .shopping select:hover {
+    border-color: color-mix(in oklab, var(--ink) 32%, transparent);
+  }
+  .shopping input:focus-visible,
+  .shopping select:focus-visible {
+    border-color: var(--accent);
+    outline: 2px solid color-mix(in oklab, var(--accent) 32%, transparent);
+    outline-offset: 1px;
+  }
+  .shopping .check input {
+    accent-color: var(--accent);
+    min-height: auto;
+    width: auto;
+  }
+
+  .shopping button {
+    align-items: center;
+    background: var(--accent);
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill, 999px);
+    color: var(--accent-ink);
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    justify-self: start;
+    min-height: 2.75rem;
+    padding: 0 1.6rem;
+    transition: background-color 0.3s var(--ease-out-expo);
+  }
+  .shopping button:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+  .shopping button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .shopping button:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--accent) 40%, transparent);
+    outline-offset: 2px;
+  }
+
+  .shopping .results {
+    margin-top: 3rem;
+  }
+
+  /*
+   * Everything below is built by `shopping-ui.mjs` at runtime, so it carries no
+   * scope hash and has to be addressed globally. The class names are that
+   * module's, not this file's.
+   */
+  :global(.result-group) {
+    margin-top: 2.5rem;
+  }
+  :global(.result-group > h4) {
+    color: var(--ink-subtle);
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    margin: 0 0 1.25rem;
+    text-transform: uppercase;
+  }
+  :global(.result-grid) {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  :global(.result-card) {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--corner);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1.15rem;
+  }
+  :global(.result-card img) {
+    aspect-ratio: 4 / 3;
+    margin: -1.15rem -1.15rem 1.15rem;
+    object-fit: cover;
+    width: calc(100% + 2.3rem);
+  }
+  :global(.result-card h5) {
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    margin: 0 0 0.5rem;
+  }
+  :global(.result-card p) {
+    color: var(--ink-muted);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin: 0 0 0.9rem;
+  }
+  :global(.result-card .price) {
+    border-top: 1px solid var(--line);
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    margin-top: auto;
+    padding-top: 0.9rem;
+  }
+  :global(.result-card button) {
+    margin-top: 0.9rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  :global(.trip ol) {
+    display: grid;
+    gap: 0.75rem;
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0;
+  }
+  :global(.trip-item) {
+    border: 1px solid var(--line);
+    border-radius: var(--corner);
+    padding: 0.85rem;
+  }
+  :global(.trip-item p) {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin: 0 0 0.6rem;
+    text-transform: capitalize;
+  }
+  :global(.trip-actions) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  :global(.trip-actions button) {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--ink-muted);
+    font-size: 0.75rem;
+    min-height: 2rem;
+    padding: 0 0.75rem;
+  }
+  :global(.trip-actions button:hover:not(:disabled)) {
+    background: transparent;
+    border-color: color-mix(in oklab, var(--ink) 35%, transparent);
+    color: var(--ink);
+  }
+  :global(.trip .booking-journey) {
+    margin-top: 1.5rem;
+  }
+
+  .visually-hidden {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
   @media (max-width: 48rem) {
-    .workspace { grid-template-columns: 1fr; }
-    .trip { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--page-text) 15%, transparent); padding: 1.5rem 0 0; }
-    fieldset { grid-template-columns: 1fr; }
-    .wide { grid-column: auto; }
+    .shopping fieldset {
+      grid-template-columns: 1fr;
+    }
+    .shopping .wide {
+      grid-column: auto;
+    }
+    .shopping .check {
+      margin-top: 0;
+    }
   }
 </style>

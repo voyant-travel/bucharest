@@ -1,0 +1,99 @@
+---
+/**
+ * The opening of a detail page.
+ *
+ * A cruise, a ship and a sailing are three different records but they arrive at
+ * the reader the same way: a way back to the listing, a category, a name, and
+ * — when the operator has uploaded one — a photograph filling the top of the
+ * window. Keeping that in one place is what stops the three pages drifting into
+ * three slightly different headers.
+ *
+ * Without a photograph the whole thing degrades to type on the canvas rather
+ * than white type over an empty grey box, so a record with no media still
+ * opens deliberately.
+ */
+import Photo from "~/components/primitives/Photo.astro"
+import { cn } from "~/lib/cn"
+
+interface Props {
+  title: string
+  eyebrow?: string | undefined
+  backHref?: string | undefined
+  backLabel?: string | undefined
+  /** A cover photograph. Its absence changes the whole treatment, not just the background. */
+  image?: string | undefined
+  imageAlt?: string | undefined
+  /** Short labels rendered as pills under the title. */
+  tags?: string[]
+}
+
+const {
+  title,
+  eyebrow,
+  backHref,
+  backLabel,
+  image,
+  imageAlt,
+  tags = [],
+} = Astro.props
+
+const over = Boolean(image)
+const headingSize = "text-[2.25rem] sm:text-[3rem] md:text-[3.875rem]"
+---
+
+{
+  over ? (
+    <header class="u-frame u-scrim-hero u-scrim-top relative flex min-h-[24rem] items-end md:min-h-[36rem]">
+      <Photo src={image!} alt={imageAlt} class="absolute inset-0" priority sizes="100vw" decorative />
+      <div class="u-shell relative z-[2] w-full pb-12 pt-32 md:pb-16">
+        {backHref && backLabel && (
+          <nav aria-label="Breadcrumb">
+            <a
+              href={backHref}
+              class="u-eyebrow inline-flex items-center gap-2.5 text-white/80 transition-opacity duration-300 hover:opacity-70"
+            >
+              <span class="h-px w-5 bg-current" aria-hidden="true" />
+              {backLabel}
+            </a>
+          </nav>
+        )}
+        {eyebrow && <p class="u-eyebrow mt-6 text-white/75">{eyebrow}</p>}
+        <h1 class={cn("u-display mt-4 max-w-[20ch] text-white", headingSize)}>{title}</h1>
+        {tags.length > 0 && (
+          <ul class="mt-6 flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <li class="u-eyebrow rounded-pill border border-white/35 px-4 py-2 text-white/85">
+                {tag}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </header>
+  ) : (
+    <header class="u-shell pb-10 pt-16 md:pt-24">
+      {backHref && backLabel && (
+        <nav aria-label="Breadcrumb">
+          <a
+            href={backHref}
+            class="u-eyebrow inline-flex items-center gap-2.5 text-ink-subtle transition-opacity duration-300 hover:opacity-65"
+          >
+            <span class="h-px w-5 bg-current" aria-hidden="true" />
+            {backLabel}
+          </a>
+        </nav>
+      )}
+      {eyebrow && <p class="u-eyebrow mt-6 text-ink-subtle">{eyebrow}</p>}
+      <h1 class={cn("u-display mt-4 max-w-[20ch]", headingSize)}>{title}</h1>
+      {tags.length > 0 && (
+        <ul class="mt-6 flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <li class="u-eyebrow rounded-pill border border-line px-4 py-2 text-ink-muted">
+              {tag}
+            </li>
+          ))}
+        </ul>
+      )}
+    </header>
+  )
+}

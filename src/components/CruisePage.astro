@@ -1,10 +1,29 @@
 ---
+/**
+ * The cruise surfaces: the listing, a cruise, a ship, a sailing.
+ *
+ * Four context kinds share one component because they share one anatomy — a
+ * lead, a row of facts, then the editorial sections a reader asks for in the
+ * order they ask for them. Splitting them into four files would mean four
+ * places to fix a heading.
+ *
+ * Everything here is editorial identity from the publication snapshot. Prices
+ * and live availability are deliberately absent: the contract strips commercial
+ * values from a snapshot, so the cruise index hands that job to the live search
+ * rendered beneath it, and a sailing page says so rather than showing a stale
+ * fare.
+ */
 import type {
   CruiseDetailContext,
   CruiseIndexContext,
   SailingDetailContext,
   ShipDetailContext,
 } from "@voyant-travel/theme"
+import JourneyCard from "~/components/cards/JourneyCard.astro"
+import PageLead from "~/components/primitives/PageLead.astro"
+import { coverOf } from "~/lib/catalog"
+import { formatDate, formatDateRange } from "~/lib/dates"
+import { counted, fill, messagesFor } from "~/lib/messages"
 
 interface Props {
   context:
@@ -15,156 +34,467 @@ interface Props {
 }
 
 const { context } = Astro.props
+const locale = context.locale
+const t = messagesFor(locale)
+
 const cruise = context.kind === "cruiseDetail" ? context.cruise : undefined
 const ship = context.kind === "shipDetail" ? context.ship : undefined
 const sailing = context.kind === "sailingDetail" ? context.sailing : undefined
+
+const heading = "u-display-sm text-[1.625rem] md:text-[2rem]"
+const body = "u-shell pb-24 pt-14 md:pb-32 md:pt-20"
+
+const cruiseCover = cruise ? coverOf(cruise) : undefined
+const shipCover = ship ? coverOf(ship) : undefined
+
+/*
+ * Whether a list is worth showing as photography.
+ *
+ * A card grid reserves a picture-shaped box per item, which is right when the
+ * operator has uploaded pictures and a row of empty grey rectangles when they
+ * have not. Cabin categories and ship profiles are frequently text-only, so the
+ * page asks the data which layout it can actually fill instead of committing to
+ * one and hoping.
+ */
+const shipsAreIllustrated = (cruise?.ships ?? []).some((item) => coverOf(item))
+const cabinsAreIllustrated = (ship?.cabinCategories ?? []).some((cabin) =>
+  coverOf(cabin),
+)
+
+/** The listing, as cards. Counts stand in for the summary a cruise may not have. */
+const cruises =
+  context.kind === "cruiseIndex"
+    ? context.cruises.map((item) => {
+        const cover = coverOf(item)
+        return {
+          title: item.name,
+          href: `/cruises/${encodeURIComponent(item.slug)}`,
+          meta:
+            item.shortDescription ??
+            [
+              counted(locale, t, "ships", item.ships.length),
+              counted(locale, t, "sailings", item.sailings.length),
+            ].join(" · "),
+          image: cover?.src,
+          imageAlt: cover?.alt,
+        }
+      })
+    : []
+
+const shipFacts = ship
+  ? [
+      ship.launchedYear
+        ? { label: t.launched, value: String(ship.launchedYear) }
+        : undefined,
+      ship.deckCount ? { label: t.decks, value: String(ship.deckCount) } : undefined,
+      ship.cabinCategories.length > 0
+        ? {
+            label: t.cabinCategories,
+            value: String(ship.cabinCategories.length),
+          }
+        : undefined,
+    ].filter((fact): fact is { label: string; value: string } => fact !== undefined)
+  : []
+
+const sailingFacts = sailing
+  ? [
+      {
+        label: t.dates,
+        value: formatDateRange(
+          locale,
+          sailing.departure.startsOn,
+          sailing.departure.endsOn,
+        ),
+      },
+      {
+        label: t.length,
+        value: counted(locale, t, "nights", sailing.departure.durationNights),
+      },
+      { label: t.embark, value: sailing.departure.embarkationPort.name },
+      { label: t.disembark, value: sailing.departure.disembarkationPort.name },
+    ]
+  : []
 ---
 
-<article class="cruise-page">
-  {context.kind === "cruiseIndex" && (
-    <>
-      <p class="eyebrow">Cruises</p>
-      <h1>{context.title}</h1>
-      {context.seo.description && <p class="lede">{context.seo.description}</p>}
-      {context.cruises.length === 0 ? (
-        <p>No cruise stories are published yet. Use the live search below for current sailings.</p>
-      ) : (
-        <ul class="cards">
-          {context.cruises.map((item) => (
-            <li>
-              {item.coverMedia && <img src={item.coverMedia.url} alt={item.coverMedia.altText ?? ""} />}
-              <h2><a href={`/cruises/${encodeURIComponent(item.slug)}`}>{item.name}</a></h2>
-              {item.shortDescription && <p>{item.shortDescription}</p>}
-              <p class="meta">{item.ships.length} ships · {item.sailings.length} published sailings</p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
-  )}
-
-  {cruise && (
-    <>
-      <p class="eyebrow">Cruise</p>
-      <h1>{cruise.name}</h1>
-      {cruise.shortDescription && <p class="lede">{cruise.shortDescription}</p>}
-      {cruise.coverMedia && <img class="cover" src={cruise.coverMedia.url} alt={cruise.coverMedia.altText ?? ""} />}
-      {cruise.descriptionHtml && <section class="prose" set:html={cruise.descriptionHtml} />}
-      {cruise.ships.length > 0 && (
-        <section>
-          <h2>Ships</h2>
-          <ul class="cards compact">
-            {cruise.ships.map((item) => (
-              <li>
-                <h3><a href={`/ships/${encodeURIComponent(item.slug)}`}>{item.name}</a></h3>
-                {item.cruiseLine && <p>{item.cruiseLine}</p>}
-                <p class="meta">{item.cabinCategories.length} cabin categories</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {cruise.sailings.length > 0 && (
-        <section>
-          <h2>Published sailings</h2>
-          <ul class="cards compact">
-            {cruise.sailings.map((item) => (
-              <li>
-                <h3><a href={`/sailings/${encodeURIComponent(item.slug)}`}>{item.name}</a></h3>
-                <p>{item.departure.startsOn} → {item.departure.endsOn}</p>
-                <p class="meta">{item.departure.durationNights} nights · {item.departure.embarkationPort.name}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      <p class="back"><a href="/cruises">Back to cruises</a></p>
-    </>
-  )}
-
-  {ship && (
-    <>
-      <p class="eyebrow">{ship.cruiseLine ?? "Ship"}</p>
-      <h1>{ship.name}</h1>
-      {ship.coverMedia && <img class="cover" src={ship.coverMedia.url} alt={ship.coverMedia.altText ?? ""} />}
-      {ship.descriptionHtml && <section class="prose" set:html={ship.descriptionHtml} />}
-      <dl class="facts">
-        {ship.launchedYear && <div><dt>Launched</dt><dd>{ship.launchedYear}</dd></div>}
-        {ship.deckCount && <div><dt>Decks</dt><dd>{ship.deckCount}</dd></div>}
-      </dl>
-      <section>
-        <h2>Cabin categories</h2>
-        {ship.cabinCategories.length === 0 ? <p>Cabin details are coming soon.</p> : (
-          <ul class="cards compact">
-            {ship.cabinCategories.map((cabin) => (
-              <li>
-                <h3>{cabin.name}</h3>
-                {cabin.maxOccupancy && <p>Up to {cabin.maxOccupancy} guests</p>}
-                {cabin.deckNames.length > 0 && <p class="meta">{cabin.deckNames.join(" · ")}</p>}
-              </li>
-            ))}
-          </ul>
+{
+  context.kind === "cruiseIndex" && (
+    <div class="u-shell pb-16 pt-16 md:pt-24">
+      <header class="max-w-[46rem]">
+        <p class="u-eyebrow flex items-center gap-3 text-ink-subtle">
+          <span class="h-px w-6 bg-current opacity-45" aria-hidden="true" />
+          {t.cruises}
+        </p>
+        <h1 class="u-display mt-6 text-[2.5rem] sm:text-[3.25rem] md:text-[4rem]">
+          {context.title}
+        </h1>
+        {context.seo.description && (
+          <p class="mt-6 text-[1.0625rem] leading-[1.65] text-ink-muted md:text-[1.125rem]">
+            {context.seo.description}
+          </p>
         )}
-      </section>
-      <p class="back"><a href="/cruises">Browse cruises</a></p>
-    </>
-  )}
+      </header>
 
-  {sailing && (
-    <>
-      <p class="eyebrow">Sailing</p>
-      <h1>{sailing.name}</h1>
-      <dl class="facts">
-        <div><dt>Dates</dt><dd>{sailing.departure.startsOn} → {sailing.departure.endsOn}</dd></div>
-        <div><dt>Duration</dt><dd>{sailing.departure.durationNights} nights</dd></div>
-        <div><dt>Embark</dt><dd>{sailing.departure.embarkationPort.name}</dd></div>
-        <div><dt>Disembark</dt><dd>{sailing.departure.disembarkationPort.name}</dd></div>
-      </dl>
-      <section>
-        <h2>{sailing.itinerary.name}</h2>
-        <ol class="itinerary">
-          {sailing.itinerary.days.map((day) => (
+      {cruises.length === 0 ? (
+        <p class="u-serif-body mt-12 max-w-[38rem] text-[1.125rem] text-ink-subtle">
+          {t.noCruisesPublished}
+        </p>
+      ) : (
+        <ul class="mt-14 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {cruises.map((item) => (
             <li>
-              <p class="eyebrow">Day {day.dayNumber}</p>
-              <h3>{day.title}</h3>
-              {day.descriptionHtml && <div set:html={day.descriptionHtml} />}
-              {day.atSea ? <p class="meta">At sea</p> : day.ports.length > 0 && <p class="meta">{day.ports.map((port) => port.name).join(" · ")}</p>}
+              <JourneyCard
+                image={item.image}
+                imageAlt={item.imageAlt}
+                title={item.title}
+                meta={item.meta}
+                href={item.href}
+                ratio="aspect-[3/4]"
+                sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
+              />
             </li>
           ))}
-        </ol>
-      </section>
-      <section>
-        <h2>Cabin categories</h2>
-        <ul class="cards compact">
-          {sailing.cabinCategories.map((cabin) => (
-            <li><h3>{cabin.name}</h3>{cabin.maxOccupancy && <p>Up to {cabin.maxOccupancy} guests</p>}</li>
-          ))}
         </ul>
-      </section>
-      <p class="live-note">Current availability and presentation-currency pricing are resolved in live cruise search and can be added to one managed itinerary without copying supplier state into this page.</p>
-      <p class="back"><a href="/cruises">Find a live sailing</a></p>
-    </>
-  )}
-</article>
+      )}
+    </div>
+  )
+}
 
-<style>
-  .cruise-page { max-width: 72rem; }
-  .cruise-page > h1 { font-size: clamp(2.8rem, 8vw, 6rem); letter-spacing: -0.045em; line-height: 0.92; margin: 0.35rem 0 1.25rem; max-width: 13ch; }
-  .eyebrow, .meta { color: color-mix(in srgb, var(--page-text) 62%, transparent); font-size: 0.78rem; letter-spacing: 0.11em; text-transform: uppercase; }
-  .lede { font-size: 1.3rem; max-width: 42rem; }
-  .cover { aspect-ratio: 16 / 7; margin: 2rem 0; object-fit: cover; width: 100%; }
-  section { margin: 3.5rem 0; }
-  .cards { background: color-mix(in srgb, var(--page-text) 14%, transparent); display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); list-style: none; margin: 2rem 0; padding: 0; }
-  .cards li { background: var(--page-background); padding: 1.4rem; }
-  .cards img { aspect-ratio: 16 / 9; margin: -1.4rem -1.4rem 1rem; object-fit: cover; width: calc(100% + 2.8rem); }
-  .cards h2, .cards h3 { margin: 0.25rem 0 0.75rem; }
-  .compact { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
-  .facts { border-block: 1px solid color-mix(in srgb, var(--page-text) 15%, transparent); display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); margin: 2.5rem 0; padding: 1.25rem 0; }
-  .facts div { display: grid; gap: 0.25rem; }
-  dt { color: color-mix(in srgb, var(--page-text) 62%, transparent); font-size: 0.78rem; text-transform: uppercase; }
-  dd { margin: 0; }
-  .itinerary { background: color-mix(in srgb, var(--page-text) 14%, transparent); display: grid; gap: 1px; list-style: none; padding: 0; }
-  .itinerary li { background: var(--page-background); padding: 1.25rem; }
-  .live-note { background: color-mix(in srgb, var(--page-accent) 8%, var(--page-background)); border: 1px solid color-mix(in srgb, var(--page-accent) 28%, transparent); padding: 1.25rem; }
-  .back { margin-top: 4rem; }
-</style>
+{
+  cruise && (
+    <article>
+      <PageLead
+        title={cruise.name}
+        eyebrow={t.cruise}
+        backHref="/cruises"
+        backLabel={t.backToCruises}
+        image={cruiseCover?.src}
+        imageAlt={cruiseCover?.alt}
+      />
+
+      <div class={body}>
+        <div class="grid gap-12 lg:grid-cols-12 lg:gap-16">
+          <div class="lg:col-span-8">
+            {cruise.shortDescription && (
+              <p class="u-serif-body text-[1.25rem] leading-[1.55] text-ink md:text-[1.5rem]">
+                {cruise.shortDescription}
+              </p>
+            )}
+
+            {cruise.descriptionHtml && (
+              <section class="mt-12">
+                <h2 class={heading}>{t.overview}</h2>
+                <div class="prose mt-6" set:html={cruise.descriptionHtml} />
+              </section>
+            )}
+
+            {cruise.sailings.length > 0 && (
+              <section class="mt-16">
+                <h2 class={heading}>{t.publishedSailings}</h2>
+                {
+                  /*
+                   * Sailings are rows rather than cards: a reader scanning for a
+                   * date wants the dates in one column, which a grid of tiles
+                   * does not give them.
+                   */
+                }
+                <ul class="mt-8 border-t border-line">
+                  {cruise.sailings.map((item) => (
+                    <li class="border-b border-line">
+                      <a
+                        href={`/sailings/${encodeURIComponent(item.slug)}`}
+                        class="group grid gap-2 py-6 transition-opacity duration-300 hover:opacity-70 md:grid-cols-12 md:items-baseline md:gap-8"
+                      >
+                        <p class="u-serif-body md:col-span-4 md:text-[1.0625rem]">
+                          {formatDateRange(
+                            locale,
+                            item.departure.startsOn,
+                            item.departure.endsOn,
+                          )}
+                        </p>
+                        <p class="u-display-sm text-[1.125rem] md:col-span-5 md:text-[1.25rem]">
+                          {item.name}
+                        </p>
+                        <p class="text-[0.8125rem] text-ink-muted md:col-span-3 md:text-right">
+                          {counted(locale, t, "nights", item.departure.durationNights)}
+                          <span class="mx-1.5 opacity-40">·</span>
+                          {item.departure.embarkationPort.name}
+                        </p>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {cruise.ports.length > 0 && (
+              <section class="mt-16">
+                <h2 class={heading}>{t.whereYouGo}</h2>
+                <ul class="mt-8 flex flex-wrap gap-2.5">
+                  {cruise.ports.map((port) => (
+                    <li class="rounded-pill border border-line px-5 py-2.5 text-[0.875rem] text-ink-muted">
+                      {port.name}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+
+          {cruise.ships.length > 0 && (
+            <aside class="lg:col-span-4">
+              <div class="lg:sticky lg:top-32">
+                <h2 class="u-eyebrow text-ink-subtle">{t.ships}</h2>
+                {shipsAreIllustrated ? (
+                  <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-1">
+                    {cruise.ships.map((item) => {
+                      const cover = coverOf(item)
+                      return (
+                        <li>
+                          <JourneyCard
+                            image={cover?.src}
+                            imageAlt={cover?.alt}
+                            title={item.name}
+                            region={item.cruiseLine}
+                            meta={counted(
+                              locale,
+                              t,
+                              "cabins",
+                              item.cabinCategories.length,
+                            )}
+                            href={`/ships/${encodeURIComponent(item.slug)}`}
+                            ratio="aspect-[16/10]"
+                            sizes="(min-width: 1024px) 24vw, (min-width: 640px) 46vw, 92vw"
+                          />
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ) : (
+                  <ul class="mt-6 border-t border-line">
+                    {cruise.ships.map((item) => (
+                      <li class="border-b border-line">
+                        <a
+                          href={`/ships/${encodeURIComponent(item.slug)}`}
+                          class="block py-5 transition-opacity duration-300 hover:opacity-65"
+                        >
+                          {item.cruiseLine && (
+                            <p class="u-eyebrow text-ink-subtle">{item.cruiseLine}</p>
+                          )}
+                          <p class="u-display-sm mt-2 text-[1.1875rem]">{item.name}</p>
+                          <p class="mt-1.5 text-[0.8125rem] text-ink-muted">
+                            {counted(locale, t, "cabins", item.cabinCategories.length)}
+                          </p>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </aside>
+          )}
+        </div>
+      </div>
+    </article>
+  )
+}
+
+{
+  ship && (
+    <article>
+      <PageLead
+        title={ship.name}
+        eyebrow={ship.cruiseLine ?? t.ship}
+        backHref="/cruises"
+        backLabel={t.browseCruises}
+        image={shipCover?.src}
+        imageAlt={shipCover?.alt}
+      />
+
+      <div class={body}>
+        <div class="max-w-[52rem]">
+          {shipFacts.length > 0 && (
+            <dl class="grid grid-cols-2 gap-x-6 gap-y-7 border-y border-line py-8 sm:grid-cols-3">
+              {shipFacts.map((fact) => (
+                <div>
+                  <dt class="u-eyebrow text-ink-subtle">{fact.label}</dt>
+                  <dd class="u-serif-body mt-2.5 text-[1.0625rem]">{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          {ship.descriptionHtml && (
+            <section class="mt-14">
+              <h2 class={heading}>{t.overview}</h2>
+              <div class="prose mt-6" set:html={ship.descriptionHtml} />
+            </section>
+          )}
+        </div>
+
+        <section class="mt-16">
+          <h2 class={heading}>{t.cabinCategories}</h2>
+          {ship.cabinCategories.length === 0 ? (
+            <p class="mt-6 text-[0.9375rem] text-ink-subtle">{t.cabinDetailsSoon}</p>
+          ) : cabinsAreIllustrated ? (
+            <ul class="mt-8 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+              {ship.cabinCategories.map((cabin) => {
+                const cover = coverOf(cabin)
+                return (
+                  <li>
+                    <JourneyCard
+                      image={cover?.src}
+                      imageAlt={cover?.alt}
+                      title={cabin.name}
+                      region={cabin.deckNames.join(" · ") || undefined}
+                      meta={
+                        cabin.maxOccupancy
+                          ? counted(locale, t, "guests", cabin.maxOccupancy)
+                          : undefined
+                      }
+                      ratio="aspect-[4/3]"
+                      sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
+                    />
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <ul class="mt-8 max-w-[52rem] border-t border-line">
+              {ship.cabinCategories.map((cabin) => (
+                <li class="grid gap-2 border-b border-line py-5 md:grid-cols-12 md:items-baseline md:gap-8">
+                  <p class="u-display-sm text-[1.1875rem] md:col-span-5">
+                    {cabin.name}
+                  </p>
+                  {cabin.deckNames.length > 0 && (
+                    <p class="text-[0.8125rem] text-ink-muted md:col-span-4">
+                      {cabin.deckNames.join(" · ")}
+                    </p>
+                  )}
+                  {cabin.maxOccupancy && (
+                    <p class="text-[0.8125rem] text-ink-subtle md:col-span-3 md:text-right">
+                      {counted(locale, t, "guests", cabin.maxOccupancy)}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </article>
+  )
+}
+
+{
+  sailing && (
+    <article>
+      <PageLead
+        title={sailing.name}
+        eyebrow={t.sailing}
+        backHref="/cruises"
+        backLabel={t.backToCruises}
+      />
+
+      <div class={body}>
+        <div class="grid gap-12 lg:grid-cols-12 lg:gap-16">
+          <div class="lg:col-span-8">
+            <dl class="grid grid-cols-2 gap-x-6 gap-y-7 border-y border-line py-8 sm:grid-cols-4">
+              {sailingFacts.map((fact) => (
+                <div>
+                  <dt class="u-eyebrow text-ink-subtle">{fact.label}</dt>
+                  <dd class="u-serif-body mt-2.5 text-[1.0625rem] leading-snug">
+                    {fact.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
+            <section class="mt-14">
+              <h2 class={heading}>{sailing.itinerary.name}</h2>
+              {
+                /*
+                 * A sea day is not a missing day. It gets the same row as a port
+                 * call with its own label, so the rhythm of the crossing reads
+                 * instead of looking like a gap in the data.
+                 */
+              }
+              <ol class="mt-8 border-t border-line">
+                {sailing.itinerary.days.map((day) => (
+                  <li class="grid gap-3 border-b border-line py-7 md:grid-cols-12 md:gap-8">
+                    <div class="md:col-span-3">
+                      <p class="u-eyebrow text-accent">
+                        {fill(t.dayNumber, { count: day.dayNumber })}
+                      </p>
+                      {day.atSea ? (
+                        <p class="mt-2 text-[0.8125rem] text-ink-subtle">{t.atSea}</p>
+                      ) : (
+                        day.ports.length > 0 && (
+                          <p class="mt-2 text-[0.8125rem] text-ink-subtle">
+                            {day.ports.map((port) => port.name).join(" · ")}
+                          </p>
+                        )
+                      )}
+                    </div>
+                    <div class="md:col-span-9">
+                      <h3 class="u-display-sm text-[1.25rem] md:text-[1.375rem]">
+                        {day.title}
+                      </h3>
+                      {day.descriptionHtml && (
+                        <div class="prose mt-3 text-[0.9375rem]" set:html={day.descriptionHtml} />
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+
+            {sailing.cabinCategories.length > 0 && (
+              <section class="mt-16">
+                <h2 class={heading}>{t.cabinCategories}</h2>
+                <ul class="mt-8 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+                  {sailing.cabinCategories.map((cabin) => (
+                    <li class="flex items-baseline justify-between gap-4 border-b border-line pb-4">
+                      <span class="u-serif-body text-[1.0625rem]">{cabin.name}</span>
+                      {cabin.maxOccupancy && (
+                        <span class="shrink-0 text-[0.8125rem] text-ink-subtle">
+                          {counted(locale, t, "guests", cabin.maxOccupancy)}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+
+          <aside class="lg:col-span-4">
+            <div class="lg:sticky lg:top-32">
+              {
+                /*
+                 * Nothing commercial is stored in this page, so the panel that
+                 * would carry a price carries the reason it does not, and points
+                 * at the live search that can.
+                 */
+              }
+              <div class="rounded-card border border-line bg-accent-wash p-6 md:p-7">
+                <p class="u-eyebrow text-ink-subtle">{t.liveSelling}</p>
+                <p class="u-serif-body mt-4 text-[1.0625rem] leading-[1.6]">
+                  {formatDate(locale, sailing.departure.startsOn)}
+                </p>
+                <p class="mt-4 text-[0.875rem] leading-relaxed text-ink-muted">
+                  {t.cruiseLiveNote}
+                </p>
+                <a
+                  href="/cruises"
+                  class="mt-6 inline-flex h-11 items-center rounded-pill bg-accent px-6 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
+                >
+                  {t.findLiveSailing}
+                </a>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </article>
+  )
+}

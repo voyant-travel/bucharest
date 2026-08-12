@@ -24,6 +24,7 @@ import {
   namesOf,
   productSections,
 } from "~/lib/catalog"
+import { counted, fill, messagesFor } from "~/lib/messages"
 import { availableCapability } from "~/lib/tour-capabilities"
 import BookingJourney from "./BookingJourney.astro"
 
@@ -33,6 +34,7 @@ interface Props {
 
 const { context } = Astro.props
 const { product } = context
+const t = messagesFor(context.locale)
 
 const availability = availableCapability(context.live, "catalog.availability.v1")
 const pricing = availableCapability(context.live, "catalog.pricing.v1")
@@ -50,14 +52,34 @@ const sections = productSections(product)
 
 const facts = [
   destinations.length > 0
-    ? { label: "Where", value: destinations.join(" · ") }
+    ? { label: t.where, value: destinations.join(" · ") }
     : undefined,
   days.length > 0
-    ? { label: "Length", value: `${days.length} ${days.length === 1 ? "day" : "days"}` }
+    ? { label: t.length, value: counted(context.locale, t, "days", days.length) }
     : undefined,
-  { label: "Format", value: humanize(product.bookingMode) },
-  { label: "Capacity", value: humanize(product.capacityMode) },
+  { label: t.format, value: humanize(product.bookingMode) },
+  { label: t.capacity, value: humanize(product.capacityMode) },
 ].filter((fact): fact is { label: string; value: string } => fact !== undefined)
+
+/*
+ * The words the live-selling script writes into the page.
+ *
+ * A module script has no access to the component's props, so the dictionary
+ * travels with the element it belongs to rather than being re-derived — and
+ * only the handful of strings that script actually writes, not the whole
+ * dictionary.
+ */
+const liveMessages = JSON.stringify({
+  checking: t.checkingLive,
+  updated: t.liveUpdated,
+  unavailable: t.liveUnavailable,
+  failed: t.requestFailed,
+  noDates: t.noBookableDates,
+  toBeConfirmed: t.dateToBeConfirmed,
+  choose: t.choose,
+  needsDate: t.priceNeedsDate,
+  places: t.plurals.places,
+})
 
 const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
 ---
@@ -68,13 +90,13 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
       <header class="u-frame u-scrim-hero u-scrim-top relative flex min-h-[26rem] items-end md:min-h-[40rem]">
         <Photo src={cover.src} alt={cover.alt} class="absolute inset-0" priority sizes="100vw" decorative />
         <div class="u-shell relative z-[2] w-full pb-12 pt-32 md:pb-16">
-          <nav aria-label="Breadcrumb">
+          <nav aria-label={t.breadcrumb}>
             <a
               href="/tours"
               class="u-eyebrow inline-flex items-center gap-2.5 text-white/80 transition-opacity duration-300 hover:opacity-70"
             >
               <span class="h-px w-5 bg-current" aria-hidden="true" />
-              All journeys
+              {t.allJourneys}
             </a>
           </nav>
           {destinations.length > 0 && (
@@ -96,13 +118,13 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
       </header>
     ) : (
       <header class="u-shell pb-10 pt-16 md:pt-24">
-        <nav aria-label="Breadcrumb">
+        <nav aria-label={t.breadcrumb}>
           <a
             href="/tours"
             class="u-eyebrow inline-flex items-center gap-2.5 text-ink-subtle transition-opacity duration-300 hover:opacity-65"
           >
             <span class="h-px w-5 bg-current" aria-hidden="true" />
-            All journeys
+            {t.allJourneys}
           </a>
         </nav>
         {destinations.length > 0 && (
@@ -125,7 +147,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
     sections.length > 1 && (
       <nav
         class="sticky top-[4.5rem] z-30 border-b border-line bg-[var(--canvas)]/92 backdrop-blur-lg md:top-[5.25rem]"
-        aria-label="On this page"
+        aria-label={t.onThisPage}
       >
         <div class="u-shell">
           <ul class="u-no-scrollbar -mx-5 flex gap-1 overflow-x-auto px-5 md:mx-0 md:px-0">
@@ -135,7 +157,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
                   href={`#${section.id}`}
                   class="inline-flex h-12 items-center whitespace-nowrap px-4 text-[0.8125rem] text-ink-muted transition-colors duration-300 hover:text-ink"
                 >
-                  {section.label}
+                  {t[section.key]}
                 </a>
               </li>
             ))}
@@ -172,7 +194,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
         {
           product.descriptionHtml && (
             <section id="overview" class="mt-14 scroll-mt-40">
-              <h2 class={sectionHeading}>Overview</h2>
+              <h2 class={sectionHeading}>{t.overview}</h2>
               <div class="prose mt-6" set:html={product.descriptionHtml} />
             </section>
           )
@@ -181,7 +203,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
         {
           days.length > 0 && (
             <section id="itinerary" class="mt-14 scroll-mt-40">
-              <h2 class={sectionHeading}>Itinerary</h2>
+              <h2 class={sectionHeading}>{t.itinerary}</h2>
               {
                 /*
                  * Days are a numbered list joined by a rule rather than a stack
@@ -193,7 +215,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
                 {days.map((day) => (
                   <li class="grid gap-3 border-b border-line py-7 md:grid-cols-12 md:gap-8">
                     <div class="md:col-span-3">
-                      <p class="u-eyebrow text-accent">Day {day.dayNumber}</p>
+                      <p class="u-eyebrow text-accent">{fill(t.dayNumber, { count: day.dayNumber })}</p>
                       {day.location && (
                         <p class="mt-2 text-[0.8125rem] text-ink-subtle">{day.location}</p>
                       )}
@@ -218,7 +240,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
         {
           features.length > 0 && (
             <section id="included" class="mt-14 scroll-mt-40">
-              <h2 class={sectionHeading}>What's included</h2>
+              <h2 class={sectionHeading}>{t.included}</h2>
               <ul class="mt-8 grid gap-x-10 gap-y-7 sm:grid-cols-2">
                 {features.map((feature) => (
                   <li class="flex gap-4">
@@ -244,7 +266,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
         {
           destinations.length > 0 && (
             <section id="destinations" class="mt-14 scroll-mt-40">
-              <h2 class={sectionHeading}>Where you go</h2>
+              <h2 class={sectionHeading}>{t.whereYouGo}</h2>
               <ul class="mt-8 flex flex-wrap gap-2.5">
                 {destinations.map((destination) => (
                   <li class="rounded-pill border border-line px-5 py-2.5 text-[0.875rem] text-ink-muted">
@@ -259,7 +281,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
         {
           gallery.length > 0 && (
             <section id="gallery" class="mt-14 scroll-mt-40">
-              <h2 class={sectionHeading}>Gallery</h2>
+              <h2 class={sectionHeading}>{t.gallery}</h2>
               <ul class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
                 {gallery.map((photo) => (
                   <li>
@@ -280,7 +302,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
         {
           faqs.length > 0 && (
             <section id="questions" class="mt-14 scroll-mt-40">
-              <h2 class={sectionHeading}>Questions</h2>
+              <h2 class={sectionHeading}>{t.questions}</h2>
               <div class="mt-8 border-t border-line">
                 {faqs.map((faq) => (
                   <details name={`tour-faq-${product.id}`} class="group border-b border-line">
@@ -332,11 +354,12 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
                 data-locale={context.locale}
                 data-availability-endpoint={availability?.endpoint}
                 data-pricing-endpoint={pricing?.endpoint}
+                data-messages={liveMessages}
               >
-                <p class="u-eyebrow text-ink-subtle">Live selling</p>
-                <h2 class="u-display-sm mt-3 text-[1.5rem]">Dates and price</h2>
+                <p class="u-eyebrow text-ink-subtle">{t.liveSelling}</p>
+                <h2 class="u-display-sm mt-3 text-[1.5rem]">{t.datesAndPrice}</h2>
                 <p class="mt-3 text-[0.875rem] leading-relaxed text-ink-muted">
-                  Checked live, never stored in this page.
+                  {t.liveNotStored}
                 </p>
                 <div class="mt-6 flex flex-wrap gap-2.5">
                   {availability && (
@@ -345,7 +368,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
                       data-load-availability
                       class="inline-flex h-11 items-center rounded-pill bg-accent px-6 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
                     >
-                      Check dates
+                      {t.checkDates}
                     </button>
                   )}
                   {pricing && (
@@ -354,7 +377,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
                       data-load-pricing
                       class="inline-flex h-11 items-center rounded-pill border border-ink/25 px-6 text-[0.875rem] transition-colors duration-300 hover:border-ink/70"
                     >
-                      Preview price
+                      {t.previewPrice}
                     </button>
                   )}
                 </div>
@@ -396,9 +419,25 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
     const productId = card.dataset.productId
     const locale = card.dataset.locale ?? "en"
 
+    // The words this script writes come from the component, which is the only
+    // layer that knows the publication's language.
+    const copy = JSON.parse(card.dataset.messages ?? "{}")
+    const fill = (template, values) =>
+      String(template ?? "").replaceAll(/\{(\w+)\}/g, (match, key) =>
+        key in values ? String(values[key]) : match,
+      )
+    const plural = (forms, count) => {
+      if (!forms) return String(count)
+      let category = "other"
+      try {
+        category = new Intl.PluralRules(locale).select(count)
+      } catch {}
+      return fill(forms[category] ?? forms.other, { count })
+    }
+
     const request = async (endpoint, body) => {
       if (!(status instanceof HTMLElement) || !(result instanceof HTMLElement) || !endpoint || !productId) return
-      status.textContent = "Checking live inventory…"
+      status.textContent = copy.checking
       result.replaceChildren()
       try {
         const response = await fetch(endpoint, {
@@ -408,13 +447,16 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
         })
         const payload = await response.json().catch(() => null)
         if (!response.ok) {
-          const message = payload && typeof payload.error === "string" ? payload.error : `Request failed (${response.status})`
+          const message =
+            payload && typeof payload.error === "string"
+              ? payload.error
+              : fill(copy.failed, { status: response.status })
           throw new Error(message.replaceAll("_", " "))
         }
-        status.textContent = "Live information updated."
+        status.textContent = copy.updated
         return payload
       } catch (error) {
-        status.textContent = error instanceof Error ? error.message : "Live selling is temporarily unavailable."
+        status.textContent = error instanceof Error ? error.message : copy.unavailable
       }
     }
 
@@ -423,15 +465,15 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
       if (!payload || !(result instanceof HTMLElement)) return
       const rows = responseRows(payload)
       if (rows.length === 0) {
-        result.textContent = "No bookable dates are currently available."
+        result.textContent = copy.noDates
         return
       }
       const list = document.createElement("ul")
       list.className = "live-options"
       for (const row of rows) {
         const item = document.createElement("li")
-        const date = rowText(row, "startsAt", "dateLocal", "startDate") ?? "Date to be confirmed"
-        const remaining = typeof row.remainingPax === "number" ? `${row.remainingPax} places` : undefined
+        const date = rowText(row, "startsAt", "dateLocal", "startDate") ?? copy.toBeConfirmed
+        const remaining = typeof row.remainingPax === "number" ? plural(copy.places, row.remainingPax) : undefined
         const copy = document.createElement("span")
         copy.textContent = remaining ? `${date} · ${remaining}` : date
         item.append(copy)
@@ -440,7 +482,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
           const choose = document.createElement("button")
           choose.type = "button"
           choose.className = "secondary choose-date"
-          choose.textContent = "Choose"
+          choose.textContent = copy.choose
           choose.addEventListener("click", () => {
             document.dispatchEvent(new CustomEvent("voyant:departure-selected", { detail: { departureSlotId } }))
           })
@@ -459,7 +501,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
       if (!payload || !(result instanceof HTMLElement)) return
       const preview = payload.kind === "offer_preview" ? payload.preview : payload
       if (preview?.available !== true || !preview.pricing) {
-        result.textContent = "Choose a date and party to receive a price."
+        result.textContent = copy.needsDate
         return
       }
       const pre = document.createElement("pre")

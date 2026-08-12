@@ -15,6 +15,7 @@
 import type { TourIndexContext } from "@voyant-travel/theme"
 import JourneyCard from "~/components/cards/JourneyCard.astro"
 import { coverOf, namesOf } from "~/lib/catalog"
+import { messagesFor } from "~/lib/messages"
 import { availableCapability } from "~/lib/tour-capabilities"
 
 interface Props {
@@ -22,7 +23,18 @@ interface Props {
 }
 
 const { context } = Astro.props
+const t = messagesFor(context.locale)
 const search = availableCapability(context.live, "catalog.search.v1")
+
+/* Only the strings the search script writes, travelling with its form. */
+const searchMessages = JSON.stringify({
+  searching: t.searching,
+  failed: t.requestFailed,
+  untitled: t.untitledJourney,
+  noMatches: t.noMatches,
+  unavailable: t.searchUnavailable,
+  results: t.plurals.results,
+})
 
 const products = context.products.map((product) => {
   const cover = coverOf(product)
@@ -44,7 +56,7 @@ const products = context.products.map((product) => {
   <header class="max-w-[46rem]">
     <p class="u-eyebrow flex items-center gap-3 text-ink-subtle">
       <span class="h-px w-6 bg-current opacity-45" aria-hidden="true"></span>
-      Journeys
+      {t.journeys}
     </p>
     <h1 class="u-display mt-6 text-[2.5rem] sm:text-[3.25rem] md:text-[4rem]">
       {context.title}
@@ -65,22 +77,23 @@ const products = context.products.map((product) => {
         data-tour-search
         data-endpoint={search.endpoint}
         data-locale={context.locale}
+        data-messages={searchMessages}
       >
         <div class="flex flex-col gap-2 md:flex-row md:items-center">
-          <label class="sr-only" for="tour-query">Find a tour</label>
+          <label class="sr-only" for="tour-query">{t.findAJourney}</label>
           <input
             id="tour-query"
             name="query"
             type="search"
             autocomplete="off"
-            placeholder="Destination or experience"
+            placeholder={t.destinationOrExperience}
             class="h-12 flex-1 rounded-pill bg-transparent px-5 text-[0.9375rem] text-ink outline-none placeholder:text-ink-subtle"
           />
           <button
             type="submit"
             class="h-12 shrink-0 rounded-pill bg-accent px-7 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
           >
-            Search
+            {t.search}
           </button>
         </div>
         <p
@@ -98,12 +111,12 @@ const products = context.products.map((product) => {
   }
 
   <section class="mt-16" aria-labelledby="published-tours">
-    <h2 id="published-tours" class="u-eyebrow text-ink-subtle">Featured journeys</h2>
+    <h2 id="published-tours" class="u-eyebrow text-ink-subtle">{t.featuredJourneys}</h2>
 
     {
       products.length === 0 ? (
         <p class="u-serif-body mt-8 text-[1.125rem] text-ink-subtle">
-          No journeys are published yet.
+          {t.noJourneysPublished}
         </p>
       ) : (
         <ul class="mt-8 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
@@ -133,6 +146,22 @@ const products = context.products.map((product) => {
   if (form instanceof HTMLFormElement) {
     const status = form.querySelector("[data-tour-search-status]")
     const results = form.querySelector("[data-tour-search-results]")
+
+    // The words this script writes come from the component, which is the only
+    // layer that knows the publication's language.
+    const copy = JSON.parse(form.dataset.messages ?? "{}")
+    const fill = (template, values) =>
+      String(template ?? "").replaceAll(/\{(\w+)\}/g, (match, key) =>
+        key in values ? String(values[key]) : match,
+      )
+    const plural = (forms, count) => {
+      if (!forms) return String(count)
+      let category = "other"
+      try {
+        category = new Intl.PluralRules(form.dataset.locale || "en").select(count)
+      } catch {}
+      return fill(forms[category] ?? forms.other, { count })
+    }
     form.addEventListener("submit", async (event) => {
       event.preventDefault()
       if (!(status instanceof HTMLElement) || !(results instanceof HTMLUListElement)) return
@@ -143,19 +172,21 @@ const products = context.products.map((product) => {
       const url = new URL(endpoint, window.location.origin)
       if (query) url.searchParams.set("query", query)
       if (form.dataset.locale) url.searchParams.set("locale", form.dataset.locale)
-      status.textContent = "Searching…"
+      status.textContent = copy.searching
       results.hidden = true
       try {
         const response = await fetch(url, { headers: { Accept: "application/json" } })
-        if (!response.ok) throw new Error(`Search failed (${response.status})`)
+        if (!response.ok) throw new Error(fill(copy.failed, { status: response.status }))
         const rows = responseRows(await response.json())
         results.replaceChildren(
           ...rows.map((row) => {
             const item = document.createElement("li")
+            item.className = "border-t border-line pt-4"
             const heading = document.createElement("h3")
+            heading.className = "u-display-sm text-[1.0625rem] leading-snug"
             const id = rowText(row, "id", "productId")
             const slug = rowText(row, "slug")
-            const name = rowText(row, "name", "title") ?? "Untitled tour"
+            const name = rowText(row, "name", "title") ?? copy.untitled
             if (slug) {
               const link = document.createElement("a")
               link.href = `/tours/${encodeURIComponent(slug)}`
@@ -167,18 +198,20 @@ const products = context.products.map((product) => {
             item.append(heading)
             const summary = rowText(row, "shortDescription", "summary", "description")
             if (summary) {
-              const copy = document.createElement("p")
-              copy.textContent = summary
-              item.append(copy)
+              const blurb = document.createElement("p")
+              blurb.className = "mt-2 text-[0.875rem] leading-relaxed text-ink-muted"
+              blurb.textContent = summary
+              item.append(blurb)
             }
             if (!slug && id) item.dataset.productId = id
             return item
           }),
         )
         results.hidden = false
-        status.textContent = rows.length === 0 ? "No matching tours." : `${rows.length} tours found.`
+        status.textContent =
+          rows.length === 0 ? copy.noMatches : plural(copy.results, rows.length)
       } catch (error) {
-        status.textContent = error instanceof Error ? error.message : "Search is unavailable."
+        status.textContent = error instanceof Error ? error.message : copy.unavailable
       }
     })
   }

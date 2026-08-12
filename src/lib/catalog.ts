@@ -144,6 +144,18 @@ export function humanize(value: string): string {
 }
 
 /**
+ * The anchor and the dictionary key of one product-page section.
+ *
+ * The label is a key rather than a string because this module has no locale:
+ * the page reading it does, and it is the page that turns `whereYouGo` into
+ * "Where you go" or "Unde ajungi".
+ */
+export type ProductSection = {
+  id: string
+  key: "overview" | "itinerary" | "included" | "whereYouGo" | "gallery" | "questions"
+}
+
+/**
  * The anchored sections a product page offers, and only the ones it can fill.
  *
  * The in-page nav is built from this rather than hard-coded, so a product with
@@ -157,19 +169,19 @@ export function productSections(product: {
   faqs?: readonly Faq[] | undefined
   coverMedia?: ProductMedia | null | undefined
   media?: readonly ProductMedia[] | undefined
-}): Array<{ id: string; label: string }> {
-  const sections: Array<{ id: string; label: string }> = []
-  if (product.descriptionHtml) sections.push({ id: "overview", label: "Overview" })
+}): ProductSection[] {
+  const sections: ProductSection[] = []
+  if (product.descriptionHtml) sections.push({ id: "overview", key: "overview" })
   if (daysOf(product.itinerary).length > 0) {
-    sections.push({ id: "itinerary", label: "Itinerary" })
+    sections.push({ id: "itinerary", key: "itinerary" })
   }
   if ((product.features ?? []).length > 0) {
-    sections.push({ id: "included", label: "What's included" })
+    sections.push({ id: "included", key: "included" })
   }
   if ((product.destinations ?? []).length > 0) {
-    sections.push({ id: "destinations", label: "Where you go" })
+    sections.push({ id: "destinations", key: "whereYouGo" })
   }
-  if (galleryOf(product).length > 0) sections.push({ id: "gallery", label: "Gallery" })
-  if ((product.faqs ?? []).length > 0) sections.push({ id: "questions", label: "Questions" })
+  if (galleryOf(product).length > 0) sections.push({ id: "gallery", key: "gallery" })
+  if ((product.faqs ?? []).length > 0) sections.push({ id: "questions", key: "questions" })
   return sections
 }
