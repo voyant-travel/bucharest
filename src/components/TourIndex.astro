@@ -1,10 +1,21 @@
 ---
+/**
+ * The journeys listing.
+ *
+ * Two things sit on this page and they are not the same thing. The published
+ * products are editorial identity from the publication snapshot, rendered
+ * server-side so a crawler and a reader without JavaScript both get the whole
+ * collection. The search box above them queries `catalog.search.v1` live,
+ * because a catalogue changes far more often than a publication is cut.
+ *
+ * The search markup and its script are upstream's, unchanged: the hooks the
+ * script binds to (`data-tour-search`, `data-tour-search-results`) are a
+ * contract between the two, and restyling is not a reason to renegotiate it.
+ */
 import type { TourIndexContext } from "@voyant-travel/theme"
-import {
-  availableCapability,
-  responseRows,
-  rowText,
-} from "../lib/tour-capabilities"
+import JourneyCard from "~/components/cards/JourneyCard.astro"
+import { coverOf, namesOf } from "~/lib/catalog"
+import { availableCapability } from "~/lib/tour-capabilities"
 
 interface Props {
   context: TourIndexContext
@@ -12,66 +23,108 @@ interface Props {
 
 const { context } = Astro.props
 const search = availableCapability(context.live, "catalog.search.v1")
+
+const products = context.products.map((product) => {
+  const cover = coverOf(product)
+  return {
+    slug: product.slug,
+    title: product.name,
+    region: namesOf(product.destinations).join(" · ") || undefined,
+    meta:
+      product.shortDescription ??
+      (namesOf(product.categories).join(" · ") || undefined),
+    image: cover?.src,
+    imageAlt: cover?.alt,
+    href: `/tours/${encodeURIComponent(product.slug)}`,
+  }
+})
 ---
 
-<section class="tour-intro">
-  <p class="eyebrow">Journeys</p>
-  <h1>{context.title}</h1>
-  {context.seo.description && <p class="lede">{context.seo.description}</p>}
-</section>
+<div class="u-shell pb-24 pt-16 md:pb-32 md:pt-24">
+  <header class="max-w-[46rem]">
+    <p class="u-eyebrow flex items-center gap-3 text-ink-subtle">
+      <span class="h-px w-6 bg-current opacity-45" aria-hidden="true"></span>
+      Journeys
+    </p>
+    <h1 class="u-display mt-6 text-[2.5rem] sm:text-[3.25rem] md:text-[4rem]">
+      {context.title}
+    </h1>
+    {
+      context.seo.description && (
+        <p class="mt-6 text-[1.0625rem] leading-[1.65] text-ink-muted md:text-[1.125rem]">
+          {context.seo.description}
+        </p>
+      )
+    }
+  </header>
 
-{
-  search && (
-    <form
-      class="tour-search"
-      data-tour-search
-      data-endpoint={search.endpoint}
-      data-locale={context.locale}
-    >
-      <label for="tour-query">Find a tour</label>
-      <div>
-        <input
-          id="tour-query"
-          name="query"
-          type="search"
-          autocomplete="off"
-          placeholder="Destination or experience"
-        />
-        <button type="submit">Search</button>
-      </div>
-      <p class="status" data-tour-search-status aria-live="polite"></p>
-      <ul class="tour-grid" data-tour-search-results hidden></ul>
-    </form>
-  )
-}
-
-<section aria-labelledby="published-tours">
-  <h2 id="published-tours">Featured tours</h2>
   {
-    context.products.length === 0 ? (
-      <p>No tours are published yet.</p>
-    ) : (
-      <ul class="tour-grid">
-        {context.products.map((product) => (
-          <li>
-            <p class="eyebrow">
-              {product.destinations.map((destination) => destination.name).join(" · ")}
-            </p>
-            <h3>
-              <a href={`/tours/${encodeURIComponent(product.slug)}`}>
-                {product.name}
-              </a>
-            </h3>
-            {product.shortDescription && <p>{product.shortDescription}</p>}
-            <p class="meta">
-              {product.categories.map((category) => category.name).join(" · ")}
-            </p>
-          </li>
-        ))}
-      </ul>
+    search && (
+      <form
+        class="mt-12 rounded-card border border-line bg-surface p-2 md:rounded-pill"
+        data-tour-search
+        data-endpoint={search.endpoint}
+        data-locale={context.locale}
+      >
+        <div class="flex flex-col gap-2 md:flex-row md:items-center">
+          <label class="sr-only" for="tour-query">Find a tour</label>
+          <input
+            id="tour-query"
+            name="query"
+            type="search"
+            autocomplete="off"
+            placeholder="Destination or experience"
+            class="h-12 flex-1 rounded-pill bg-transparent px-5 text-[0.9375rem] text-ink outline-none placeholder:text-ink-subtle"
+          />
+          <button
+            type="submit"
+            class="h-12 shrink-0 rounded-pill bg-accent px-7 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
+          >
+            Search
+          </button>
+        </div>
+        <p
+          class="px-5 pb-1 pt-3 text-[0.8125rem] text-ink-subtle empty:hidden"
+          data-tour-search-status
+          aria-live="polite"
+        />
+        <ul
+          class="grid gap-x-6 gap-y-10 p-4 sm:grid-cols-2 lg:grid-cols-3"
+          data-tour-search-results
+          hidden
+        />
+      </form>
     )
   }
-</section>
+
+  <section class="mt-16" aria-labelledby="published-tours">
+    <h2 id="published-tours" class="u-eyebrow text-ink-subtle">Featured journeys</h2>
+
+    {
+      products.length === 0 ? (
+        <p class="u-serif-body mt-8 text-[1.125rem] text-ink-subtle">
+          No journeys are published yet.
+        </p>
+      ) : (
+        <ul class="mt-8 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((product) => (
+            <li>
+              <JourneyCard
+                image={product.image}
+                imageAlt={product.imageAlt}
+                title={product.title}
+                region={product.region}
+                meta={product.meta}
+                href={product.href}
+                sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+</div>
 
 <script>
   import { responseRows, rowText } from "../lib/tour-capabilities"
@@ -130,20 +183,3 @@ const search = availableCapability(context.live, "catalog.search.v1")
     })
   }
 </script>
-
-<style>
-  .tour-intro { margin: 0 0 3rem; max-width: 42rem; }
-  .tour-intro h1 { font-size: clamp(2.5rem, 8vw, 5rem); line-height: 0.95; margin: 0.35rem 0 1rem; }
-  .eyebrow, .meta { color: color-mix(in srgb, var(--page-text) 62%, transparent); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; }
-  .lede { font-size: 1.25rem; }
-  .tour-search { border-block: 1px solid color-mix(in srgb, var(--page-text) 15%, transparent); margin: 0 0 3rem; padding: 1.5rem 0; }
-  .tour-search label { display: block; font-weight: 650; margin-bottom: 0.5rem; }
-  .tour-search > div { display: flex; gap: 0.5rem; }
-  input { background: transparent; border: 1px solid color-mix(in srgb, var(--page-text) 30%, transparent); border-radius: 0; color: inherit; flex: 1; font: inherit; padding: 0.75rem; }
-  button { background: var(--page-accent); border: 0; color: white; cursor: pointer; font: inherit; font-weight: 650; padding: 0.75rem 1.25rem; }
-  .status { min-height: 1.5rem; }
-  .tour-grid { display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); list-style: none; margin: 1.25rem 0 0; padding: 0; background: color-mix(in srgb, var(--page-text) 14%, transparent); }
-  .tour-grid li { background: var(--page-background); padding: 1.5rem; }
-  .tour-grid h3 { font-size: 1.35rem; margin: 0.35rem 0 0.75rem; }
-  .tour-grid p { margin: 0.5rem 0; }
-</style>
