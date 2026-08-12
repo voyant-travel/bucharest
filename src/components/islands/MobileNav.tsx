@@ -25,6 +25,7 @@ type Props = {
   phone?: string
   closeLabel?: string
   menuLabel?: string
+  submenuLabel?: string
 }
 
 export default function MobileNav({
@@ -35,6 +36,7 @@ export default function MobileNav({
   phone,
   closeLabel = "Close menu",
   menuLabel = "Menu",
+  submenuLabel = "submenu",
 }: Props) {
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -104,7 +106,7 @@ export default function MobileNav({
                         <button
                           type="button"
                           aria-expanded={isOpen}
-                          aria-label={`${item.label} — submenu`}
+                          aria-label={`${item.label} — ${submenuLabel}`}
                           onClick={() => setExpanded(isOpen ? null : `${index}`)}
                           className="grid h-10 w-10 place-items-center rounded-pill transition-colors duration-300 hover:bg-ink/[0.06]"
                         >

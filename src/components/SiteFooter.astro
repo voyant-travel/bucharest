@@ -1,5 +1,6 @@
 ---
 import { cn } from "~/lib/cn"
+import type { Messages } from "~/lib/messages"
 import type { MenuItem, SiteSettings } from "~/lib/site"
 import { telHref } from "~/lib/site"
 
@@ -9,9 +10,10 @@ interface Props {
   columns: Array<{ title?: string; items: MenuItem[] }>
   settings: SiteSettings
   fallbackItems: MenuItem[]
+  messages: Messages
 }
 
-const { siteName, logo, columns, settings, fallbackItems } = Astro.props
+const { siteName, logo, columns, settings, fallbackItems, messages } = Astro.props
 
 /** A site with no footer menus still gets a sitemap, from the primary nav. */
 const resolved =
@@ -117,7 +119,7 @@ const SOCIAL_PATHS: Record<string, string> = {
                   ? "grid-cols-2 md:grid-cols-3"
                   : "grid-cols-2",
             )}
-            aria-label="Footer"
+            aria-label={messages.footerNav}
           >
             {resolved.map((column) => (
               <div>

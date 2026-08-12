@@ -1,6 +1,7 @@
 ---
 import MobileNav from "~/components/islands/MobileNav"
 import { cn } from "~/lib/cn"
+import type { Messages } from "~/lib/messages"
 import type { MenuItem, SiteSettings } from "~/lib/site"
 import { telHref } from "~/lib/site"
 
@@ -11,9 +12,10 @@ interface Props {
   settings: SiteSettings
   /** Only a page that opens with a full-bleed hero can host a clear header. */
   overHero: boolean
+  messages: Messages
 }
 
-const { siteName, logo, items, settings, overHero } = Astro.props
+const { siteName, logo, items, settings, overHero, messages } = Astro.props
 
 const transparent = overHero && settings.headerStyle === "over-hero"
 ---
@@ -60,7 +62,7 @@ const transparent = overHero && settings.headerStyle === "over-hero"
       }
     </a>
 
-    <nav class="hidden lg:block" aria-label="Primary">
+    <nav class="hidden lg:block" aria-label={messages.primaryNav}>
       <ul class="flex items-center gap-1">
         {
           items.map((item) => (
@@ -151,6 +153,9 @@ const transparent = overHero && settings.headerStyle === "over-hero"
       <MobileNav
         client:media="(max-width: 1023px)"
         items={items}
+        menuLabel={messages.menu}
+        closeLabel={messages.closeMenu}
+        submenuLabel={messages.submenu}
         siteName={siteName}
         ctaLabel={settings.headerCtaLabel}
         ctaHref={settings.headerCtaHref}

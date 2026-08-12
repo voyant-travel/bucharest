@@ -3,6 +3,7 @@ import { cleanStega, type ThemePageContext } from "@voyant-travel/theme"
 import SiteFooter from "~/components/SiteFooter.astro"
 import SiteHeader from "~/components/SiteHeader.astro"
 import { cn } from "~/lib/cn"
+import { messagesFor } from "~/lib/messages"
 import { footerMenus, primaryMenu, readSettings } from "~/lib/site"
 import "~/styles/global.css"
 
@@ -39,6 +40,8 @@ const openGraphImageAlt = context.openGraph?.image?.alt
   : undefined
 
 const settings = readSettings(context.settings ?? {})
+// The theme's own labels, in the language this publication resolved to.
+const t = messagesFor(context.locale)
 const navigation = primaryMenu(context)
 const columns = footerMenus(context)
 const injection = "codeInjection" in context ? context.codeInjection : undefined
@@ -160,7 +163,7 @@ const accentStyle = settings.accent
       href="#main"
       class="sr-only rounded-pill bg-accent px-5 py-3 text-[0.875rem] text-accent-ink focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]"
     >
-      Skip to content
+      {t.skipToContent}
     </a>
 
     <SiteHeader
@@ -169,6 +172,7 @@ const accentStyle = settings.accent
       items={navigation}
       settings={settings}
       overHero={overHero}
+      messages={t}
     />
 
     {
@@ -194,6 +198,7 @@ const accentStyle = settings.accent
       columns={columns}
       settings={settings}
       fallbackItems={navigation}
+      messages={t}
     />
 
     {injection?.bodyEnd && <Fragment set:html={injection.bodyEnd} />}

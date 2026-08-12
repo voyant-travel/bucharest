@@ -752,7 +752,6 @@ export default defineTheme({
               layout: "split",
               image: "https://images.unsplash.com/photo-1590523278191-995cbcda646b?w=1600&q=80&auto=format&fit=crop",
               "image-alt": "A hammock strung between palms on a beach at sunset",
-              "submit-label": "Subscribe",
               note: "We have never sold a mailing list and never will.",
             },
             blocks: [],

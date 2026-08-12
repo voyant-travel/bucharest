@@ -3,6 +3,7 @@ import Band from "~/components/primitives/Band.astro"
 import Heading from "~/components/primitives/Heading.astro"
 import Photo from "~/components/primitives/Photo.astro"
 import { cn } from "~/lib/cn"
+import { messagesFor } from "~/lib/messages"
 import { frame } from "~/lib/presentation"
 import {
   attributeSetting,
@@ -15,9 +16,11 @@ import {
 
 interface Props {
   section: SectionInstance
+  locale?: string
 }
 
-const { section } = Astro.props
+const { section, locale } = Astro.props
+const t = messagesFor(locale)
 const settings = section.data.settings
 const { tone, spacing } = frame(settings)
 const layout = choiceSetting(settings, "layout", ["panel", "split", "inline"], "panel")
@@ -25,7 +28,7 @@ const layout = choiceSetting(settings, "layout", ["panel", "split", "inline"], "
 const action = linkSetting(settings, "action")
 const fieldName = attributeSetting(settings, "field-name") ?? "email"
 const placeholder = attributeSetting(settings, "placeholder") ?? "you@example.com"
-const submitLabel = visibleSetting(settings, "submit-label") ?? "Subscribe"
+const submitLabel = visibleSetting(settings, "submit-label") ?? t.subscribe
 const note = visibleSetting(settings, "note")
 const image = imageSetting(settings, "image")
 const imageAlt = attributeSetting(settings, "image-alt")
@@ -87,7 +90,7 @@ const fieldId = `newsletter-${section.data.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`
         action={action}
         class={cn("mt-7 flex flex-col gap-2.5 sm:flex-row", layout === "panel" && "mx-auto max-w-[28rem]")}
       >
-        <label class="sr-only" for={fieldId}>Email address</label>
+        <label class="sr-only" for={fieldId}>{t.emailAddress}</label>
         <input
           id={fieldId}
           type="email"

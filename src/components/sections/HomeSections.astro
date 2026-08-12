@@ -67,7 +67,6 @@ const SIMPLE = {
   hero: Hero,
   "journey-cards": JourneyCards,
   "logo-strip": LogoStrip,
-  newsletter: Newsletter,
   prose: Prose,
   "quote-feature": QuoteFeature,
   "stat-band": StatBand,
@@ -79,6 +78,10 @@ const SIMPLE = {
 
 {
   sections.map((section) => {
+    // Newsletter supplies one label of its own, so it needs the locale.
+    if (section.type === "newsletter") {
+      return <Newsletter section={section} locale={locale} />
+    }
     if (section.type === "journey-search") {
       return (
         <JourneySearch
