@@ -198,34 +198,6 @@
   --shadow: 0 0 0;
 }
 
-/* ---------------------------------------------------------------------------
- * Compatibility with the pre-redesign token names.
- *
- * The commerce components — the booking journey, the shopping experience, the
- * cruise pages — carry scoped stylesheets written against `--page-background`,
- * `--page-text` and `--page-accent`. Those were the whole palette before this
- * redesign; nothing sets them now.
- *
- * A missing custom property does not fall back, it resolves to nothing: an
- * input styled `background: var(--page-background)` becomes transparent and
- * `border: 1px solid color-mix(in srgb, var(--page-text) 30%, transparent)`
- * becomes an invalid declaration and is dropped. The result is a form whose
- * fields are invisible rather than one that looks slightly wrong, which is why
- * this is worth an alias rather than a note.
- *
- * Aliasing rather than rewriting those stylesheets keeps this change to
- * presentation and leaves the tested commerce markup alone. They should be
- * migrated to the semantic tokens when each surface is redesigned; this block
- * goes away with the last of them.
- * ------------------------------------------------------------------------- */
-
-:root {
-  --page-background: var(--canvas);
-  --page-text: var(--ink);
-  --page-accent: var(--accent);
-  --content-width: 44rem;
-}
-
 /* Corner radius, set once and referenced by every card, button and field. The
  * editorial default is very nearly square; an operator can soften it. */
 :root {
