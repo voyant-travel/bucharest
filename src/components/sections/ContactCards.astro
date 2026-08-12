@@ -1,0 +1,82 @@
+---
+import Band from "~/components/primitives/Band.astro"
+import Heading from "~/components/primitives/Heading.astro"
+import Icon from "~/components/primitives/Icon.astro"
+import { cn } from "~/lib/cn"
+import { frame } from "~/lib/presentation"
+import {
+  choiceSetting,
+  linkSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(settings, "layout", ["three", "row"], "three")
+
+const methods = section.data.blocks
+  .filter((block) => block.type === "method")
+  .map((block) => ({
+    title: visibleSetting(block.settings, "title"),
+    detail: visibleSetting(block.settings, "detail"),
+    icon: choiceSetting(
+      block.settings,
+      "icon",
+      ["phone", "mail", "pin", "clock", "compass"],
+      "phone",
+    ),
+    href: linkSetting(block.settings, "page"),
+  }))
+  .filter((method) => method.title || method.detail)
+---
+
+{
+  methods.length > 0 && (
+    <Band tone={tone} spacing={spacing}>
+      <Heading
+        eyebrow={visibleSetting(settings, "eyebrow")}
+        heading={visibleSetting(settings, "heading")}
+        lede={visibleSetting(settings, "introduction")}
+        headingHtml
+        class="mb-12"
+      />
+
+      <ul
+        class={cn(
+          layout === "three"
+            ? "grid gap-5 md:grid-cols-3"
+            : "grid border-t border-line md:grid-cols-3",
+        )}
+      >
+        {methods.map((method) => {
+          const Tag = method.href ? "a" : "div"
+          return (
+            <li>
+              <Tag
+                href={method.href}
+                class={cn(
+                  "group flex h-full flex-col transition-colors duration-500",
+                  layout === "three"
+                    ? "rounded-card border border-line bg-surface p-7 hover:border-ink/25"
+                    : "border-b border-line py-8 md:border-b-0 md:border-l md:px-8 md:py-2 md:first:border-l-0 md:first:pl-0",
+                )}
+              >
+                <Icon name={method.icon} class="h-5 w-5 text-accent" />
+                {method.title && <h3 class="u-eyebrow mt-5 text-ink-subtle">{method.title}</h3>}
+                {method.detail && (
+                  <p class="u-serif-body mt-2.5 text-[1.125rem] leading-snug">{method.detail}</p>
+                )}
+              </Tag>
+            </li>
+          )
+        })}
+      </ul>
+    </Band>
+  )
+}

@@ -1,0 +1,178 @@
+---
+import MobileNav from "~/components/islands/MobileNav"
+import { cn } from "~/lib/cn"
+import type { MenuItem, SiteSettings } from "~/lib/site"
+import { telHref } from "~/lib/site"
+
+interface Props {
+  siteName: string
+  logo?: { src: string; alt: string } | undefined
+  items: MenuItem[]
+  settings: SiteSettings
+  /** Only a page that opens with a full-bleed hero can host a clear header. */
+  overHero: boolean
+}
+
+const { siteName, logo, items, settings, overHero } = Astro.props
+
+const transparent = overHero && settings.headerStyle === "over-hero"
+---
+
+{
+  /*
+   * A transparent header has to become opaque once the hero has scrolled past,
+   * or the navigation ends up as white type on white photography. The sentinel
+   * is a zero-height element at the top of the document: when it leaves the
+   * viewport the header has left the hero. An IntersectionObserver on that is
+   * a single callback at the boundary, where a scroll listener would run on
+   * every frame of every scroll for the life of the page.
+   */
+}
+<div data-header-sentinel aria-hidden="true"></div>
+
+<header
+  data-header
+  data-transparent={transparent ? "true" : "false"}
+  class={cn(
+    "group/header fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,box-shadow] duration-500 ease-[var(--ease-out-expo)]",
+    transparent
+      ? "border-b border-transparent bg-transparent text-white data-[stuck=true]:border-line data-[stuck=true]:bg-[var(--canvas)]/92 data-[stuck=true]:text-ink data-[stuck=true]:backdrop-blur-lg"
+      : cn(
+          "bg-[var(--canvas)]/92 text-ink backdrop-blur-lg",
+          settings.headerStyle === "bordered" && "border-b border-line",
+        ),
+  )}
+>
+  <div class="u-shell flex h-[4.5rem] items-center justify-between gap-6 md:h-[5.25rem]">
+    <a href="/" class="flex shrink-0 items-center gap-3" aria-label={siteName}>
+      {
+        logo ? (
+          <img
+            src={logo.src}
+            alt={logo.alt || siteName}
+            class="h-7 w-auto max-w-[11rem] object-contain md:h-8"
+          />
+        ) : (
+          <span class="u-display-sm text-[1.25rem] tracking-[-0.01em] md:text-[1.375rem]">
+            {siteName}
+          </span>
+        )
+      }
+    </a>
+
+    <nav class="hidden lg:block" aria-label="Primary">
+      <ul class="flex items-center gap-1">
+        {
+          items.map((item) => (
+            <li class="group/nav relative">
+              <a
+                href={item.href}
+                class="flex items-center gap-1.5 rounded-pill px-3.5 py-2.5 text-[0.8125rem] font-medium tracking-[0.06em] uppercase transition-opacity duration-300 hover:opacity-60"
+              >
+                {item.label}
+                {item.items && item.items.length > 0 && (
+                  <svg
+                    class="h-3 w-3 opacity-60 transition-transform duration-400 group-hover/nav:rotate-180"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    aria-hidden="true"
+                  >
+                    <path d="m8 10 4 4 4-4" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                )}
+              </a>
+
+              {
+                /*
+                 * The submenu opens on hover and on keyboard focus alike.
+                 * `focus-within` is what makes the second level reachable by
+                 * tab; hover alone would strand a keyboard user on the parent.
+                 */
+              }
+              {item.items && item.items.length > 0 && (
+                <div class="invisible absolute left-0 top-full pt-2 opacity-0 transition-[opacity,visibility] duration-300 group-hover/nav:visible group-hover/nav:opacity-100 group-focus-within/nav:visible group-focus-within/nav:opacity-100">
+                  <ul class="min-w-[15rem] rounded-card border border-line bg-[var(--canvas)] p-2 text-ink shadow-[0_24px_50px_-30px_rgba(0,0,0,0.4)]">
+                    {item.items.map((child) => (
+                      <li>
+                        <a
+                          href={child.href}
+                          class="block rounded-[calc(var(--corner)+2px)] px-3.5 py-2.5 text-[0.875rem] text-ink-muted transition-colors duration-200 hover:bg-accent-wash hover:text-ink"
+                        >
+                          {child.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="flex items-center gap-1.5">
+      {
+        settings.phone && (
+          <a
+            href={telHref(settings.phone)}
+            class="hidden rounded-pill px-3 py-2 text-[0.8125rem] tracking-[0.02em] transition-opacity duration-300 hover:opacity-60 xl:block"
+          >
+            {settings.phone}
+          </a>
+        )
+      }
+      {
+        settings.headerCtaLabel && (
+          <a
+            href={settings.headerCtaHref}
+            class={cn(
+              "hidden h-10 items-center rounded-pill px-5 text-[0.8125rem] font-medium transition-colors duration-300 lg:inline-flex",
+              transparent
+                ? "border border-white/40 text-white hover:bg-white hover:text-ink group-data-[stuck=true]/header:border-transparent group-data-[stuck=true]/header:bg-accent group-data-[stuck=true]/header:text-accent-ink"
+                : "bg-accent text-accent-ink hover:bg-accent-hover",
+            )}
+          >
+            {settings.headerCtaLabel}
+          </a>
+        )
+      }
+      {
+        /*
+         * Hydrated only where the drawer can actually be opened. The trigger
+         * is hidden above `lg`, so `client:idle` would download React and the
+         * Radix dialog on every desktop page load to power a button nobody can
+         * see. `client:media` also re-evaluates on resize, so narrowing the
+         * window still gets a working drawer.
+         */
+      }
+      <MobileNav
+        client:media="(max-width: 1023px)"
+        items={items}
+        siteName={siteName}
+        ctaLabel={settings.headerCtaLabel}
+        ctaHref={settings.headerCtaHref}
+        phone={settings.phone}
+      />
+    </div>
+  </div>
+</header>
+
+<script>
+  const header = document.querySelector<HTMLElement>("[data-header]")
+  const sentinel = document.querySelector<HTMLElement>("[data-header-sentinel]")
+
+  if (header && sentinel) {
+    // A small root margin flips the state just before the sentinel is fully
+    // gone, so the background is already there when the hero edge arrives.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        header.dataset.stuck = entry?.isIntersecting ? "false" : "true"
+      },
+      { rootMargin: "-72px 0px 0px 0px" },
+    )
+    observer.observe(sentinel)
+  }
+</script>

@@ -1,0 +1,127 @@
+---
+import Band from "~/components/primitives/Band.astro"
+import Heading from "~/components/primitives/Heading.astro"
+import Photo from "~/components/primitives/Photo.astro"
+import { cn } from "~/lib/cn"
+import { frame } from "~/lib/presentation"
+import {
+  attributeSetting,
+  choiceSetting,
+  imageSetting,
+  numberSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(settings, "layout", ["grid", "single", "rail"], "grid")
+
+const quotes = section.data.blocks
+  .filter((block) => block.type === "testimonial")
+  .map((block) => ({
+    quote: visibleSetting(block.settings, "quote"),
+    author: visibleSetting(block.settings, "author"),
+    role: visibleSetting(block.settings, "role"),
+    image: imageSetting(block.settings, "image"),
+    imageAlt: attributeSetting(block.settings, "image-alt"),
+    rating: numberSetting(block.settings, "rating", 0, 5, 0),
+  }))
+  .filter((quote) => quote.quote)
+---
+
+{
+  quotes.length > 0 && (
+    <Band tone={tone} spacing={spacing}>
+      <Heading
+        eyebrow={visibleSetting(settings, "eyebrow")}
+        heading={visibleSetting(settings, "heading")}
+        lede={visibleSetting(settings, "introduction")}
+        headingHtml
+        align={layout === "single" ? "center" : "left"}
+        class="mb-14"
+      />
+
+      <ul
+        class={cn(
+          layout === "grid" && "grid gap-6 md:grid-cols-2 lg:grid-cols-3",
+          layout === "rail" &&
+            "u-no-scrollbar -mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 md:-mx-10 md:px-10",
+          layout === "single" && "mx-auto max-w-[46rem]",
+        )}
+      >
+        {quotes.map((quote, index) => (
+          <li
+            class={cn(
+              layout === "rail" && "w-[82vw] shrink-0 snap-start sm:w-[46vw] lg:w-[32vw]",
+              layout === "single" && index > 0 && "mt-10 border-t border-line pt-10",
+            )}
+          >
+            <figure
+              class={cn(
+                "m-0 flex h-full flex-col",
+                layout !== "single" &&
+                  "rounded-card border border-line bg-surface p-7 transition-colors duration-500 hover:border-ink/25",
+                layout === "single" && "text-center",
+              )}
+            >
+              {quote.rating > 0 && (
+                <div
+                  class={cn("flex gap-1 text-brass", layout === "single" && "justify-center")}
+                  aria-label={`${quote.rating} out of 5`}
+                >
+                  {Array.from({ length: quote.rating }).map(() => (
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="m12 3.5 2.7 5.6 6.1.9-4.4 4.3 1 6.2-5.4-2.9-5.4 2.9 1-6.2L3.2 10l6.1-.9L12 3.5Z" />
+                    </svg>
+                  ))}
+                </div>
+              )}
+
+              <blockquote
+                class={cn(
+                  "u-serif-body flex-1",
+                  layout === "single"
+                    ? "mt-6 text-[1.375rem] leading-[1.5] md:text-[1.75rem]"
+                    : "mt-5 text-[1.0625rem] leading-[1.65]",
+                )}
+              >
+                {quote.quote}
+              </blockquote>
+
+              {(quote.author || quote.role || quote.image) && (
+                <figcaption
+                  class={cn(
+                    "mt-7 flex items-center gap-3.5",
+                    layout === "single" && "justify-center",
+                  )}
+                >
+                  {quote.image && (
+                    <Photo
+                      src={quote.image}
+                      alt={quote.imageAlt}
+                      ratio="aspect-square"
+                      class="h-11 w-11 shrink-0 rounded-pill"
+                      sizes="44px"
+                    />
+                  )}
+                  <div class={cn(layout === "single" && "text-left")}>
+                    {quote.author && <p class="u-eyebrow text-ink">{quote.author}</p>}
+                    {quote.role && (
+                      <p class="mt-1.5 text-[0.8125rem] text-ink-subtle">{quote.role}</p>
+                    )}
+                  </div>
+                </figcaption>
+              )}
+            </figure>
+          </li>
+        ))}
+      </ul>
+    </Band>
+  )
+}

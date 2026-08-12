@@ -1,9 +1,34 @@
 ---
+/**
+ * Renders the sections an operator composed, in the order they placed them.
+ *
+ * The type list this switch covers is declared in `lib/section-registry.ts`
+ * and the page filters on the same list, so a section that reaches here is one
+ * this build knows. Anything else has already been dropped: a page is served
+ * from a publication snapshot that may have been materialized against a later
+ * release of this theme than the Worker running it, so an unknown type is an
+ * ordinary consequence of two artifacts moving independently.
+ */
 import type { SectionInstance } from "../../lib/sections"
+import AlternatingFeatures from "./AlternatingFeatures.astro"
 import Callout from "./Callout.astro"
+import ContactCards from "./ContactCards.astro"
+import DestinationGrid from "./DestinationGrid.astro"
+import Divider from "./Divider.astro"
+import Faq from "./Faq.astro"
 import FeatureGrid from "./FeatureGrid.astro"
+import Gallery from "./Gallery.astro"
 import Hero from "./Hero.astro"
+import JourneyCards from "./JourneyCards.astro"
 import JourneySearch from "./JourneySearch.astro"
+import LogoStrip from "./LogoStrip.astro"
+import Newsletter from "./Newsletter.astro"
+import Prose from "./Prose.astro"
+import QuoteFeature from "./QuoteFeature.astro"
+import StatBand from "./StatBand.astro"
+import Steps from "./Steps.astro"
+import Testimonials from "./Testimonials.astro"
+import TextMedia from "./TextMedia.astro"
 
 interface Props {
   sections: SectionInstance[]
@@ -24,12 +49,37 @@ const {
   bookingEndpoint,
   checkoutEndpoint,
 } = Astro.props
+
+/**
+ * Sections that take only their own instance. `journey-search` is kept out of
+ * this table deliberately — it is the one section wired to live capability
+ * endpoints, and passing those through a generic map would hide it.
+ */
+const SIMPLE = {
+  "alternating-features": AlternatingFeatures,
+  callout: Callout,
+  "contact-cards": ContactCards,
+  "destination-grid": DestinationGrid,
+  divider: Divider,
+  faq: Faq,
+  "feature-grid": FeatureGrid,
+  gallery: Gallery,
+  hero: Hero,
+  "journey-cards": JourneyCards,
+  "logo-strip": LogoStrip,
+  newsletter: Newsletter,
+  prose: Prose,
+  "quote-feature": QuoteFeature,
+  "stat-band": StatBand,
+  steps: Steps,
+  testimonials: Testimonials,
+  "text-media": TextMedia,
+} as const
 ---
 
 {
   sections.map((section) => {
-    if (section.type === "hero") return <Hero section={section} />
-    if (section.type === "journey-search")
+    if (section.type === "journey-search") {
       return (
         <JourneySearch
           section={section}
@@ -41,8 +91,8 @@ const {
           checkoutEndpoint={checkoutEndpoint}
         />
       )
-    if (section.type === "feature-grid") return <FeatureGrid section={section} />
-    if (section.type === "callout") return <Callout section={section} />
-    return null
+    }
+    const Component = SIMPLE[section.type as keyof typeof SIMPLE]
+    return Component ? <Component section={section} /> : null
   })
 }

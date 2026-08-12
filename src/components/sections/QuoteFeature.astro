@@ -1,0 +1,98 @@
+---
+import Band from "~/components/primitives/Band.astro"
+import Photo from "~/components/primitives/Photo.astro"
+import { cn } from "~/lib/cn"
+import { frame } from "~/lib/presentation"
+import {
+  attributeSetting,
+  choiceSetting,
+  imageSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(settings, "layout", ["plain", "portrait", "over-image"], "plain")
+
+const quote = visibleSetting(settings, "quote")
+const author = visibleSetting(settings, "author")
+const role = visibleSetting(settings, "role")
+const image = imageSetting(settings, "image")
+const imageAlt = attributeSetting(settings, "image-alt")
+
+/**
+ * Fraunces italic, set large and hung on an opening mark. The mark is a
+ * decorative glyph rather than content — a screen reader announcing a stray
+ * double-prime before the sentence is noise — so it is drawn aria-hidden.
+ */
+const quoteClass =
+  "u-display font-display italic text-[1.75rem] leading-[1.28] sm:text-[2.25rem] md:text-[2.75rem]"
+---
+
+{
+  quote && (
+    <Band tone={tone} spacing={spacing}>
+      {layout === "over-image" && image ? (
+        <div class="u-frame u-veil relative flex min-h-[26rem] items-center rounded-card md:min-h-[34rem]">
+          <Photo src={image} alt={imageAlt} class="absolute inset-0" sizes="100vw" decorative />
+          <figure class="relative z-[2] m-0 w-full px-6 py-16 text-center md:px-16">
+            <blockquote class={cn(quoteClass, "mx-auto max-w-[38rem] text-white")}>
+              {quote}
+            </blockquote>
+            {(author || role) && (
+              <figcaption class="mt-9 text-white/75">
+                {author && <span class="u-eyebrow">{author}</span>}
+                {role && <p class="mt-2 text-[0.875rem]">{role}</p>}
+              </figcaption>
+            )}
+          </figure>
+        </div>
+      ) : layout === "portrait" ? (
+        <figure class="m-0 grid items-center gap-10 md:grid-cols-12 md:gap-16">
+          {image && (
+            <div class="md:col-span-4">
+              <Photo
+                src={image}
+                alt={imageAlt}
+                ratio="aspect-[4/5]"
+                class="rounded-card"
+                sizes="(min-width: 768px) 32vw, 100vw"
+              />
+            </div>
+          )}
+          <div class={image ? "md:col-span-8" : "md:col-span-12"}>
+            <span class="u-display block text-[4rem] leading-[0.5] text-accent opacity-30" aria-hidden="true">
+              &ldquo;
+            </span>
+            <blockquote class={cn(quoteClass, "mt-6")}>{quote}</blockquote>
+            {(author || role) && (
+              <figcaption class="mt-8 border-t border-line pt-6">
+                {author && <span class="u-eyebrow text-ink">{author}</span>}
+                {role && <p class="mt-2 text-[0.875rem] text-ink-muted">{role}</p>}
+              </figcaption>
+            )}
+          </div>
+        </figure>
+      ) : (
+        <figure class="m-0 mx-auto max-w-[46rem] text-center">
+          <span class="u-display block text-[4.5rem] leading-[0.5] text-accent opacity-25" aria-hidden="true">
+            &ldquo;
+          </span>
+          <blockquote class={cn(quoteClass, "mt-8")}>{quote}</blockquote>
+          {(author || role) && (
+            <figcaption class="mt-9">
+              {author && <span class="u-eyebrow text-ink">{author}</span>}
+              {role && <p class="mt-2 text-[0.875rem] text-ink-muted">{role}</p>}
+            </figcaption>
+          )}
+        </figure>
+      )}
+    </Band>
+  )
+}

@@ -1,0 +1,145 @@
+---
+import Band from "~/components/primitives/Band.astro"
+import Heading from "~/components/primitives/Heading.astro"
+import Photo from "~/components/primitives/Photo.astro"
+import { cn } from "~/lib/cn"
+import { frame } from "~/lib/presentation"
+import {
+  attributeSetting,
+  choiceSetting,
+  imageSetting,
+  linkSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(
+  settings,
+  "layout",
+  ["media-right", "media-left", "media-full"],
+  "media-right",
+)
+
+const image = imageSetting(settings, "image")
+const imageAlt = attributeSetting(settings, "image-alt")
+const caption = visibleSetting(settings, "caption")
+const body = visibleSetting(settings, "body")
+const ctaLabel = visibleSetting(settings, "label")
+const ctaHref = linkSetting(settings, "page")
+
+const points = section.data.blocks
+  .filter((block) => block.type === "point")
+  .map((block) => visibleSetting(block.settings, "text"))
+  .filter((text): text is string => Boolean(text))
+
+const mediaFirst = layout === "media-left"
+
+const Points = points.length > 0
+const cta = ctaLabel && ctaHref
+---
+
+<Band tone={tone} spacing={spacing}>
+  {
+    layout === "media-full" ? (
+      <div class="flex flex-col gap-12">
+        <div class="grid gap-8 md:grid-cols-12 md:gap-14">
+          <div class="md:col-span-6">
+            <Heading
+              eyebrow={visibleSetting(settings, "eyebrow")}
+              heading={visibleSetting(settings, "heading")}
+              headingHtml
+              class="mb-0"
+            />
+          </div>
+          <div class="md:col-span-6">
+            {body && <div class="prose" set:html={body} />}
+            {Points && (
+              <ul class="mt-7 space-y-3.5">
+                {points.map((point) => (
+                  <li class="flex gap-3.5 text-[0.9375rem] text-ink-muted">
+                    <span class="mt-2 h-1 w-1 shrink-0 rounded-pill bg-accent" aria-hidden="true" />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {cta && (
+              <a
+                href={ctaHref}
+                class="mt-8 inline-flex h-11 items-center rounded-pill border border-ink/25 px-6 text-[0.875rem] transition-colors duration-300 hover:border-ink/70"
+              >
+                {ctaLabel}
+              </a>
+            )}
+          </div>
+        </div>
+        {image && (
+          <figure class="m-0">
+            <Photo
+              src={image}
+              alt={imageAlt}
+              ratio="aspect-[16/9] md:aspect-[21/9]"
+              class="rounded-card"
+              sizes="100vw"
+            />
+            {caption && <figcaption class="mt-3 text-[0.8125rem] text-ink-subtle">{caption}</figcaption>}
+          </figure>
+        )}
+      </div>
+    ) : (
+      <div class="grid items-center gap-10 md:grid-cols-12 md:gap-16">
+        <div class={cn("md:col-span-6", mediaFirst && "md:order-2")}>
+          <Heading
+            eyebrow={visibleSetting(settings, "eyebrow")}
+            heading={visibleSetting(settings, "heading")}
+            headingHtml
+            class="mb-0"
+          />
+          {body && <div class="prose mt-6" set:html={body} />}
+          {Points && (
+            <ul class="mt-7 space-y-3.5 border-t border-line pt-7">
+              {points.map((point) => (
+                <li class="flex gap-3.5 text-[0.9375rem] text-ink-muted">
+                  <span class="mt-2 h-1 w-1 shrink-0 rounded-pill bg-accent" aria-hidden="true" />
+                  {point}
+                </li>
+              ))}
+            </ul>
+          )}
+          {cta && (
+            <a
+              href={ctaHref}
+              class="mt-9 inline-flex h-11 items-center rounded-pill bg-accent px-6 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
+            >
+              {ctaLabel}
+            </a>
+          )}
+        </div>
+
+        <div class={cn("md:col-span-6", mediaFirst && "md:order-1")}>
+          {image && (
+            <figure class="m-0">
+              <Photo
+                src={image}
+                alt={imageAlt}
+                ratio="aspect-[4/5] md:aspect-[5/6]"
+                class="rounded-card"
+                sizes="(min-width: 768px) 48vw, 100vw"
+              />
+              {caption && (
+                <figcaption class="mt-3 text-[0.8125rem] text-ink-subtle">{caption}</figcaption>
+              )}
+            </figure>
+          )}
+        </div>
+      </div>
+    )
+  }
+</Band>

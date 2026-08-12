@@ -11,6 +11,7 @@ import {
   entryFields,
 } from "../lib/collection-values"
 import { sectionInstances } from "../lib/sections"
+import { isKnownSection, opensFullBleed } from "../lib/section-registry"
 import { capabilityEndpoint } from "../lib/shopping.mjs"
 import { resolveThemeContext } from "virtual:voyant-theme"
 
@@ -24,9 +25,7 @@ if (context.kind === "notFound") Astro.response.status = 404
 const homeSections =
   context.kind === "home"
     ? sectionInstances(context.sections).filter((section) =>
-        ["hero", "journey-search", "feature-grid", "callout"].includes(
-          section.type,
-        ),
+        isKnownSection(section.type),
       )
     : []
 const live = "live" in context ? context.live : undefined
@@ -47,6 +46,16 @@ const shoppingTripBookingEndpoint = capabilityEndpoint(
 )
 const bookingEndpoint = capabilityEndpoint(live, "booking.session.v1", "PATCH")
 const checkoutEndpoint = capabilityEndpoint(live, "checkout.v1", "POST")
+/**
+ * Whether the header may sit over the page rather than above it. Only true
+ * when the first thing on the page is a hero that actually carries a
+ * photograph filling the top of the window.
+ */
+const firstSection = homeSections[0]
+const overHero = firstSection
+  ? opensFullBleed(firstSection.type, firstSection.data.settings)
+  : false
+
 const hasAuthoredJourneySearch = homeSections.some(
   (section) => section.type === "journey-search",
 )
@@ -59,7 +68,11 @@ const hasAuthoredJourneySearch = homeSections.some(
 
 ---
 
-<Layout context={context} authoredHome={homeSections.length > 0}>
+<Layout
+  context={context}
+  authoredHome={homeSections.length > 0}
+  overHero={overHero}
+>
   {context.kind === "home" && homeSections.length > 0 && (
     <HomeSections
       sections={homeSections}

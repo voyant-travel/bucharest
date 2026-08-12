@@ -1,4 +1,5 @@
 import { defineTheme } from "@voyant-travel/theme"
+import { sections as editorialSections } from "./src/theme/sections"
 
 export default defineTheme({
   contractVersion: "v1",
@@ -44,8 +45,47 @@ export default defineTheme({
           { label: "Ocean", value: "ocean" },
           { label: "Sand", value: "sand" },
           { label: "Ink", value: "ink" },
+          { label: "Midnight", value: "midnight" },
         ],
       },
+      {
+        id: "corner-style",
+        label: "Corners",
+        type: "select",
+        default: "square",
+        options: [
+          { label: "Square", value: "square" },
+          { label: "Softened", value: "soft" },
+          { label: "Rounded", value: "round" },
+        ],
+      },
+      {
+        id: "paper-grain",
+        label: "Paper grain",
+        type: "checkbox",
+        default: true,
+      },
+      {
+        id: "header-style",
+        label: "Header",
+        type: "select",
+        default: "over-hero",
+        options: [
+          { label: "Transparent over the hero", value: "over-hero" },
+          { label: "Solid", value: "solid" },
+          { label: "Solid with a rule", value: "bordered" },
+        ],
+      },
+      { id: "header-cta-label", label: "Header button label", type: "text" },
+      { id: "header-cta-href", label: "Header button link", type: "text" },
+      { id: "phone", label: "Telephone", type: "text" },
+      { id: "email", label: "Email", type: "text" },
+      { id: "address", label: "Address", type: "textarea" },
+      { id: "footer-note", label: "Footer small print", type: "textarea" },
+      { id: "social-instagram", label: "Instagram URL", type: "text" },
+      { id: "social-facebook", label: "Facebook URL", type: "text" },
+      { id: "social-youtube", label: "YouTube URL", type: "text" },
+      { id: "social-linkedin", label: "LinkedIn URL", type: "text" },
       {
         id: "accent-color",
         label: "Accent colour",
@@ -315,6 +355,7 @@ export default defineTheme({
         ],
         templates: ["home"],
       },
+      ...editorialSections,
     ],
     /**
      * The collection shape this theme renders, named in ITS OWN terms.
@@ -376,6 +417,10 @@ export default defineTheme({
               eyebrow: "Voyant reference theme",
               heading: "Travel stories, given room to breathe",
               height: 520,
+              image:
+                "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1600&q=80&auto=format&fit=crop",
+              "image-alt":
+                "A wooden rowing boat on a turquoise mountain lake beneath forested peaks",
             },
             blocks: [
               {
@@ -448,6 +493,267 @@ export default defineTheme({
               heading: "One theme, authored many ways",
               label: "Read about the theme",
               page: "/pages/about",
+            },
+            blocks: [],
+          },
+        },
+        {
+          type: "journey-cards",
+          data: {
+            id: "home-journeys",
+            settings: {
+              eyebrow: "This season",
+              heading: "Itineraries leaving soon",
+              introduction:
+                "Each one is a starting point. We take it apart and rebuild it around your dates.",
+              layout: "feature-first",
+              tone: "sunk",
+              label: "All itineraries",
+              page: "/tours",
+            },
+            blocks: [
+              {
+                id: "journey-migration",
+                type: "journey",
+                settings: {
+                  title: "The Great Migration, end to end",
+                  region: "Kenya & Tanzania",
+                  meta: "Sixteen days following the herds from the Serengeti to the Mara, with two nights in a camp that moves when they do.",
+                  price: "From £8,400 per person",
+                  badge: "Flagship",
+                  image: "https://images.unsplash.com/photo-1516426122078-c23e76319801?w=1600&q=80&auto=format&fit=crop",
+                  "image-alt": "An open safari vehicle on the plains at sunset",
+                  page: "/tours",
+                },
+              },
+              {
+                id: "journey-bhutan",
+                type: "journey",
+                settings: {
+                  title: "Bhutan: the high passes",
+                  region: "The Himalaya",
+                  meta: "11 days · Small group",
+                  price: "From £6,150",
+                  image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1600&q=80&auto=format&fit=crop",
+                  "image-alt": "Snow-covered Himalayan peaks above a hillside stupa",
+                  page: "/tours",
+                },
+              },
+              {
+                id: "journey-thailand",
+                type: "journey",
+                settings: {
+                  title: "Northern Thailand by back road",
+                  region: "Thailand",
+                  meta: "12 days · Private",
+                  price: "From £4,280",
+                  image: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=1600&q=80&auto=format&fit=crop",
+                  "image-alt": "Gilded temple spires against a bright sky",
+                  page: "/tours",
+                },
+              },
+              {
+                id: "journey-rockies",
+                type: "journey",
+                settings: {
+                  title: "The Rockies in early autumn",
+                  region: "Canada",
+                  meta: "10 days · Self-drive",
+                  price: "From £3,940",
+                  image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=1600&q=80&auto=format&fit=crop",
+                  "image-alt": "A still turquoise lake below the Canadian Rockies at sunset",
+                  page: "/tours",
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: "destination-grid",
+          data: {
+            id: "home-destinations",
+            settings: {
+              eyebrow: "Where we work",
+              heading: "Places we know by name",
+              introduction:
+                "Not a catalogue. These are the places our own people live in and travel through.",
+              layout: "mosaic",
+            },
+            blocks: [
+              {
+                id: "place-africa",
+                type: "place",
+                settings: {
+                  title: "East Africa",
+                  meta: "14 journeys",
+                  image: "https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=1600&q=80&auto=format&fit=crop",
+                  "image-alt": "A giraffe silhouetted beneath an acacia at dusk",
+                  page: "/tours",
+                },
+              },
+              {
+                id: "place-cyclades",
+                type: "place",
+                settings: {
+                  title: "The Cyclades",
+                  meta: "9 journeys",
+                  image: "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1600&q=80&auto=format&fit=crop",
+                  "image-alt": "A whitewashed alley opening onto deep blue Aegean sea",
+                  page: "/tours",
+                },
+              },
+              {
+                id: "place-japan",
+                type: "place",
+                settings: {
+                  title: "Japan",
+                  meta: "11 journeys",
+                  image: "https://images.unsplash.com/photo-1554797589-7241bb691973?w=1600&q=80&auto=format&fit=crop",
+                  "image-alt": "A narrow Tokyo alley lit by paper lanterns at night",
+                  page: "/tours",
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: "alternating-features",
+          data: {
+            id: "home-why",
+            settings: {
+              eyebrow: "How we differ",
+              heading: "Why people come back to us",
+              introduction: "Two things unusual enough to be worth saying plainly.",
+              layout: "timeline",
+              spacing: "roomy",
+            },
+            blocks: [
+              {
+                id: "why-handwritten",
+                type: "feature",
+                settings: {
+                  label: "Written by hand",
+                  title: "No two itineraries are the same",
+                  description:
+                    "Every journey is drafted from scratch by the person who will look after you. There is no template underneath it.",
+                  image: "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?w=1600&q=80&auto=format&fit=crop",
+                  "image-alt": "A camera, binoculars and notebook laid out on a desk",
+                },
+              },
+              {
+                id: "why-seen",
+                type: "feature",
+                settings: {
+                  label: "Rooms we have slept in",
+                  title: "We only sell what we have seen",
+                  description:
+                    "Every property on the list visited in the last three years by someone on this staff.",
+                  image: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=1600&q=80&auto=format&fit=crop",
+                  "image-alt": "Loungers on an infinity terrace above a hazy valley",
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: "stat-band",
+          data: {
+            id: "home-figures",
+            settings: { layout: "bordered", tone: "accent", spacing: "tight" },
+            blocks: [
+              { id: "stat-years", type: "stat", settings: { value: "51", label: "Years arranging journeys" } },
+              { id: "stat-guides", type: "stat", settings: { value: "140", label: "Guides on long-term contracts" } },
+              { id: "stat-countries", type: "stat", settings: { value: "26", label: "Countries we work in" } },
+              { id: "stat-return", type: "stat", settings: { value: "71%", label: "Of guests travel with us again" } },
+            ],
+          },
+        },
+        {
+          type: "quote-feature",
+          data: {
+            id: "home-quote",
+            settings: {
+              layout: "over-image",
+              quote:
+                "They rewrote four days of the trip overnight because the rains came early. We only found out afterwards that anything had changed.",
+              author: "Marianne Iversen",
+              role: "Serengeti and the Ngorongoro Crater, March",
+              image: "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=1600&q=80&auto=format&fit=crop",
+              "image-alt": "A lone acacia against a red sunset on an open plain",
+            },
+            blocks: [],
+          },
+        },
+        {
+          type: "gallery",
+          data: {
+            id: "home-gallery",
+            settings: {
+              eyebrow: "Sent in by travellers",
+              heading: "Photographs from the last twelve months",
+              layout: "mosaic",
+              caption: "Guest photographs, published with permission.",
+            },
+            blocks: [
+              { id: "shot-elephant", type: "photograph", settings: { image: "https://images.unsplash.com/photo-1535941339077-2dd1c7963098?w=1600&q=80&auto=format&fit=crop", "image-alt": "An elephant crossing golden grassland" } },
+              { id: "shot-camp", type: "photograph", settings: { image: "https://images.unsplash.com/photo-1517824806704-9040b037703b?w=1600&q=80&auto=format&fit=crop", "image-alt": "A lit tent beneath the Milky Way in the desert" } },
+              { id: "shot-railay", type: "photograph", settings: { image: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=1600&q=80&auto=format&fit=crop", "image-alt": "Longtail boats moored below limestone cliffs" } },
+              { id: "shot-peaks", type: "photograph", settings: { image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80&auto=format&fit=crop", "image-alt": "A mountain range rising above a sea of cloud at sunrise" } },
+            ],
+          },
+        },
+        {
+          type: "faq",
+          data: {
+            id: "home-faq",
+            settings: {
+              eyebrow: "Before you ask",
+              heading: "The questions we are asked most",
+              introduction: "If yours is not here, telephone us. Nobody on this staff works to a script.",
+              layout: "side-heading",
+            },
+            blocks: [
+              {
+                id: "faq-when",
+                type: "question",
+                settings: {
+                  question: "How far ahead should we book?",
+                  answer: "<p>For East Africa in the migration months, ten to twelve months. For most of Europe, four is plenty.</p>",
+                },
+              },
+              {
+                id: "faq-protection",
+                type: "question",
+                settings: {
+                  question: "Is my money protected?",
+                  answer: "<p>Every payment sits in a trust account until you travel, including the deposit.</p>",
+                },
+              },
+              {
+                id: "faq-fee",
+                type: "question",
+                settings: {
+                  question: "Do you charge a planning fee?",
+                  answer: "<p>No. We are paid by the properties we book, at rates that do not change with what we recommend.</p>",
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: "newsletter",
+          data: {
+            id: "home-newsletter",
+            settings: {
+              eyebrow: "The dispatch",
+              heading: "Six letters a year, and nothing else",
+              introduction:
+                "Where our guides are going in the quiet season, and when the flights are worth booking.",
+              layout: "split",
+              image: "https://images.unsplash.com/photo-1590523278191-995cbcda646b?w=1600&q=80&auto=format&fit=crop",
+              "image-alt": "A hammock strung between palms on a beach at sunset",
+              "submit-label": "Subscribe",
+              note: "We have never sold a mailing list and never will.",
             },
             blocks: [],
           },

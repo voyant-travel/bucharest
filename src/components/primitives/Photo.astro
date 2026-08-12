@@ -1,0 +1,83 @@
+---
+/**
+ * A photograph, framed.
+ *
+ * Takes `src` and `alt` separately rather than an image object, because that
+ * is how the contract publishes them: `image_picker` yields a URL and the
+ * operator writes the description into its own `image-alt` text setting. The
+ * two are read with different helpers — the URL is validated, the alt is
+ * stripped of stega provenance because an attribute is not a text node.
+ */
+import { cn } from "~/lib/cn"
+
+interface Props {
+  src: string
+  alt?: string | undefined
+  /** Tailwind aspect utility, e.g. `aspect-[4/5]`. Omit to fill the parent. */
+  ratio?: string
+  class?: string
+  /** The one image above the fold. Everything else waits. */
+  priority?: boolean
+  sizes?: string
+  /** Decorative duplicate of adjacent text — hidden from assistive tech. */
+  decorative?: boolean
+  width?: number
+  height?: number
+}
+
+const {
+  src,
+  alt,
+  ratio,
+  class: className,
+  priority = false,
+  sizes = "(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw",
+  decorative = false,
+  width,
+  height,
+} = Astro.props
+
+/**
+ * Width candidates for sources that take a `w` query parameter.
+ *
+ * Operator media comes from a CDN this theme knows nothing about, so a srcset
+ * is only offered when the source already carries the parameter that would
+ * make one meaningful. Guessing at a resizing API and getting it wrong costs a
+ * broken image, which is worse than serving one width.
+ */
+const WIDTHS = [640, 960, 1280, 1920, 2560]
+
+function srcsetFor(source: string): string | undefined {
+  let url: URL
+  try {
+    url = new URL(source, "https://placeholder.invalid")
+  } catch {
+    return undefined
+  }
+  if (!url.searchParams.has("w")) return undefined
+  return WIDTHS.map((candidate) => {
+    url.searchParams.set("w", String(candidate))
+    const rendered = source.startsWith("/")
+      ? `${url.pathname}${url.search}`
+      : url.toString()
+    return `${rendered} ${candidate}w`
+  }).join(", ")
+}
+
+const srcset = srcsetFor(src)
+---
+
+<div class={cn("u-frame", ratio ?? "h-full w-full", className)}>
+  <img
+    src={src}
+    srcset={srcset}
+    sizes={srcset ? sizes : undefined}
+    alt={decorative ? "" : (alt ?? "")}
+    aria-hidden={decorative ? "true" : undefined}
+    width={width}
+    height={height}
+    loading={priority ? "eager" : "lazy"}
+    decoding={priority ? "sync" : "async"}
+    fetchpriority={priority ? "high" : undefined}
+  />
+</div>

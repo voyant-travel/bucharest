@@ -1,0 +1,169 @@
+---
+import JourneyCard from "~/components/cards/JourneyCard.astro"
+import Band from "~/components/primitives/Band.astro"
+import Heading from "~/components/primitives/Heading.astro"
+import Photo from "~/components/primitives/Photo.astro"
+import { frame } from "~/lib/presentation"
+import {
+  attributeSetting,
+  choiceSetting,
+  imageSetting,
+  linkSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(
+  settings,
+  "layout",
+  ["grid", "feature-first", "rail", "editorial-list"],
+  "grid",
+)
+
+const journeys = section.data.blocks
+  .filter((block) => block.type === "journey")
+  .map((block) => ({
+    title: visibleSetting(block.settings, "title"),
+    region: visibleSetting(block.settings, "region"),
+    meta: visibleSetting(block.settings, "meta"),
+    price: visibleSetting(block.settings, "price"),
+    badge: visibleSetting(block.settings, "badge"),
+    image: imageSetting(block.settings, "image"),
+    imageAlt: attributeSetting(block.settings, "image-alt"),
+    href: linkSetting(block.settings, "page"),
+  }))
+  .filter((journey) => journey.title || journey.image)
+
+const ctaLabel = visibleSetting(settings, "label")
+const ctaHref = linkSetting(settings, "page")
+const [feature, ...rest] = journeys
+---
+
+{
+  journeys.length > 0 && (
+    <Band tone={tone} spacing={spacing}>
+      <div class="mb-12 flex flex-col gap-6 md:mb-16 md:flex-row md:items-end md:justify-between">
+        <Heading
+          eyebrow={visibleSetting(settings, "eyebrow")}
+          heading={visibleSetting(settings, "heading")}
+          lede={visibleSetting(settings, "introduction")}
+          headingHtml
+          class="mb-0"
+        />
+        {ctaLabel && ctaHref && (
+          <a
+            href={ctaHref}
+            class="hidden shrink-0 items-center gap-2 rounded-pill border border-ink/25 px-6 py-3 text-[0.875rem] transition-colors duration-300 hover:border-ink/70 md:inline-flex"
+          >
+            {ctaLabel}
+          </a>
+        )}
+      </div>
+
+      {layout === "grid" && (
+        <ul class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          {journeys.map((journey) => (
+            <li>
+              <JourneyCard {...journey} sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw" />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {layout === "feature-first" && feature && (
+        <div class="flex flex-col gap-12">
+          <a href={feature.href} class="group grid gap-7 md:grid-cols-12 md:items-center md:gap-12">
+            <div class="md:col-span-7">
+              {feature.image && (
+                <Photo
+                  src={feature.image}
+                  alt={feature.imageAlt}
+                  ratio="aspect-[16/10]"
+                  class="rounded-card"
+                  sizes="(min-width: 768px) 58vw, 100vw"
+                />
+              )}
+            </div>
+            <div class="md:col-span-5">
+              {feature.badge && (
+                <span class="u-eyebrow inline-block rounded-pill border border-line px-3 py-1.5 text-ink-muted">
+                  {feature.badge}
+                </span>
+              )}
+              {feature.region && <p class="u-eyebrow mt-4 text-ink-subtle">{feature.region}</p>}
+              {feature.title && (
+                <h3 class="u-display mt-3 text-[1.875rem] md:text-[2.5rem]">{feature.title}</h3>
+              )}
+              {feature.meta && (
+                <p class="mt-4 text-[0.9375rem] leading-relaxed text-ink-muted">{feature.meta}</p>
+              )}
+              {feature.price && (
+                <p class="u-serif-body mt-6 border-t border-line pt-5 text-[1.0625rem]">
+                  {feature.price}
+                </p>
+              )}
+            </div>
+          </a>
+          {rest.length > 0 && (
+            <ul class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+              {rest.map((journey) => (
+                <li>
+                  <JourneyCard {...journey} ratio="aspect-[3/4]" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {layout === "rail" && (
+        <ul class="u-no-scrollbar -mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 md:-mx-10 md:px-10">
+          {journeys.map((journey) => (
+            <li class="w-[78vw] shrink-0 snap-start sm:w-[46vw] lg:w-[30vw]">
+              <JourneyCard {...journey} sizes="80vw" />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {layout === "editorial-list" && (
+        <ul class="border-t border-line">
+          {journeys.map((journey) => (
+            <li>
+              <a href={journey.href} class="group grid items-center gap-5 border-b border-line py-7 md:grid-cols-12 md:gap-8">
+                <div class="md:col-span-3">
+                  {journey.image && (
+                    <Photo
+                      src={journey.image}
+                      alt={journey.imageAlt}
+                      ratio="aspect-[3/2]"
+                      class="rounded-card"
+                      sizes="(min-width: 768px) 22vw, 100vw"
+                    />
+                  )}
+                </div>
+                <div class="md:col-span-6">
+                  {journey.region && <p class="u-eyebrow text-ink-subtle">{journey.region}</p>}
+                  {journey.title && (
+                    <h3 class="u-display-sm mt-2 text-[1.375rem] md:text-[1.625rem]">{journey.title}</h3>
+                  )}
+                  {journey.meta && <p class="mt-2 text-[0.875rem] text-ink-muted">{journey.meta}</p>}
+                </div>
+                <div class="flex items-center justify-between gap-4 md:col-span-3 md:justify-end">
+                  {journey.price && <span class="u-serif-body text-[1.0625rem]">{journey.price}</span>}
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Band>
+  )
+}

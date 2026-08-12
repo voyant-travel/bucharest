@@ -36,3 +36,8 @@ pnpm-debug.log*
 # had touched.
 pnpm-lock.yaml
 yarn.lock
+
+# git worktrees checked out inside the repo. One was committed as a gitlink
+# by a `git add -A`, which breaks clones; ignore the directory rather than
+# rely on everyone remembering to path-limit their adds.
+worktrees/

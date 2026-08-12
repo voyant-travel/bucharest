@@ -1,0 +1,90 @@
+---
+/**
+ * Eyebrow, headline and standfirst — the opening of nearly every section.
+ *
+ * The eyebrow is drawn with a short rule rather than set on its own, because a
+ * line of spaced capitals floating above a serif headline is the single
+ * clearest tell of a template. The rule ties it to the headline instead.
+ */
+import { cn } from "~/lib/cn"
+
+interface Props {
+  eyebrow?: string | undefined
+  heading?: string | undefined
+  lede?: string | undefined
+  align?: "left" | "center"
+  size?: "sm" | "md" | "lg"
+  class?: string
+  /** The page's h1 lives in the hero; every other section opens at h2. */
+  level?: "h1" | "h2" | "h3"
+  /**
+   * The heading came from an `inline_richtext` setting, so it may legitimately
+   * carry `<em>` or `<strong>` and has to be placed as markup. Kept as an
+   * explicit opt-in rather than sniffing for tags, because a heading that
+   * merely mentions `<` in prose is not markup.
+   */
+  headingHtml?: boolean
+}
+
+const {
+  eyebrow,
+  heading,
+  lede,
+  align = "left",
+  size = "md",
+  class: className,
+  level: Tag = "h2",
+  headingHtml = false,
+} = Astro.props
+
+const headingSize = {
+  sm: "text-[1.75rem] md:text-[2.125rem]",
+  md: "text-[2.125rem] md:text-[3rem] lg:text-[3.375rem]",
+  lg: "text-[2.5rem] md:text-[3.75rem] lg:text-[4.5rem]",
+}[size]
+
+const centered = align === "center"
+---
+
+{
+  (eyebrow || heading || lede) && (
+    <div
+      class={cn(
+        "max-w-[46rem]",
+        centered && "mx-auto text-center",
+        className,
+      )}
+    >
+      {eyebrow && (
+        <p
+          class={cn(
+            "u-eyebrow flex items-center gap-3 text-ink-subtle",
+            centered && "justify-center",
+          )}
+        >
+          <span class="h-px w-6 bg-current opacity-45" aria-hidden="true" />
+          {eyebrow}
+        </p>
+      )}
+      {heading &&
+        (headingHtml ? (
+          <Tag
+            class={cn("u-display mt-5 text-balance", headingSize)}
+            set:html={heading}
+          />
+        ) : (
+          <Tag class={cn("u-display mt-5 text-balance", headingSize)}>{heading}</Tag>
+        ))}
+      {lede && (
+        <p
+          class={cn(
+            "mt-6 text-[1.0625rem] leading-[1.65] text-ink-muted md:text-[1.125rem]",
+            centered && "mx-auto max-w-[38rem]",
+          )}
+        >
+          {lede}
+        </p>
+      )}
+    </div>
+  )
+}

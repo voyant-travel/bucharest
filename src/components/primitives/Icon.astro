@@ -1,0 +1,67 @@
+---
+/**
+ * The theme's own icon set.
+ *
+ * Hand-drawn rather than pulled from an icon package: an icon library ships
+ * one stroke weight and one corner treatment, and at the hairline weight this
+ * theme uses everywhere, a 2px stroke set reads as a different design system
+ * bolted on. It also keeps a React runtime out of pages that are otherwise
+ * static.
+ */
+import { cn } from "~/lib/cn"
+
+interface Props {
+  name: string
+  class?: string
+  strokeWidth?: number
+}
+
+const { name, class: className, strokeWidth = 1.25 } = Astro.props
+
+const PATHS: Record<string, string> = {
+  compass: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM15.4 8.6l-1.7 5.1-5.1 1.7 1.7-5.1 5.1-1.7Z",
+  route:
+    "M6 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM18 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM15.5 7.5H10a3.5 3.5 0 0 0 0 7h4a3.5 3.5 0 0 1 0 7H8.5",
+  globe:
+    "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM3.5 9h17M3.5 15h17M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
+  mountain: "M3 19h18L14.5 7 11 13l-2-3-6 9ZM14.5 7 12 11",
+  leaf: "M20 4S8 4 5.5 10.5 8 20 8 20s10-1.5 12-16ZM8 20c1-6 4-10 9-13",
+  shield: "M12 21s7-3.2 7-9V5.6L12 3 5 5.6V12c0 5.8 7 9 7 9ZM9 12l2.2 2.2L15.5 10",
+  sparkle:
+    "m12 3 1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4L12 3ZM18.5 16l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z",
+  star: "m12 3.5 2.7 5.6 6.1.9-4.4 4.3 1 6.2-5.4-2.9-5.4 2.9 1-6.2L3.2 10l6.1-.9L12 3.5Z",
+  plane: "M21 15.5 3 10V7l2 .6 1.5 2.2 5 1.5V4.5L13.5 3v8.9l5.5 1.6L21 15.5ZM8 19l4-1.5 4 1.5",
+  calendar:
+    "M5 6.5h14a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7.5a1 1 0 0 1 1-1ZM8 3.5v5M16 3.5v5M4 11.5h16",
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7.5V12l3 2",
+  phone:
+    "M8.2 3.8 5.6 4.9a2 2 0 0 0-1.2 2.2c.8 4.9 6.6 11.4 12 12.6a2 2 0 0 0 2.3-1.2l1-2.5-4.1-2.3-1.9 1.9c-2-1-4.1-3.2-5.1-5.3l2-1.9-2.4-4.6Z",
+  mail: "M3.5 6.5h17v11h-17v-11ZM3.5 7l8.5 6 8.5-6",
+  pin: "M12 21s6.5-6 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15 12 21 12 21ZM12 13a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z",
+  heart:
+    "M12 20S3.5 14.8 3.5 9.2A4.2 4.2 0 0 1 12 7a4.2 4.2 0 0 1 8.5 2.2C20.5 14.8 12 20 12 20Z",
+  key: "M15.5 12a4 4 0 1 0-3.9-5H3.5v3H6v2.5h2.5V10h3.1a4 4 0 0 0 3.9 2ZM17 8h.01",
+  search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM16.2 16.2 21 21",
+  menu: "M4 7h16M4 12h16M4 17h16",
+  close: "M6 6l12 12M18 6 6 18",
+  arrow: "M4 12h15M13 6l6 6-6 6",
+  chevron: "m8 10 4 4 4-4",
+  quote:
+    "M9.5 6c-3 1.4-4.5 3.9-4.5 7.4 0 2.7 1.4 4.6 3.6 4.6 1.9 0 3.2-1.4 3.2-3.2 0-1.8-1.2-3-2.9-3-.3 0-.6 0-.8.1.3-1.7 1.4-3 3.2-3.9L9.5 6ZM19 6c-3 1.4-4.5 3.9-4.5 7.4 0 2.7 1.4 4.6 3.6 4.6 1.9 0 3.2-1.4 3.2-3.2 0-1.8-1.2-3-2.9-3-.3 0-.6 0-.8.1.3-1.7 1.4-3 3.2-3.9L19 6Z",
+}
+
+const path = PATHS[name] ?? PATHS.compass
+---
+
+<svg
+  class={cn("h-6 w-6 shrink-0", className)}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width={strokeWidth}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <path d={path}></path>
+</svg>

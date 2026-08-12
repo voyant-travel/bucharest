@@ -1,12 +1,21 @@
 ---
 import { cleanStega, type ThemePageContext } from "@voyant-travel/theme"
+import SiteFooter from "~/components/SiteFooter.astro"
+import SiteHeader from "~/components/SiteHeader.astro"
+import { cn } from "~/lib/cn"
+import { footerMenus, primaryMenu, readSettings } from "~/lib/site"
+import "~/styles/global.css"
 
 interface Props {
   context: ThemePageContext
+  /** The home page is composed of sections, so it manages its own rhythm. */
   authoredHome?: boolean
+  /** The page opens with a full-bleed image, so the header may sit over it. */
+  overHero?: boolean
 }
 
-const { context, authoredHome = false } = Astro.props
+const { context, authoredHome = false, overHero = false } = Astro.props
+
 // Authored SEO wins, because it is the one description an operator wrote on
 // purpose. A content page falls back to its own summary so a published page is
 // never indexed without one; a collection page has no equivalent prose to
@@ -14,6 +23,9 @@ const { context, authoredHome = false } = Astro.props
 const description =
   context.seo.description ??
   (context.kind === "content" ? context.summary : undefined)
+
+// Everything in `head` is an attribute or a title, never a text node, so all
+// of it is stripped of provenance.
 const documentTitle = cleanStega(context.seo.title)
 const metadataDescription = description ? cleanStega(description) : undefined
 const openGraphTitle = context.openGraph?.title
@@ -26,61 +38,83 @@ const openGraphImageAlt = context.openGraph?.image?.alt
   ? cleanStega(context.openGraph.image.alt)
   : undefined
 
+const settings = readSettings(context.settings ?? {})
+const navigation = primaryMenu(context)
+const columns = footerMenus(context)
+const injection = "codeInjection" in context ? context.codeInjection : undefined
+const canonical = new URL(context.path, Astro.url).toString()
+
 /**
- * Operator-chosen presentation, resolved to CSS custom properties.
- *
- * Every value is looked up against a table the theme owns rather than being
- * written into the page. `settings` is operator input reaching a style
- * attribute, so an unrecognized palette falls back instead of becoming CSS.
- * The one free-text value, the accent colour, is matched against a strict
- * colour pattern for the same reason.
+ * The operator's accent, applied as a variable override rather than written
+ * into a rule. `--accent-hover` is derived from it so a custom accent still
+ * has a hover state; `--accent-ink` is left alone, because each palette
+ * carries a foreground already checked against its own accent and guessing a
+ * new one from an arbitrary hex would be a coin flip on legibility.
  */
-const PALETTES = {
-  forest: { background: "#fbfaf7", text: "#12211a", accent: "#0b3d2e" },
-  ocean: { background: "#f8fbfd", text: "#0f1d28", accent: "#12506e" },
-  sand: { background: "#fdfbf6", text: "#241c11", accent: "#8a5a1f" },
-  ink: { background: "#ffffff", text: "#111111", accent: "#1a1a1a" },
-} as const
-
-const WIDTHS = {
-  narrow: "34rem",
-  regular: "44rem",
-  wide: "60rem",
-} as const
-
-function chosen<T extends Record<string, unknown>>(
-  table: T,
-  value: unknown,
-  fallback: keyof T,
-): T[keyof T] {
-  return typeof value === "string" && value in table
-    ? table[value as keyof T]
-    : table[fallback]
-}
-
-const palette = chosen(PALETTES, context.settings.palette, "forest")
-const contentWidth = chosen(WIDTHS, context.settings["content-width"], "regular")
-
-const requestedAccent = context.settings["accent-color"]
-const accent =
-  typeof requestedAccent === "string" &&
-  /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(requestedAccent.trim())
-    ? requestedAccent.trim()
-    : palette.accent
+const accentStyle = settings.accent
+  ? `--accent:${settings.accent};--accent-hover:color-mix(in oklab, ${settings.accent} 84%, white);`
+  : undefined
 ---
 
 <!doctype html>
-<html lang={context.locale}>
+<html
+  lang={context.locale}
+  data-palette={settings.palette}
+  data-corners={settings.corners}
+  style={accentStyle}
+>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
+    <link rel="canonical" href={canonical} />
+
     <title>{documentTitle}</title>
     {metadataDescription && (
       <meta name="description" content={metadataDescription} />
     )}
-    {context.seo.noIndex && <meta name="robots" content="noindex, nofollow" />}
+    {
+      /*
+       * A 404 is never indexable, whatever the publication says. The context
+       * for a missing page is synthesized rather than authored, so it can
+       * reach a theme without `noIndex` set, and a soft 404 in the index is
+       * worse for the operator than the missing page was.
+       */
+      (context.seo.noIndex || context.kind === "notFound") && (
+        <meta name="robots" content="noindex, nofollow" />
+      )
+    }
+
+    {
+      /*
+       * The two faces that draw above-the-fold type, fetched in parallel with
+       * the stylesheet instead of after it. `crossorigin` is required even
+       * same-origin: a font request is anonymous, and without it the browser
+       * downloads the file a second time.
+       */
+    }
+    <link
+      rel="preload"
+      href="/fonts/fraunces-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/instrument-sans-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <meta
+      property="og:type"
+      content={context.kind === "content" ? "article" : "website"}
+    />
+    <meta property="og:site_name" content={cleanStega(context.site.name)} />
+    <meta property="og:url" content={canonical} />
     {openGraphTitle && <meta property="og:title" content={openGraphTitle} />}
     {openGraphDescription && (
       <meta property="og:description" content={openGraphDescription} />
@@ -88,7 +122,9 @@ const accent =
     {context.openGraph?.image && (
       <meta property="og:image" content={context.openGraph.image.src} />
     )}
-    {openGraphImageAlt && <meta property="og:image:alt" content={openGraphImageAlt} />}
+    {openGraphImageAlt && (
+      <meta property="og:image:alt" content={openGraphImageAlt} />
+    )}
     {context.openGraph?.image?.width && (
       <meta
         property="og:image:width"
@@ -101,66 +137,65 @@ const accent =
         content={String(context.openGraph.image.height)}
       />
     )}
+    <meta
+      name="twitter:card"
+      content={context.openGraph?.image ? "summary_large_image" : "summary"}
+    />
+
+    {
+      /*
+       * Operator-supplied markup, verbatim. A theme's only job is to place
+       * each slot where it belongs; escaping it here would be the same bug as
+       * trusting it, and would silently break the analytics and consent tags
+       * operators depend on.
+       */
+      injection?.head && <Fragment set:html={injection.head} />
+    }
   </head>
-  <body
-    style={`--page-background:${palette.background};--page-text:${palette.text};--page-accent:${accent};--content-width:${contentWidth}`}
-  >
-    <header>
-      <a class="wordmark" href="/">{context.site.name}</a>
-      <nav>
-        {
-          context.navigation.map((item) => (
-            <a href={item.href}>{item.label}</a>
-          ))
-        }
-      </nav>
-    </header>
-    <main class:list={{ "authored-home": authoredHome }}>
+
+  <body class={cn(settings.grain && "u-grain")}>
+    {injection?.bodyStart && <Fragment set:html={injection.bodyStart} />}
+
+    <a
+      href="#main"
+      class="sr-only rounded-pill bg-accent px-5 py-3 text-[0.875rem] text-accent-ink focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]"
+    >
+      Skip to content
+    </a>
+
+    <SiteHeader
+      siteName={context.site.name}
+      logo={context.site.logo}
+      items={navigation}
+      settings={settings}
+      overHero={overHero}
+    />
+
+    {
+      /*
+       * A page that does not open with a full-bleed image starts below the
+       * fixed header rather than under it. The ones that do pad themselves,
+       * because their photograph is meant to run to the top of the window.
+       */
+    }
+    <main
+      id="main"
+      class:list={[
+        !overHero && "pt-[4.5rem] md:pt-[5.25rem]",
+        { "authored-home": authoredHome },
+      ]}
+    >
       <slot />
     </main>
+
+    <SiteFooter
+      siteName={context.site.name}
+      logo={context.site.logo}
+      columns={columns}
+      settings={settings}
+      fallbackItems={navigation}
+    />
+
+    {injection?.bodyEnd && <Fragment set:html={injection.bodyEnd} />}
   </body>
 </html>
-
-<style>
-  html,
-  body {
-    margin: 0;
-    width: 100%;
-    font-family: system-ui, sans-serif;
-    line-height: 1.55;
-    background: var(--page-background, #fbfaf7);
-    color: var(--page-text, #12211a);
-  }
-  header {
-    display: flex;
-    align-items: baseline;
-    gap: 2rem;
-    padding: 1.25rem 2rem;
-    border-bottom: 1px solid color-mix(in srgb, var(--page-text, #12211a) 12%, transparent);
-  }
-  .wordmark {
-    font-weight: 600;
-    text-decoration: none;
-    color: var(--page-accent, #0b3d2e);
-  }
-  nav {
-    display: flex;
-    gap: 1rem;
-  }
-  nav a {
-    color: inherit;
-    text-decoration-color: color-mix(in srgb, var(--page-accent, #0b3d2e) 45%, transparent);
-  }
-  main {
-    max-width: var(--content-width, 44rem);
-    margin: 0 auto;
-    padding: 3rem 2rem;
-  }
-  main.authored-home {
-    max-width: none;
-    padding: 0;
-  }
-  main :global(a) {
-    color: var(--page-accent, #0b3d2e);
-  }
-</style>

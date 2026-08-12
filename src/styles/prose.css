@@ -1,0 +1,172 @@
+/**
+ * Long-form typography.
+ *
+ * Applied to a container rather than to each element, because the markup
+ * inside comes from the operator's editor and the theme cannot put a class on
+ * it. Kept small on purpose: only the elements a travel editor actually
+ * produces — headings, paragraphs, lists, quotes, links, tables, figures.
+ */
+
+.prose {
+  color: var(--ink-muted);
+  font-size: 1.0625rem;
+  line-height: 1.8;
+}
+
+.prose > * + * {
+  margin-top: 1.5em;
+}
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+  text-wrap: balance;
+}
+
+.prose h2 {
+  font-size: 1.875rem;
+  font-variation-settings: "opsz" 36;
+  margin-top: 2.4em;
+}
+
+.prose h3 {
+  font-size: 1.4375rem;
+  font-variation-settings: "opsz" 24;
+  margin-top: 2em;
+}
+
+.prose h4 {
+  font-size: 1.1875rem;
+  font-variation-settings: "opsz" 18;
+  margin-top: 1.8em;
+}
+
+.prose h2 + *,
+.prose h3 + *,
+.prose h4 + * {
+  margin-top: 0.85em;
+}
+
+.prose strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.prose a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.24em;
+  text-decoration-color: color-mix(in oklab, var(--accent) 45%, transparent);
+  transition: text-decoration-color 0.3s var(--ease-out-expo);
+}
+
+.prose a:hover {
+  text-decoration-color: var(--accent);
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.35em;
+}
+
+.prose ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prose ul > li {
+  padding-left: 1.6em;
+  position: relative;
+}
+
+/* A hairline dash rather than a bullet — quieter beside a serif column. */
+.prose ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.85em;
+  width: 0.7em;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+.prose ol {
+  list-style: decimal;
+}
+
+.prose ol > li::marker {
+  color: var(--ink-subtle);
+  font-size: 0.875em;
+}
+
+.prose li + li {
+  margin-top: 0.6em;
+}
+
+.prose blockquote {
+  border-left: 1px solid var(--accent);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.3125rem;
+  font-style: italic;
+  font-variation-settings: "opsz" 24;
+  line-height: 1.5;
+  margin-inline: 0;
+  padding-left: 1.5rem;
+}
+
+.prose img,
+.prose figure {
+  border-radius: var(--radius-card);
+}
+
+.prose figure figcaption {
+  color: var(--ink-subtle);
+  font-size: 0.8125rem;
+  margin-top: 0.75rem;
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin-block: 3em;
+}
+
+.prose code {
+  background: var(--surface-sunk);
+  border-radius: 3px;
+  font-size: 0.875em;
+  padding: 0.15em 0.4em;
+}
+
+/* A table in a travel itinerary is usually a departure list, and it will not
+ * fit a phone. Let it scroll rather than break the page width. */
+.prose table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.prose th,
+.prose td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 1rem 0.75rem 0;
+  text-align: left;
+}
+
+.prose th {
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}

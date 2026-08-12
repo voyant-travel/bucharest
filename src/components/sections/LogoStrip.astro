@@ -1,0 +1,81 @@
+---
+import Band from "~/components/primitives/Band.astro"
+import { cn } from "~/lib/cn"
+import { frame } from "~/lib/presentation"
+import {
+  attributeSetting,
+  choiceSetting,
+  imageSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(settings, "layout", ["static", "marquee"], "static")
+const treatment = choiceSetting(settings, "treatment", ["muted", "full"], "muted")
+const label = visibleSetting(settings, "label")
+
+const marks = section.data.blocks
+  .filter((block) => block.type === "mark")
+  .map((block) => ({
+    src: imageSetting(block.settings, "image"),
+    alt: attributeSetting(block.settings, "image-alt") ?? "",
+  }))
+  .filter((mark): mark is { src: string; alt: string } => Boolean(mark.src))
+
+const markClass = cn(
+  "h-7 w-auto max-w-[9rem] object-contain md:h-8",
+  treatment === "muted" &&
+    "opacity-55 grayscale transition-[opacity,filter] duration-500 hover:opacity-100 hover:grayscale-0",
+)
+---
+
+{
+  marks.length > 0 && (
+    <Band tone={tone} spacing={spacing} bleed={layout === "marquee"}>
+      {label && (
+        <p class={cn("u-eyebrow text-ink-subtle", layout === "marquee" && "u-shell")}>{label}</p>
+      )}
+
+      {layout === "static" ? (
+        <div
+          class={cn(
+            "flex flex-wrap items-center justify-center gap-x-10 gap-y-7 md:justify-between md:gap-x-12",
+            label && "mt-8",
+          )}
+        >
+          {marks.map((mark) => (
+            <img src={mark.src} alt={mark.alt} loading="lazy" decoding="async" class={markClass} />
+          ))}
+        </div>
+      ) : (
+        /*
+         * The track holds two copies so the translation can loop at exactly
+         * -50% with no visible jump. `aria-hidden` on the duplicate keeps a
+         * screen reader from reading every accreditation twice.
+         */
+        <div
+          class={cn(
+            "relative flex overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_6rem,black_calc(100%-6rem),transparent)]",
+            label && "mt-8",
+          )}
+        >
+          <div class="flex w-max animate-marquee items-center gap-12 pr-12 md:gap-16 md:pr-16">
+            {marks.map((mark) => (
+              <img src={mark.src} alt={mark.alt} loading="lazy" decoding="async" class={markClass} />
+            ))}
+            {marks.map((mark) => (
+              <img src={mark.src} alt="" aria-hidden="true" loading="lazy" decoding="async" class={markClass} />
+            ))}
+          </div>
+        </div>
+      )}
+    </Band>
+  )
+}
