@@ -9,6 +9,10 @@ const { value } = Astro.props
 ---
 
 {value.kind === "text" && <span>{value.text}</span>}
+{/* A declared `richText` field, placed as markup for the same reason a mapped
+    richText slot is: escaping it turns an operator's formatted passage into a
+    page of visible tags. */}
+{value.kind === "markup" && <div class="prose" set:html={value.markup} />}
 {
   value.kind === "image" && (
     <img src={value.image.src} alt={value.image.alt} loading="lazy" />
