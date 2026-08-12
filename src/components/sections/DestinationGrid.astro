@@ -1,0 +1,105 @@
+---
+import PlaceCard from "~/components/cards/PlaceCard.astro"
+import Band from "~/components/primitives/Band.astro"
+import Heading from "~/components/primitives/Heading.astro"
+import { cn } from "~/lib/cn"
+import { frame } from "~/lib/presentation"
+import {
+  attributeSetting,
+  choiceSetting,
+  imageSetting,
+  linkSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(settings, "layout", ["mosaic", "even", "rail"], "mosaic")
+
+const places = section.data.blocks
+  .filter((block) => block.type === "place")
+  .map((block) => ({
+    title: visibleSetting(block.settings, "title"),
+    meta: visibleSetting(block.settings, "meta"),
+    image: imageSetting(block.settings, "image"),
+    imageAlt: attributeSetting(block.settings, "image-alt"),
+    href: linkSetting(block.settings, "page"),
+  }))
+  .filter((place) => place.title || place.image)
+
+const ctaLabel = visibleSetting(settings, "label")
+const ctaHref = linkSetting(settings, "page")
+
+/**
+ * Varying the proportion is what stops a set of cards reading as a contact
+ * sheet. Laid out in CSS columns rather than a grid: grid rows align to their
+ * tallest cell, which turns varied heights into ragged white gaps, while
+ * columns let each card sit directly under the one above it.
+ */
+const mosaicRatio = (index: number) =>
+  [
+    "aspect-[4/5] lg:aspect-[3/4]",
+    "aspect-[4/5] lg:aspect-[4/5]",
+    "aspect-[4/5] lg:aspect-[5/7]",
+  ][index % 3]!
+---
+
+{
+  places.length > 0 && (
+    <Band tone={tone} spacing={spacing}>
+      <div class="mb-12 flex flex-col gap-6 md:mb-16 md:flex-row md:items-end md:justify-between">
+        <Heading
+          eyebrow={visibleSetting(settings, "eyebrow")}
+          heading={visibleSetting(settings, "heading")}
+          lede={visibleSetting(settings, "introduction")}
+          headingHtml
+          class="mb-0"
+        />
+        {ctaLabel && ctaHref && (
+          <a
+            href={ctaHref}
+            class="hidden shrink-0 items-center gap-2 rounded-pill border border-ink/25 px-6 py-3 text-[0.875rem] transition-colors duration-300 hover:border-ink/70 md:inline-flex"
+          >
+            {ctaLabel}
+          </a>
+        )}
+      </div>
+
+      {layout === "mosaic" && (
+        <ul class="columns-2 gap-3 md:gap-4 lg:columns-3">
+          {places.map((place, index) => (
+            <li class={cn("mb-3 break-inside-avoid md:mb-4", index === 1 && "lg:mt-12")}>
+              <PlaceCard {...place} ratio={mosaicRatio(index)} sizes="(min-width: 1024px) 31vw, 46vw" />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {layout === "even" && (
+        <ul class="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
+          {places.map((place) => (
+            <li>
+              <PlaceCard {...place} ratio="aspect-[4/5]" />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {layout === "rail" && (
+        <ul class="u-no-scrollbar -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 md:-mx-10 md:px-10">
+          {places.map((place) => (
+            <li class="w-[62vw] shrink-0 snap-start sm:w-[38vw] lg:w-[26vw]">
+              <PlaceCard {...place} ratio="aspect-[3/4]" sizes="65vw" />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Band>
+  )
+}

@@ -1,0 +1,120 @@
+---
+import Band from "~/components/primitives/Band.astro"
+import Heading from "~/components/primitives/Heading.astro"
+import Photo from "~/components/primitives/Photo.astro"
+import { cn } from "~/lib/cn"
+import { messagesFor } from "~/lib/messages"
+import { frame } from "~/lib/presentation"
+import {
+  attributeSetting,
+  choiceSetting,
+  imageSetting,
+  linkSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+  locale?: string
+}
+
+const { section, locale } = Astro.props
+const t = messagesFor(locale)
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(settings, "layout", ["panel", "split", "inline"], "panel")
+
+const action = linkSetting(settings, "action")
+const fieldName = attributeSetting(settings, "field-name") ?? "email"
+const placeholder = attributeSetting(settings, "placeholder") ?? "you@example.com"
+const submitLabel = visibleSetting(settings, "submit-label") ?? t.subscribe
+const note = visibleSetting(settings, "note")
+const image = imageSetting(settings, "image")
+const imageAlt = attributeSetting(settings, "image-alt")
+
+/** Scoped to this instance: two newsletters on one page would otherwise share
+ *  an id, and every label would point at the first form's field. */
+const fieldId = `newsletter-${section.data.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`
+---
+
+<Band tone={tone} spacing={spacing}>
+  <div
+    class={cn(
+      layout === "panel" && "rounded-card border border-line bg-surface px-7 py-12 md:px-14 md:py-16",
+      layout === "split" && "grid items-center gap-10 md:grid-cols-12 md:gap-16",
+      layout === "inline" &&
+        "flex flex-col gap-8 border-y border-line py-12 md:flex-row md:items-center md:justify-between",
+    )}
+  >
+    {
+      layout === "split" && image && (
+        <div class="md:col-span-5">
+          <Photo
+            src={image}
+            alt={imageAlt}
+            ratio="aspect-[4/3]"
+            class="rounded-card"
+            sizes="(min-width: 768px) 40vw, 100vw"
+          />
+        </div>
+      )
+    }
+
+    <div
+      class={cn(
+        layout === "split" && (image ? "md:col-span-7" : "md:col-span-12"),
+        layout === "panel" && "mx-auto max-w-[36rem] text-center",
+        layout === "inline" && "max-w-[30rem]",
+      )}
+    >
+      <Heading
+        eyebrow={visibleSetting(settings, "eyebrow")}
+        heading={visibleSetting(settings, "heading")}
+        lede={visibleSetting(settings, "introduction")}
+        headingHtml
+        size="sm"
+        align={layout === "panel" ? "center" : "left"}
+        class="mb-0"
+      />
+
+      {
+        /*
+         * A real form posting to whatever list the operator runs. `type=email`
+         * gets the right keyboard on a phone and the browser's own validation;
+         * `autocomplete` fills it from the reader's saved address.
+         */
+      }
+      <form
+        method="post"
+        action={action}
+        class={cn("mt-7 flex flex-col gap-2.5 sm:flex-row", layout === "panel" && "mx-auto max-w-[28rem]")}
+      >
+        <label class="sr-only" for={fieldId}>{t.emailAddress}</label>
+        <input
+          id={fieldId}
+          type="email"
+          name={fieldName}
+          required
+          autocomplete="email"
+          placeholder={placeholder}
+          class="h-12 flex-1 rounded-pill border border-line bg-[var(--canvas)] px-5 text-[0.9375rem] text-ink outline-none transition-colors duration-300 placeholder:text-ink-subtle focus:border-ink/45"
+        />
+        <button
+          type="submit"
+          class="h-12 shrink-0 rounded-pill bg-accent px-7 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
+        >
+          {submitLabel}
+        </button>
+      </form>
+
+      {
+        note && (
+          <p class={cn("mt-4 text-[0.75rem] leading-relaxed text-ink-subtle", layout === "panel" && "mx-auto max-w-[28rem]")}>
+            {note}
+          </p>
+        )
+      }
+    </div>
+  </div>
+</Band>

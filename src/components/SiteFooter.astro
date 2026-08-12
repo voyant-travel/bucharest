@@ -1,0 +1,153 @@
+---
+import { cn } from "~/lib/cn"
+import type { Messages } from "~/lib/messages"
+import type { MenuItem, SiteSettings } from "~/lib/site"
+import { telHref } from "~/lib/site"
+
+interface Props {
+  siteName: string
+  logo?: { src: string; alt: string } | undefined
+  columns: Array<{ title?: string; items: MenuItem[] }>
+  settings: SiteSettings
+  fallbackItems: MenuItem[]
+  messages: Messages
+}
+
+const { siteName, logo, columns, settings, fallbackItems, messages } = Astro.props
+
+/** A site with no footer menus still gets a sitemap, from the primary nav. */
+const resolved =
+  columns.length > 0 ? columns : fallbackItems.length > 0 ? [{ items: fallbackItems }] : []
+
+const year = new Date().getFullYear()
+
+/**
+ * Brand marks, drawn to be filled.
+ *
+ * These are the one place in the theme that does not use the hairline stroke
+ * set: a wordmark outlined at 1.35px reads as a smudge at 16px, and a
+ * recognisable logo is the entire job of a social icon. They are drawn solid
+ * and sized down instead.
+ */
+const SOCIAL_PATHS: Record<string, string> = {
+  instagram:
+    "M12 2.2c3.2 0 3.6 0 4.9.07 1.2.05 1.8.25 2.2.42.6.22 1 .48 1.4.9.43.42.7.82.92 1.4.17.42.37 1.05.42 2.25.06 1.28.07 1.66.07 4.88s-.01 3.6-.07 4.88c-.05 1.2-.25 1.83-.42 2.25a3.8 3.8 0 0 1-.92 1.4c-.42.43-.82.7-1.4.92-.42.17-1.05.37-2.25.42-1.28.06-1.66.07-4.88.07s-3.6-.01-4.88-.07c-1.2-.05-1.83-.25-2.25-.42a3.8 3.8 0 0 1-1.4-.92 3.8 3.8 0 0 1-.92-1.4c-.17-.42-.37-1.05-.42-2.25C2.21 15.6 2.2 15.22 2.2 12s.01-3.6.07-4.88c.05-1.2.25-1.83.42-2.25a3.8 3.8 0 0 1 .92-1.4c.42-.43.82-.7 1.4-.92.42-.17 1.05-.37 2.25-.42C8.4 2.21 8.78 2.2 12 2.2Zm0 1.8c-3.17 0-3.5.01-4.74.07-1.14.05-1.76.24-2.17.4-.55.21-.94.47-1.35.88-.4.4-.66.8-.87 1.35-.16.4-.35 1.03-.4 2.17C2.4 10.1 2.4 10.43 2.4 12s0 1.9.06 3.13c.05 1.14.24 1.76.4 2.17.21.55.47.94.88 1.35.4.4.8.66 1.35.87.4.16 1.03.35 2.17.4 1.24.06 1.57.06 4.74.06s3.5 0 4.74-.06c1.14-.05 1.76-.24 2.17-.4a3.6 3.6 0 0 0 1.35-.87c.4-.4.66-.8.87-1.35.16-.4.35-1.03.4-2.17.06-1.24.06-1.57.06-3.13s0-1.9-.06-3.13c-.05-1.14-.24-1.76-.4-2.17a3.6 3.6 0 0 0-.87-1.35 3.6 3.6 0 0 0-1.35-.87c-.4-.16-1.03-.35-2.17-.4C15.5 4.01 15.17 4 12 4Zm0 3.03a4.97 4.97 0 1 1 0 9.94 4.97 4.97 0 0 1 0-9.94Zm0 1.8a3.17 3.17 0 1 0 0 6.34 3.17 3.17 0 0 0 0-6.34Zm5.17-3.2a1.16 1.16 0 1 1 0 2.32 1.16 1.16 0 0 1 0-2.32Z",
+  facebook:
+    "M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.9h2.54V9.85c0-2.52 1.5-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.45 2.9h-2.33V22c4.78-.76 8.44-4.92 8.44-9.94Z",
+  youtube:
+    "M21.58 7.19a2.51 2.51 0 0 0-1.77-1.77C18.25 5 12 5 12 5s-6.25 0-7.81.42a2.51 2.51 0 0 0-1.77 1.77C2 8.75 2 12 2 12s0 3.25.42 4.81c.23.86.9 1.54 1.77 1.77C5.75 19 12 19 12 19s6.25 0 7.81-.42a2.51 2.51 0 0 0 1.77-1.77C22 15.25 22 12 22 12s0-3.25-.42-4.81ZM10 15.02V8.98L15.2 12 10 15.02Z",
+  linkedin:
+    "M6.94 8.9v11.4H3.15V8.9h3.79Zm.24-3.52c0 1.09-.82 1.96-2.14 1.96h-.02c-1.27 0-2.09-.87-2.09-1.96 0-1.11.85-1.96 2.14-1.96 1.29 0 2.09.85 2.11 1.96ZM20.6 13.76v6.54h-3.78v-6.1c0-1.53-.55-2.58-1.92-2.58-1.05 0-1.67.7-1.95 1.39-.1.24-.12.58-.12.92v6.37H9.04s.05-10.34 0-11.41h3.79v1.62l-.03.04h.03v-.04c.5-.78 1.4-1.89 3.41-1.89 2.49 0 4.36 1.63 4.36 5.14Z",
+}
+---
+
+<footer class="border-t border-line bg-canvas">
+  <div class="u-shell py-16 md:py-20">
+    <div class="grid gap-12 md:grid-cols-12 md:gap-10">
+      <div class="md:col-span-4 lg:col-span-3">
+        <a href="/" class="inline-flex items-center" aria-label={siteName}>
+          {
+            logo ? (
+              <img
+                src={logo.src}
+                alt={logo.alt || siteName}
+                class="h-8 w-auto max-w-[12rem] object-contain"
+              />
+            ) : (
+              <span class="u-display-sm text-[1.5rem]">{siteName}</span>
+            )
+          }
+        </a>
+
+        {
+          (settings.phone || settings.email || settings.address) && (
+            <address class="mt-7 space-y-2.5 not-italic text-[0.875rem] leading-relaxed text-ink-muted">
+              {settings.address && <p class="max-w-[16rem]">{settings.address}</p>}
+              {settings.phone && (
+                <p>
+                  <a href={telHref(settings.phone)} class="u-link">
+                    {settings.phone}
+                  </a>
+                </p>
+              )}
+              {settings.email && (
+                <p>
+                  <a href={`mailto:${settings.email}`} class="u-link">
+                    {settings.email}
+                  </a>
+                </p>
+              )}
+            </address>
+          )
+        }
+
+        {
+          settings.social.length > 0 && (
+            <ul class="mt-7 flex items-center gap-2">
+              {settings.social.map((entry) => (
+                <li>
+                  <a
+                    href={entry.href}
+                    rel="me noopener"
+                    aria-label={entry.name}
+                    class="grid h-10 w-10 place-items-center rounded-pill border border-line text-ink-muted transition-colors duration-400 hover:border-ink/40 hover:text-ink"
+                  >
+                    <svg
+                      class="h-[15px] w-[15px]"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path d={SOCIAL_PATHS[entry.icon]} />
+                    </svg>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </div>
+
+      {
+        resolved.length > 0 && (
+          <nav
+            class={cn(
+              "grid gap-10 md:col-span-8 lg:col-span-9",
+              resolved.length >= 4
+                ? "grid-cols-2 lg:grid-cols-4"
+                : resolved.length === 3
+                  ? "grid-cols-2 md:grid-cols-3"
+                  : "grid-cols-2",
+            )}
+            aria-label={messages.footerNav}
+          >
+            {resolved.map((column) => (
+              <div>
+                {column.title && (
+                  <h2 class="u-eyebrow text-ink-subtle">{column.title}</h2>
+                )}
+                <ul class={cn("space-y-3", column.title && "mt-5")}>
+                  {column.items.map((item) => (
+                    <li>
+                      <a
+                        href={item.href}
+                        class="text-[0.9375rem] text-ink-muted transition-colors duration-300 hover:text-ink"
+                      >
+                        {item.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        )
+      }
+    </div>
+
+    <div class="mt-16 flex flex-col gap-4 border-t border-line pt-8 text-[0.8125rem] text-ink-subtle md:flex-row md:items-center md:justify-between">
+      <p>&copy; {year} {siteName}</p>
+      {settings.footerNote && <p class="max-w-[42rem]">{settings.footerNote}</p>}
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,40 @@
+---
+import Band from "~/components/primitives/Band.astro"
+import Heading from "~/components/primitives/Heading.astro"
+import { cn } from "~/lib/cn"
+import { frame } from "~/lib/presentation"
+import { choiceSetting, visibleSetting, type SectionInstance } from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(settings, "layout", ["narrow", "side-heading", "wide"], "narrow")
+
+const body = visibleSetting(settings, "body")
+const headingProps = {
+  eyebrow: visibleSetting(settings, "eyebrow"),
+  heading: visibleSetting(settings, "heading"),
+}
+---
+
+<Band tone={tone} spacing={spacing}>
+  {
+    layout === "side-heading" ? (
+      <div class="grid gap-8 md:grid-cols-12 md:gap-16">
+        <div class="md:col-span-5">
+          <Heading {...headingProps} headingHtml size="sm" class="mb-0 md:sticky md:top-28" />
+        </div>
+        <div class="md:col-span-7">{body && <div class="prose" set:html={body} />}</div>
+      </div>
+    ) : (
+      <div class={cn(layout === "narrow" ? "max-w-[42rem]" : "max-w-[58rem]")}>
+        <Heading {...headingProps} headingHtml class="mb-8" />
+        {body && <div class="prose" set:html={body} />}
+      </div>
+    )
+  }
+</Band>

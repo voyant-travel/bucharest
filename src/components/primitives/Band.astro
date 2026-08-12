@@ -1,0 +1,48 @@
+---
+/**
+ * The outer wrapper every section shares.
+ *
+ * Sections are composed in an order nobody writes down in advance, so the
+ * background and the vertical rhythm have to be resolved in one place. Two
+ * adjacent bands on the same tone collapse their shared padding through
+ * `[&+&]` rather than each section guessing what precedes it.
+ */
+import { cn } from "~/lib/cn"
+import {
+  spacingClass,
+  toneClass,
+  type Spacing,
+  type Tone,
+} from "~/lib/presentation"
+
+interface Props {
+  tone?: Tone
+  spacing?: Spacing
+  class?: string
+  innerClass?: string
+  /** Skip the page gutter — for full-bleed heroes and image strips. */
+  bleed?: boolean
+  id?: string
+  as?: "section" | "div" | "header" | "footer"
+}
+
+const {
+  tone = "canvas",
+  spacing = "regular",
+  class: className,
+  innerClass,
+  bleed = false,
+  id,
+  as: Tag = "section",
+} = Astro.props
+---
+
+<Tag
+  id={id}
+  data-tone={tone}
+  class={cn("relative", toneClass(tone), spacingClass(spacing), className)}
+>
+  <div class={cn(bleed ? "w-full" : "u-shell", innerClass)}>
+    <slot />
+  </div>
+</Tag>

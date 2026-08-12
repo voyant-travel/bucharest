@@ -1,0 +1,112 @@
+---
+/**
+ * One itinerary.
+ *
+ * The title sits below the photograph rather than over it. Trip names run long
+ * — "African Honeymoon Immersed in Nature" — and overlaid type either wraps
+ * over a face or gets truncated, which is how a card of someone's flagship
+ * trip ends up unreadable. Place names get the overlay treatment instead; they
+ * are one word and they benefit from it.
+ */
+import Photo from "~/components/primitives/Photo.astro"
+import { cn } from "~/lib/cn"
+
+interface Props {
+  image?: string | undefined
+  imageAlt?: string | undefined
+  badge?: string | undefined
+  title?: string | undefined
+  region?: string | undefined
+  meta?: string | undefined
+  price?: string | undefined
+  href?: string | undefined
+  ratio?: string
+  class?: string
+  priority?: boolean
+  sizes?: string
+}
+
+const {
+  image,
+  imageAlt,
+  badge,
+  title,
+  region,
+  meta,
+  price,
+  href,
+  ratio = "aspect-[4/5]",
+  class: className,
+  priority = false,
+  sizes,
+} = Astro.props
+
+const Tag = href ? "a" : "div"
+---
+
+<Tag
+  href={href}
+  class={cn(
+    "group flex h-full flex-col",
+    href && "focus-visible:outline-none",
+    className,
+  )}
+>
+  <div class="relative">
+    {
+      image ? (
+        <Photo
+          src={image}
+          alt={imageAlt}
+          ratio={ratio}
+          priority={priority}
+          sizes={sizes}
+          class="rounded-card"
+        />
+      ) : (
+        <div class={cn("rounded-card bg-surface-sunk", ratio)} />
+      )
+    }
+    {
+      badge && (
+        <span class="u-eyebrow absolute left-3 top-3 rounded-pill bg-canvas/92 px-3 py-2 text-ink backdrop-blur-sm">
+          {badge}
+        </span>
+      )
+    }
+  </div>
+
+  <div class="flex flex-1 flex-col pt-5">
+    {
+      region && (
+        <p class="u-eyebrow text-ink-subtle">{region}</p>
+      )
+    }
+    {
+      title && (
+        <h3 class="u-display-sm mt-2.5 text-[1.3125rem] leading-[1.2] md:text-[1.4375rem]">
+          <span
+            class={cn(
+              "bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 transition-[background-size] duration-500 ease-[var(--ease-out-expo)]",
+              href && "group-hover:bg-[length:100%_1px]",
+            )}
+          >
+            {title}
+          </span>
+        </h3>
+      )
+    }
+    {
+      (meta || price) && (
+        <div class="mt-auto flex items-baseline justify-between gap-4 border-t border-line pt-4 text-[0.8125rem] text-ink-muted">
+          {meta && <span class="leading-snug">{meta}</span>}
+          {price && (
+            <span class="u-serif-body shrink-0 text-[0.9375rem] text-ink">
+              {price}
+            </span>
+          )}
+        </div>
+      )
+    }
+  </div>
+</Tag>

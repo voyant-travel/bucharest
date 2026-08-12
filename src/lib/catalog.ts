@@ -1,0 +1,235 @@
+/**
+ * Reading a catalog product.
+ *
+ * A published tour carries editorial identity only — description, itinerary,
+ * media, features, destinations. Price and availability are deliberately
+ * absent: the contract strips commercial values from a publication snapshot
+ * and serves them live behind capabilities instead. So nothing here invents a
+ * "from" price or a departure date, and a template that wants one asks the
+ * capability layer rather than the product.
+ *
+ * Every list arrives with an optional `sortOrder`. The operator arranged them
+ * for a reason, so each accessor sorts by it and falls back to the published
+ * order rather than re-sorting alphabetically.
+ */
+
+type Ordered = { sortOrder?: number | undefined }
+
+/** Stable ordering: authored `sortOrder` first, published order as the tiebreak. */
+function byOrder<T extends Ordered>(items: readonly T[]): T[] {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const left = a.item.sortOrder ?? Number.MAX_SAFE_INTEGER
+      const right = b.item.sortOrder ?? Number.MAX_SAFE_INTEGER
+      return left === right ? a.index - b.index : left - right
+    })
+    .map(({ item }) => item)
+}
+
+export type ProductMedia = {
+  id: string
+  mediaType: string
+  url: string
+  altText?: string | null | undefined
+  width?: number | null | undefined
+  height?: number | null | undefined
+  sortOrder?: number | undefined
+}
+
+export type Photo = { src: string; alt: string; width?: number; height?: number }
+
+/**
+ * Only a source a browser will fetch from this document.
+ *
+ * Media URLs come from the operator's own CDN, which this theme knows nothing
+ * about, so the check is on the scheme rather than the host.
+ */
+function isSafeSrc(url: string): boolean {
+  return /^https?:\/\//i.test(url) || url.startsWith("/")
+}
+
+function toPhoto(media: ProductMedia): Photo | undefined {
+  if (!isSafeSrc(media.url)) return undefined
+  return {
+    src: media.url,
+    alt: media.altText ?? "",
+    ...(typeof media.width === "number" ? { width: media.width } : {}),
+    ...(typeof media.height === "number" ? { height: media.height } : {}),
+  }
+}
+
+/** Images only. A product's media list may also carry video and documents. */
+export function imagesOf(media: readonly ProductMedia[] = []): Photo[] {
+  return byOrder(media)
+    .filter((item) => item.mediaType.toLowerCase().includes("image"))
+    .map(toPhoto)
+    .filter((photo): photo is Photo => photo !== undefined)
+}
+
+/**
+ * The lead photograph.
+ *
+ * `coverMedia` when the operator chose one, otherwise the first image in the
+ * gallery — a product page led by a grey box when perfectly good photography
+ * sits below it is worse than borrowing the first frame.
+ */
+export function coverOf(product: {
+  coverMedia?: ProductMedia | null | undefined
+  media?: readonly ProductMedia[] | undefined
+}): Photo | undefined {
+  const cover = product.coverMedia ? toPhoto(product.coverMedia) : undefined
+  return cover ?? imagesOf(product.media)[0]
+}
+
+/** Gallery images with the lead one removed, so it is not shown twice. */
+export function galleryOf(product: {
+  coverMedia?: ProductMedia | null | undefined
+  media?: readonly ProductMedia[] | undefined
+}): Photo[] {
+  const cover = coverOf(product)
+  return imagesOf(product.media).filter((photo) => photo.src !== cover?.src)
+}
+
+export type Named = {
+  id: string
+  name: string
+  slug?: string
+  coverMedia?: ProductMedia | null | undefined
+  sortOrder?: number | undefined
+}
+
+export function namesOf(items: readonly Named[] = []): string[] {
+  return byOrder(items).map((item) => item.name)
+}
+
+export type Place = { name: string; slug?: string | undefined; photo?: Photo | undefined }
+
+/**
+ * Destinations and ports with whatever photography they carry.
+ *
+ * A taxonomy record only gained a `coverMedia` in contract v1 / SDK 1.1.0, so
+ * a publication cut before that has names and nothing else. Both shapes have
+ * to render: the caller checks `illustrated` and picks a layout rather than
+ * committing to cards and hoping the operator filled them in.
+ */
+export function placesOf(items: readonly Named[] = []): Place[] {
+  return byOrder(items).map((item) => ({
+    name: item.name,
+    slug: item.slug,
+    photo: item.coverMedia ? toPhoto(item.coverMedia) : undefined,
+  }))
+}
+
+/** Whether any item in a list has a photograph worth building a grid around. */
+export function illustrated(places: readonly Place[]): boolean {
+  return places.some((place) => place.photo !== undefined)
+}
+
+export type Feature = {
+  id: string
+  featureType: string
+  title: string
+  description?: string | null | undefined
+  sortOrder?: number | undefined
+}
+
+export function featuresOf(features: readonly Feature[] = []): Feature[] {
+  return byOrder(features)
+}
+
+export type Faq = {
+  id: string
+  question: string
+  answer: string
+  sortOrder?: number | undefined
+}
+
+export function faqsOf(faqs: readonly Faq[] = []): Faq[] {
+  return byOrder(faqs)
+}
+
+export type ItineraryDay = {
+  id: string
+  dayNumber: number
+  title?: string | null | undefined
+  description?: string | null | undefined
+  location?: string | null | undefined
+  coverMedia?: ProductMedia | null | undefined
+  /** @deprecated Superseded by `coverMedia`; still present on older publications. */
+  thumbnailUrl?: string | null | undefined
+}
+
+/**
+ * A day's photograph.
+ *
+ * `coverMedia` first, then the deprecated `thumbnailUrl` a publication cut
+ * against an earlier contract may still carry. The bare URL has no dimensions
+ * and no description, so a day that only has one gets an empty alt — it is
+ * decorative beside the text it illustrates, and inventing a description would
+ * be worse than admitting there is none.
+ */
+export function dayPhotoOf(day: ItineraryDay): Photo | undefined {
+  if (day.coverMedia) return toPhoto(day.coverMedia)
+  if (typeof day.thumbnailUrl === "string" && isSafeSrc(day.thumbnailUrl)) {
+    return { src: day.thumbnailUrl, alt: "" }
+  }
+  return undefined
+}
+
+/** Days in the order they are travelled, whatever order they were published in. */
+export function daysOf(
+  itinerary: { days?: readonly ItineraryDay[] | undefined } | null | undefined,
+): ItineraryDay[] {
+  if (!itinerary?.days) return []
+  return [...itinerary.days].sort((a, b) => a.dayNumber - b.dayNumber)
+}
+
+/** A machine value like `small_group` rendered as the words an operator wrote. */
+export function humanize(value: string): string {
+  const spaced = value.replaceAll("_", " ").replaceAll("-", " ").trim()
+  return spaced === "" ? value : spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
+/**
+ * The anchor and the dictionary key of one product-page section.
+ *
+ * The label is a key rather than a string because this module has no locale:
+ * the page reading it does, and it is the page that turns `whereYouGo` into
+ * "Where you go" or "Unde ajungi".
+ */
+export type ProductSection = {
+  id: string
+  key: "overview" | "itinerary" | "included" | "whereYouGo" | "gallery" | "questions"
+}
+
+/**
+ * The anchored sections a product page offers, and only the ones it can fill.
+ *
+ * The in-page nav is built from this rather than hard-coded, so a product with
+ * no itinerary does not advertise an "Itinerary" link that scrolls nowhere.
+ */
+export function productSections(product: {
+  descriptionHtml?: string | undefined
+  itinerary?: { days?: readonly ItineraryDay[] | undefined } | null | undefined
+  destinations?: readonly Named[] | undefined
+  features?: readonly Feature[] | undefined
+  faqs?: readonly Faq[] | undefined
+  coverMedia?: ProductMedia | null | undefined
+  media?: readonly ProductMedia[] | undefined
+}): ProductSection[] {
+  const sections: ProductSection[] = []
+  if (product.descriptionHtml) sections.push({ id: "overview", key: "overview" })
+  if (daysOf(product.itinerary).length > 0) {
+    sections.push({ id: "itinerary", key: "itinerary" })
+  }
+  if ((product.features ?? []).length > 0) {
+    sections.push({ id: "included", key: "included" })
+  }
+  if ((product.destinations ?? []).length > 0) {
+    sections.push({ id: "destinations", key: "whereYouGo" })
+  }
+  if (galleryOf(product).length > 0) sections.push({ id: "gallery", key: "gallery" })
+  if ((product.faqs ?? []).length > 0) sections.push({ id: "questions", key: "questions" })
+  return sections
+}

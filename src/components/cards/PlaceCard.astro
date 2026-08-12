@@ -1,0 +1,84 @@
+---
+/**
+ * One destination. Place names are short, so they take the overlay.
+ */
+import Photo from "~/components/primitives/Photo.astro"
+import { cn } from "~/lib/cn"
+
+interface Props {
+  image?: string | undefined
+  imageAlt?: string | undefined
+  title?: string | undefined
+  meta?: string | undefined
+  href?: string | undefined
+  ratio?: string
+  class?: string
+  priority?: boolean
+  sizes?: string
+}
+
+const {
+  image,
+  imageAlt,
+  title,
+  meta,
+  href,
+  ratio = "aspect-[4/5]",
+  class: className,
+  priority = false,
+  sizes,
+} = Astro.props
+
+const Tag = href ? "a" : "div"
+---
+
+<Tag
+  href={href}
+  class={cn(
+    "group u-frame u-scrim relative block rounded-card",
+    ratio,
+    className,
+  )}
+>
+  {
+    image ? (
+      <Photo src={image} alt={imageAlt} class="absolute inset-0" priority={priority} sizes={sizes} />
+    ) : (
+      <div class="absolute inset-0 bg-surface-sunk" />
+    )
+  }
+
+  <div class="absolute inset-x-0 bottom-0 z-[2] flex items-end justify-between gap-4 p-5 md:p-6">
+    <div class="min-w-0">
+      {
+        title && (
+          <h3 class="u-display-sm text-[1.375rem] text-white drop-shadow-[0_1px_12px_rgba(0,0,0,0.35)] md:text-[1.625rem]">
+            {title}
+          </h3>
+        )
+      }
+      {
+        meta && (
+          <p class="mt-1.5 text-[0.8125rem] text-white/78">{meta}</p>
+        )
+      }
+    </div>
+    {
+      href && (
+        <span
+          class="grid h-9 w-9 shrink-0 translate-y-1 place-items-center rounded-pill border border-white/40 text-white opacity-0 transition-all duration-500 ease-[var(--ease-out-expo)] group-hover:translate-y-0 group-hover:opacity-100"
+          aria-hidden="true"
+        >
+          <svg class="h-3.5 w-3.5" viewBox="0 0 12 12" fill="none">
+            <path
+              d="M1 6h9M6.5 2 10.5 6l-4 4"
+              stroke="currentColor"
+              stroke-width="1.25"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+        </span>
+      )
+    }
+  </div>
+</Tag>

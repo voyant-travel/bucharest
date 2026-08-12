@@ -1,0 +1,101 @@
+---
+import Band from "~/components/primitives/Band.astro"
+import Heading from "~/components/primitives/Heading.astro"
+import { cn } from "~/lib/cn"
+import { frame } from "~/lib/presentation"
+import {
+  choiceSetting,
+  linkSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+const layout = choiceSetting(settings, "layout", ["row", "vertical"], "row")
+
+const steps = section.data.blocks
+  .filter((block) => block.type === "step")
+  .map((block) => ({
+    title: visibleSetting(block.settings, "title"),
+    description: visibleSetting(block.settings, "description"),
+  }))
+  .filter((step) => step.title || step.description)
+
+const ctaLabel = visibleSetting(settings, "label")
+const ctaHref = linkSetting(settings, "page")
+const ordinal = (index: number) => String(index + 1).padStart(2, "0")
+
+const columns =
+  steps.length >= 4 ? "lg:grid-cols-4" : steps.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-2"
+---
+
+{
+  steps.length > 0 && (
+    <Band tone={tone} spacing={spacing}>
+      <Heading
+        eyebrow={visibleSetting(settings, "eyebrow")}
+        heading={visibleSetting(settings, "heading")}
+        lede={visibleSetting(settings, "introduction")}
+        headingHtml
+        class="mb-14"
+      />
+
+      <ol
+        class={cn(
+          layout === "row" && cn("grid gap-x-8 gap-y-12 sm:grid-cols-2", columns),
+          layout === "vertical" && "border-t border-line",
+        )}
+      >
+        {steps.map((step, index) => (
+          <li
+            class={cn(
+              layout === "vertical" && "grid gap-3 border-b border-line py-8 md:grid-cols-12 md:gap-10",
+            )}
+          >
+            <div class={cn(layout === "vertical" && "md:col-span-4 md:flex md:items-baseline md:gap-5")}>
+              <span
+                class={cn(
+                  "u-display block text-[2.5rem] leading-none text-accent opacity-30",
+                  layout !== "vertical" && "mb-5",
+                )}
+                aria-hidden="true"
+              >
+                {ordinal(index)}
+              </span>
+              {step.title && (
+                <h3 class="u-display-sm text-[1.25rem] md:text-[1.375rem]">{step.title}</h3>
+              )}
+            </div>
+            {step.description && (
+              <p
+                class={cn(
+                  "text-[0.9375rem] leading-[1.7] text-ink-muted",
+                  layout === "vertical" ? "md:col-span-8" : "mt-3",
+                )}
+              >
+                {step.description}
+              </p>
+            )}
+          </li>
+        ))}
+      </ol>
+
+      {ctaLabel && ctaHref && (
+        <div class="mt-12">
+          <a
+            href={ctaHref}
+            class="inline-flex h-11 items-center rounded-pill bg-accent px-6 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
+          >
+            {ctaLabel}
+          </a>
+        </div>
+      )}
+    </Band>
+  )
+}

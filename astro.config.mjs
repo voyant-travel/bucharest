@@ -1,5 +1,7 @@
 // @ts-check
 import cloudflare from "@astrojs/cloudflare"
+import react from "@astrojs/react"
+import tailwindcss from "@tailwindcss/vite"
 import { voyantTheme } from "@voyant-travel/astro"
 import { defineConfig } from "astro/config"
 import theme from "./theme.config.ts"
@@ -11,5 +13,16 @@ import theme from "./theme.config.ts"
 export default defineConfig({
   output: "server",
   adapter: cloudflare(),
-  integrations: [voyantTheme({ theme })],
+  // React renders the three genuinely interactive parts — the mobile drawer,
+  // the listing filter, the gallery viewer. Every section is Astro, so a page
+  // that uses none of them ships no framework at all.
+  integrations: [react(), voyantTheme({ theme })],
+  vite: {
+    plugins: [tailwindcss()],
+    resolve: {
+      alias: {
+        "~": new URL("./src", import.meta.url).pathname,
+      },
+    },
+  },
 })

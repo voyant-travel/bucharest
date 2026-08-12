@@ -1,6 +1,35 @@
 ---
+/**
+ * A tour, as a product page.
+ *
+ * The anatomy is the one a tour operator's product page actually needs:
+ * a cinematic lead, a sticky in-page nav, then the editorial sections in the
+ * order a reader asks about them — what it is, what happens each day, what is
+ * included, where it goes — with the live booking panel alongside.
+ *
+ * No price or departure date is read from the publication. The contract strips
+ * commercial values from a snapshot on purpose, so everything commercial in
+ * the sidebar is fetched live from the capability endpoints at request time.
+ */
 import type { TourDetailContext } from "@voyant-travel/theme"
-import { availableCapability } from "../lib/tour-capabilities"
+import PlaceCard from "~/components/cards/PlaceCard.astro"
+import Photo from "~/components/primitives/Photo.astro"
+import { cn } from "~/lib/cn"
+import {
+  coverOf,
+  dayPhotoOf,
+  daysOf,
+  illustrated,
+  placesOf,
+  faqsOf,
+  featuresOf,
+  galleryOf,
+  humanize,
+  namesOf,
+  productSections,
+} from "~/lib/catalog"
+import { counted, fill, messagesFor } from "~/lib/messages"
+import { availableCapability } from "~/lib/tour-capabilities"
 import BookingJourney from "./BookingJourney.astro"
 
 interface Props {
@@ -9,91 +38,421 @@ interface Props {
 
 const { context } = Astro.props
 const { product } = context
+const t = messagesFor(context.locale)
+
 const availability = availableCapability(context.live, "catalog.availability.v1")
 const pricing = availableCapability(context.live, "catalog.pricing.v1")
 const booking = availableCapability(context.live, "booking.session.v1")
 const checkout = availableCapability(context.live, "checkout.v1")
+
+const cover = coverOf(product)
+const gallery = galleryOf(product)
+const days = daysOf(product.itinerary)
+const features = featuresOf(product.features)
+const faqs = faqsOf(product.faqs)
+const destinations = namesOf(product.destinations)
+const places = placesOf(product.destinations)
+const categories = namesOf(product.categories)
+const sections = productSections(product)
+
+const facts = [
+  destinations.length > 0
+    ? { label: t.where, value: destinations.join(" · ") }
+    : undefined,
+  days.length > 0
+    ? { label: t.length, value: counted(context.locale, t, "days", days.length) }
+    : undefined,
+  { label: t.format, value: humanize(product.bookingMode) },
+  { label: t.capacity, value: humanize(product.capacityMode) },
+].filter((fact): fact is { label: string; value: string } => fact !== undefined)
+
+/*
+ * The words the live-selling script writes into the page.
+ *
+ * A module script has no access to the component's props, so the dictionary
+ * travels with the element it belongs to rather than being re-derived — and
+ * only the handful of strings that script actually writes, not the whole
+ * dictionary.
+ */
+const liveMessages = JSON.stringify({
+  checking: t.checkingLive,
+  updated: t.liveUpdated,
+  unavailable: t.liveUnavailable,
+  failed: t.requestFailed,
+  noDates: t.noBookableDates,
+  toBeConfirmed: t.dateToBeConfirmed,
+  choose: t.choose,
+  needsDate: t.priceNeedsDate,
+  places: t.plurals.places,
+})
+
+const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
 ---
 
-<article class="tour-detail">
-  <p class="eyebrow">
-    {product.destinations.map((destination) => destination.name).join(" · ") || "Tour"}
-  </p>
-  <h1>{product.name}</h1>
-  {product.shortDescription && <p class="lede">{product.shortDescription}</p>}
+<article>
+  {
+    cover ? (
+      <header class="u-frame u-scrim-hero u-scrim-top relative flex min-h-[26rem] items-end md:min-h-[40rem]">
+        <Photo src={cover.src} alt={cover.alt} class="absolute inset-0" priority sizes="100vw" decorative />
+        <div class="u-shell relative z-[2] w-full pb-12 pt-32 md:pb-16">
+          <nav aria-label={t.breadcrumb}>
+            <a
+              href="/tours"
+              class="u-eyebrow inline-flex items-center gap-2.5 text-white/80 transition-opacity duration-300 hover:opacity-70"
+            >
+              <span class="h-px w-5 bg-current" aria-hidden="true" />
+              {t.allJourneys}
+            </a>
+          </nav>
+          {destinations.length > 0 && (
+            <p class="u-eyebrow mt-6 text-white/75">{destinations.join(" · ")}</p>
+          )}
+          <h1 class="u-display mt-4 max-w-[20ch] text-[2.25rem] text-white sm:text-[3rem] md:text-[3.875rem]">
+            {product.name}
+          </h1>
+          {categories.length > 0 && (
+            <ul class="mt-6 flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <li class="u-eyebrow rounded-pill border border-white/35 px-4 py-2 text-white/85">
+                  {category}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </header>
+    ) : (
+      <header class="u-shell pb-10 pt-16 md:pt-24">
+        <nav aria-label={t.breadcrumb}>
+          <a
+            href="/tours"
+            class="u-eyebrow inline-flex items-center gap-2.5 text-ink-subtle transition-opacity duration-300 hover:opacity-65"
+          >
+            <span class="h-px w-5 bg-current" aria-hidden="true" />
+            {t.allJourneys}
+          </a>
+        </nav>
+        {destinations.length > 0 && (
+          <p class="u-eyebrow mt-6 text-ink-subtle">{destinations.join(" · ")}</p>
+        )}
+        <h1 class="u-display mt-4 max-w-[20ch] text-[2.25rem] sm:text-[3rem] md:text-[3.875rem]">
+          {product.name}
+        </h1>
+      </header>
+    )
+  }
 
-  <dl class="facts">
-    <div><dt>Format</dt><dd>{product.bookingMode.replaceAll("_", " ")}</dd></div>
-    <div><dt>Capacity</dt><dd>{product.capacityMode.replaceAll("_", " ")}</dd></div>
-    {product.categories.length > 0 && (
-      <div><dt>Style</dt><dd>{product.categories.map((item) => item.name).join(", ")}</dd></div>
-    )}
-  </dl>
+  {
+    /*
+     * The in-page nav is built from the sections this product can actually
+     * fill, so a tour with no itinerary never advertises a link that scrolls
+     * nowhere. It scrolls horizontally on a phone rather than wrapping into
+     * three rows above the content.
+     */
+    sections.length > 1 && (
+      <nav
+        class="sticky top-[4.5rem] z-30 border-b border-line bg-[var(--canvas)]/92 backdrop-blur-lg md:top-[5.25rem]"
+        aria-label={t.onThisPage}
+      >
+        <div class="u-shell">
+          <ul class="u-no-scrollbar -mx-5 flex gap-1 overflow-x-auto px-5 md:mx-0 md:px-0">
+            {sections.map((section) => (
+              <li>
+                <a
+                  href={`#${section.id}`}
+                  class="inline-flex h-12 items-center whitespace-nowrap px-4 text-[0.8125rem] text-ink-muted transition-colors duration-300 hover:text-ink"
+                >
+                  {t[section.key]}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </nav>
+    )
+  }
 
-  {product.descriptionHtml && (
-    <section class="prose" set:html={product.descriptionHtml} />
-  )}
+  <div class="u-shell py-14 md:py-20">
+    <div class="grid gap-12 lg:grid-cols-12 lg:gap-16">
+      <div class="lg:col-span-7 xl:col-span-8">
+        {
+          product.shortDescription && (
+            <p class="u-serif-body text-[1.25rem] leading-[1.55] text-ink md:text-[1.5rem]">
+              {product.shortDescription}
+            </p>
+          )
+        }
 
-  {product.features.length > 0 && (
-    <section>
-      <h2>What makes it special</h2>
-      <ul class="features">
-        {product.features.map((feature) => (
-          <li>
-            <h3>{feature.title}</h3>
-            {feature.description && <p>{feature.description}</p>}
-          </li>
-        ))}
-      </ul>
-    </section>
-  )}
+        {
+          facts.length > 0 && (
+            <dl class="mt-10 grid grid-cols-2 gap-x-6 gap-y-7 border-y border-line py-8 sm:grid-cols-4">
+              {facts.map((fact) => (
+                <div>
+                  <dt class="u-eyebrow text-ink-subtle">{fact.label}</dt>
+                  <dd class="u-serif-body mt-2.5 text-[1.0625rem]">{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )
+        }
 
-  {product.itinerary && (
-    <section>
-      <h2>{product.itinerary.name}</h2>
-      <ol class="itinerary">
-        {product.itinerary.days.map((day) => (
-          <li>
-            <p class="eyebrow">Day {day.dayNumber}</p>
-            {day.title && <h3>{day.title}</h3>}
-            {day.description && <p>{day.description}</p>}
-          </li>
-        ))}
-      </ol>
-    </section>
-  )}
+        {
+          product.descriptionHtml && (
+            <section id="overview" class="mt-14 scroll-mt-40">
+              <h2 class={sectionHeading}>{t.overview}</h2>
+              <div class="prose mt-6" set:html={product.descriptionHtml} />
+            </section>
+          )
+        }
 
-  {(availability || pricing) && (
-    <section
-      class="live-card"
-      data-tour-live
-      data-product-id={product.id}
-      data-locale={context.locale}
-      data-availability-endpoint={availability?.endpoint}
-      data-pricing-endpoint={pricing?.endpoint}
-    >
-      <p class="eyebrow">Live selling</p>
-      <h2>Dates and price</h2>
-      <p>Availability and pricing are checked live and are never copied into the published page.</p>
-      <div class="actions">
-        {availability && <button type="button" data-load-availability>Check dates</button>}
-        {pricing && <button type="button" class="secondary" data-load-pricing>Preview price</button>}
+        {
+          days.length > 0 && (
+            <section id="itinerary" class="mt-14 scroll-mt-40">
+              <h2 class={sectionHeading}>{t.itinerary}</h2>
+              {
+                /*
+                 * Days are a numbered list joined by a rule rather than a stack
+                 * of cards: an itinerary is read in sequence, and the through
+                 * line is the point of it.
+                 */
+              }
+              <ol class="mt-8 border-t border-line">
+                {days.map((day) => (
+                  <li class="grid gap-3 border-b border-line py-7 md:grid-cols-12 md:gap-8">
+                    <div class="md:col-span-3">
+                      <p class="u-eyebrow text-accent">{fill(t.dayNumber, { count: day.dayNumber })}</p>
+                      {day.location && (
+                        <p class="mt-2 text-[0.8125rem] text-ink-subtle">{day.location}</p>
+                      )}
+                    </div>
+                    <div class="md:col-span-9">
+                      {day.title && (
+                        <h3 class="u-display-sm text-[1.25rem] md:text-[1.375rem]">{day.title}</h3>
+                      )}
+                      {day.description && (
+                        <p class="mt-3 text-[0.9375rem] leading-[1.75] text-ink-muted">
+                          {day.description}
+                        </p>
+                      )}
+                      {
+                        /*
+                         * A day's photograph sits under its copy rather than
+                         * beside it: at this column width a floated thumbnail
+                         * leaves a two-word ragged edge, and the picture is
+                         * illustrating the day, not competing with it.
+                         */
+                      }
+                      {dayPhotoOf(day) && (
+                        <Photo
+                          src={dayPhotoOf(day)!.src}
+                          alt={dayPhotoOf(day)!.alt}
+                          ratio="aspect-[16/9]"
+                          class="mt-5 rounded-card"
+                          sizes="(min-width: 1024px) 46vw, 92vw"
+                        />
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )
+        }
+
+        {
+          features.length > 0 && (
+            <section id="included" class="mt-14 scroll-mt-40">
+              <h2 class={sectionHeading}>{t.included}</h2>
+              <ul class="mt-8 grid gap-x-10 gap-y-7 sm:grid-cols-2">
+                {features.map((feature) => (
+                  <li class="flex gap-4">
+                    <span
+                      class="mt-2 h-1.5 w-1.5 shrink-0 rounded-pill bg-accent"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <h3 class="text-[0.9375rem] font-medium">{feature.title}</h3>
+                      {feature.description && (
+                        <p class="mt-1.5 text-[0.875rem] leading-relaxed text-ink-muted">
+                          {feature.description}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        {
+          destinations.length > 0 && (
+            <section id="destinations" class="mt-14 scroll-mt-40">
+              <h2 class={sectionHeading}>{t.whereYouGo}</h2>
+              {
+                /*
+                 * Destinations only gained a `coverMedia` in SDK 1.1.0, so a
+                 * publication cut before that has names and nothing else. With
+                 * photography they are places worth looking at; without, they
+                 * stay the labels they have always been.
+                 */
+              }
+              {illustrated(places) ? (
+                <ul class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                  {places.map((place) => (
+                    <li>
+                      <PlaceCard
+                        image={place.photo?.src}
+                        imageAlt={place.photo?.alt}
+                        title={place.name}
+                        ratio="aspect-[4/5]"
+                        sizes="(min-width: 768px) 30vw, 46vw"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul class="mt-8 flex flex-wrap gap-2.5">
+                  {destinations.map((destination) => (
+                    <li class="rounded-pill border border-line px-5 py-2.5 text-[0.875rem] text-ink-muted">
+                      {destination}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )
+        }
+
+        {
+          gallery.length > 0 && (
+            <section id="gallery" class="mt-14 scroll-mt-40">
+              <h2 class={sectionHeading}>{t.gallery}</h2>
+              <ul class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                {gallery.map((photo) => (
+                  <li>
+                    <Photo
+                      src={photo.src}
+                      alt={photo.alt}
+                      ratio="aspect-[4/3]"
+                      class="rounded-card"
+                      sizes="(min-width: 768px) 30vw, 46vw"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        {
+          faqs.length > 0 && (
+            <section id="questions" class="mt-14 scroll-mt-40">
+              <h2 class={sectionHeading}>{t.questions}</h2>
+              <div class="mt-8 border-t border-line">
+                {faqs.map((faq) => (
+                  <details name={`tour-faq-${product.id}`} class="group border-b border-line">
+                    <summary class="flex cursor-pointer list-none items-start justify-between gap-6 py-5 [&::-webkit-details-marker]:hidden">
+                      <span class="u-serif-body text-[1.0625rem] leading-snug md:text-[1.1875rem]">
+                        {faq.question}
+                      </span>
+                      <span
+                        class="relative mt-1.5 h-3.5 w-3.5 shrink-0 text-ink-subtle"
+                        aria-hidden="true"
+                      >
+                        <span class="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-current" />
+                        <span class="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-current transition-transform duration-400 ease-[var(--ease-out-expo)] group-open:scale-y-0" />
+                      </span>
+                    </summary>
+                    <p class="pb-6 pr-10 text-[0.9375rem] leading-[1.75] text-ink-muted">
+                      {faq.answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )
+        }
       </div>
-      <p data-live-status aria-live="polite"></p>
-      <div data-live-result></div>
-    </section>
-  )}
 
-  {booking && (
-    <BookingJourney
-      productId={product.id}
-      locale={context.locale}
-      bookingEndpoint={booking.endpoint}
-      checkoutEndpoint={checkout?.endpoint}
-    />
-  )}
+      {
+        /*
+         * The booking panel sticks on wide screens only. On a phone it sits
+         * inline after the copy, where a fixed bar would cover the itinerary a
+         * reader is trying to read.
+         */
+      }
+      <aside class="lg:col-span-5 xl:col-span-4">
+        <div class="lg:sticky lg:top-40 lg:space-y-4">
+          {
+            /*
+             * Dates and price are fetched live and never copied into the
+             * published page — the contract strips commercial values from a
+             * snapshot on purpose. This card is presentation over those
+             * capabilities; it is not a booking engine, and the journey itself
+             * is handed to the managed engine below.
+             */
+            (availability || pricing) && (
+              <section
+                class="rounded-card border border-line bg-surface p-6 md:p-7"
+                data-tour-live
+                data-product-id={product.id}
+                data-locale={context.locale}
+                data-availability-endpoint={availability?.endpoint}
+                data-pricing-endpoint={pricing?.endpoint}
+                data-messages={liveMessages}
+              >
+                <p class="u-eyebrow text-ink-subtle">{t.liveSelling}</p>
+                <h2 class="u-display-sm mt-3 text-[1.5rem]">{t.datesAndPrice}</h2>
+                <p class="mt-3 text-[0.875rem] leading-relaxed text-ink-muted">
+                  {t.liveNotStored}
+                </p>
+                <div class="mt-6 flex flex-wrap gap-2.5">
+                  {availability && (
+                    <button
+                      type="button"
+                      data-load-availability
+                      class="inline-flex h-11 items-center rounded-pill bg-accent px-6 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
+                    >
+                      {t.checkDates}
+                    </button>
+                  )}
+                  {pricing && (
+                    <button
+                      type="button"
+                      data-load-pricing
+                      class="inline-flex h-11 items-center rounded-pill border border-ink/25 px-6 text-[0.875rem] transition-colors duration-300 hover:border-ink/70"
+                    >
+                      {t.previewPrice}
+                    </button>
+                  )}
+                </div>
+                <p
+                  data-live-status
+                  aria-live="polite"
+                  class="mt-5 text-[0.8125rem] text-ink-subtle empty:hidden"
+                />
+                <div data-live-result class="mt-4 text-[0.875rem]" />
+              </section>
+            )
+          }
 
-  <p class="back"><a href="/tours">Back to all tours</a></p>
+          {
+            booking && (
+              <div class="[&_.booking-journey]:rounded-card">
+                <BookingJourney
+                  productId={product.id}
+                  locale={context.locale}
+                  bookingEndpoint={booking.endpoint}
+                  checkoutEndpoint={checkout?.endpoint}
+                />
+              </div>
+            )
+          }
+        </div>
+      </aside>
+    </div>
+  </div>
 </article>
 
 <script>
@@ -106,9 +465,25 @@ const checkout = availableCapability(context.live, "checkout.v1")
     const productId = card.dataset.productId
     const locale = card.dataset.locale ?? "en"
 
+    // The words this script writes come from the component, which is the only
+    // layer that knows the publication's language.
+    const copy = JSON.parse(card.dataset.messages ?? "{}")
+    const fill = (template, values) =>
+      String(template ?? "").replaceAll(/\{(\w+)\}/g, (match, key) =>
+        key in values ? String(values[key]) : match,
+      )
+    const plural = (forms, count) => {
+      if (!forms) return String(count)
+      let category = "other"
+      try {
+        category = new Intl.PluralRules(locale).select(count)
+      } catch {}
+      return fill(forms[category] ?? forms.other, { count })
+    }
+
     const request = async (endpoint, body) => {
       if (!(status instanceof HTMLElement) || !(result instanceof HTMLElement) || !endpoint || !productId) return
-      status.textContent = "Checking live inventory…"
+      status.textContent = copy.checking
       result.replaceChildren()
       try {
         const response = await fetch(endpoint, {
@@ -118,13 +493,16 @@ const checkout = availableCapability(context.live, "checkout.v1")
         })
         const payload = await response.json().catch(() => null)
         if (!response.ok) {
-          const message = payload && typeof payload.error === "string" ? payload.error : `Request failed (${response.status})`
+          const message =
+            payload && typeof payload.error === "string"
+              ? payload.error
+              : fill(copy.failed, { status: response.status })
           throw new Error(message.replaceAll("_", " "))
         }
-        status.textContent = "Live information updated."
+        status.textContent = copy.updated
         return payload
       } catch (error) {
-        status.textContent = error instanceof Error ? error.message : "Live selling is temporarily unavailable."
+        status.textContent = error instanceof Error ? error.message : copy.unavailable
       }
     }
 
@@ -133,15 +511,15 @@ const checkout = availableCapability(context.live, "checkout.v1")
       if (!payload || !(result instanceof HTMLElement)) return
       const rows = responseRows(payload)
       if (rows.length === 0) {
-        result.textContent = "No bookable dates are currently available."
+        result.textContent = copy.noDates
         return
       }
       const list = document.createElement("ul")
       list.className = "live-options"
       for (const row of rows) {
         const item = document.createElement("li")
-        const date = rowText(row, "startsAt", "dateLocal", "startDate") ?? "Date to be confirmed"
-        const remaining = typeof row.remainingPax === "number" ? `${row.remainingPax} places` : undefined
+        const date = rowText(row, "startsAt", "dateLocal", "startDate") ?? copy.toBeConfirmed
+        const remaining = typeof row.remainingPax === "number" ? plural(copy.places, row.remainingPax) : undefined
         const copy = document.createElement("span")
         copy.textContent = remaining ? `${date} · ${remaining}` : date
         item.append(copy)
@@ -150,7 +528,7 @@ const checkout = availableCapability(context.live, "checkout.v1")
           const choose = document.createElement("button")
           choose.type = "button"
           choose.className = "secondary choose-date"
-          choose.textContent = "Choose"
+          choose.textContent = copy.choose
           choose.addEventListener("click", () => {
             document.dispatchEvent(new CustomEvent("voyant:departure-selected", { detail: { departureSlotId } }))
           })
@@ -169,7 +547,7 @@ const checkout = availableCapability(context.live, "checkout.v1")
       if (!payload || !(result instanceof HTMLElement)) return
       const preview = payload.kind === "offer_preview" ? payload.preview : payload
       if (preview?.available !== true || !preview.pricing) {
-        result.textContent = "Choose a date and party to receive a price."
+        result.textContent = copy.needsDate
         return
       }
       const pre = document.createElement("pre")
@@ -178,27 +556,3 @@ const checkout = availableCapability(context.live, "checkout.v1")
     })
   }
 </script>
-
-<style>
-  .tour-detail { max-width: 48rem; }
-  .tour-detail > h1 { font-size: clamp(2.7rem, 8vw, 5.4rem); letter-spacing: -0.04em; line-height: 0.92; margin: 0.35rem 0 1.25rem; }
-  .eyebrow { color: color-mix(in srgb, var(--page-text) 62%, transparent); font-size: 0.78rem; letter-spacing: 0.12em; margin: 0; text-transform: uppercase; }
-  .lede { font-size: 1.3rem; max-width: 38rem; }
-  .facts { border-block: 1px solid color-mix(in srgb, var(--page-text) 15%, transparent); display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); margin: 2.5rem 0; padding: 1.25rem 0; }
-  .facts div { display: grid; gap: 0.25rem; }
-  dt { color: color-mix(in srgb, var(--page-text) 62%, transparent); font-size: 0.78rem; text-transform: uppercase; }
-  dd { margin: 0; text-transform: capitalize; }
-  section { margin: 3.5rem 0; }
-  .features, .itinerary { display: grid; gap: 1px; list-style: none; padding: 0; background: color-mix(in srgb, var(--page-text) 14%, transparent); }
-  .features li, .itinerary li { background: var(--page-background); padding: 1.25rem; }
-  .features h3, .itinerary h3 { margin: 0.3rem 0; }
-  .live-card { background: color-mix(in srgb, var(--page-accent) 8%, var(--page-background)); border: 1px solid color-mix(in srgb, var(--page-accent) 28%, transparent); padding: 1.5rem; }
-  .live-card h2 { margin: 0.35rem 0; }
-  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; }
-  button { background: var(--page-accent); border: 1px solid var(--page-accent); color: white; cursor: pointer; font: inherit; font-weight: 650; padding: 0.7rem 1rem; }
-  button.secondary { background: transparent; color: var(--page-accent); }
-  :global(.live-options li) { align-items: center; display: flex; gap: 0.75rem; justify-content: space-between; }
-  :global(.live-options .choose-date) { padding: 0.4rem 0.65rem; }
-  pre { background: var(--page-background); max-width: 100%; overflow: auto; padding: 1rem; }
-  .back { margin-top: 4rem; }
-</style>
