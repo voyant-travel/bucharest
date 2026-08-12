@@ -42,6 +42,55 @@ export type CountedPhrase =
   | "sailings"
   | "cabins"
 
+/**
+ * The managed booking journey's labels.
+ *
+ * Grouped rather than flattened into the top level: they belong to one panel,
+ * they are only read by that panel, and a translator working through a new
+ * language benefits from seeing them as the single conversation they are.
+ */
+export type BookingMessages = {
+  eyebrowLive: string
+  eyebrowItinerary: string
+  headingLive: string
+  headingItinerary: string
+  intro: string
+  departureReference: string
+  departureHint: string
+  adults: string
+  firstName: string
+  lastName: string
+  email: string
+  steps: string
+  start: string
+  update: string
+  getQuote: string
+  holdPlace: string
+  continueToCheckout: string
+  checkStatus: string
+  paymentQuestion: string
+  card: string
+  bankTransfer: string
+  inquiry: string
+  renew: string
+  abandon: string
+  stateSession: string
+  stateKind: string
+  stateRevision: string
+  stateQuote: string
+  stateHold: string
+  notStarted: string
+  waiting: string
+  checkoutReady: string
+  openCheckout: string
+  prepareCheckout: string
+  inProgress: string
+  rejected: string
+  nothingChanged: string
+  departureSelected: string
+  itineraryCreated: string
+}
+
 export type Messages = {
   // Chrome
   skipToContent: string
@@ -127,6 +176,7 @@ export type Messages = {
   backTo: string
   pageNotFound: string
 
+  booking: BookingMessages
   plurals: Record<CountedPhrase, PluralForms>
 }
 
@@ -211,6 +261,48 @@ const DICTIONARIES: Record<string, Messages> = {
     nothingPublished: "Nothing published here yet.",
     backTo: "Back to {name}",
     pageNotFound: "Page not found",
+
+    booking: {
+      eyebrowLive: "Secure live booking",
+      eyebrowItinerary: "Secure itinerary booking",
+      headingLive: "Build your booking",
+      headingItinerary: "Book everything together",
+      intro: "Dates, prices, holds, and checkout are resolved live. They are not stored in this published page.",
+      departureReference: "Departure reference",
+      departureHint: "Choose a live date above or enter its reference.",
+      adults: "Adults",
+      firstName: "First name",
+      lastName: "Last name",
+      email: "Email",
+      steps: "Booking steps",
+      start: "Start booking",
+      update: "Update details",
+      getQuote: "Get binding quote",
+      holdPlace: "Hold one place",
+      continueToCheckout: "Continue to checkout",
+      checkStatus: "Check booking status",
+      paymentQuestion: "How would you like to continue?",
+      card: "Card",
+      bankTransfer: "Bank transfer",
+      inquiry: "Send an inquiry",
+      renew: "Keep session active",
+      abandon: "Abandon booking",
+      stateSession: "Session",
+      stateKind: "State",
+      stateRevision: "Revision",
+      stateQuote: "Quote",
+      stateHold: "Hold",
+      notStarted: "Not started",
+      waiting: "Waiting",
+      checkoutReady: "Your secure checkout is ready.",
+      openCheckout: "Open secure checkout",
+      prepareCheckout: "Prepare checkout handoff",
+      inProgress: "{action} in progress…",
+      rejected: "{reason}. The live session was not advanced.",
+      nothingChanged: "Nothing was changed. Retry this action when ready.",
+      departureSelected: "Departure selected. Add traveller details to start.",
+      itineraryCreated: "Itinerary session created. Review traveller details, then get a binding quote.",
+    },
 
     plurals: {
       days: { one: "{count} day", other: "{count} days" },
@@ -310,6 +402,48 @@ const DICTIONARIES: Record<string, Messages> = {
     nothingPublished: "Nimic publicat aici încă.",
     backTo: "Înapoi la {name}",
     pageNotFound: "Pagina nu a fost găsită",
+
+    booking: {
+      eyebrowLive: "Rezervare live securizată",
+      eyebrowItinerary: "Rezervare de itinerariu securizată",
+      headingLive: "Începe rezervarea",
+      headingItinerary: "Rezervă totul împreună",
+      intro: "Datele, prețurile, rezervările temporare și plata sunt rezolvate live. Nu sunt stocate în această pagină publicată.",
+      departureReference: "Referința plecării",
+      departureHint: "Alege o dată live de mai sus sau introdu referința ei.",
+      adults: "Adulți",
+      firstName: "Prenume",
+      lastName: "Nume",
+      email: "Email",
+      steps: "Pașii rezervării",
+      start: "Începe rezervarea",
+      update: "Actualizează datele",
+      getQuote: "Obține o ofertă fermă",
+      holdPlace: "Rezervă un loc",
+      continueToCheckout: "Continuă spre plată",
+      checkStatus: "Verifică starea rezervării",
+      paymentQuestion: "Cum dorești să continui?",
+      card: "Card",
+      bankTransfer: "Transfer bancar",
+      inquiry: "Trimite o cerere",
+      renew: "Menține sesiunea activă",
+      abandon: "Renunță la rezervare",
+      stateSession: "Sesiune",
+      stateKind: "Stare",
+      stateRevision: "Revizie",
+      stateQuote: "Ofertă",
+      stateHold: "Rezervare temporară",
+      notStarted: "Neînceput",
+      waiting: "În așteptare",
+      checkoutReady: "Plata securizată este pregătită.",
+      openCheckout: "Deschide plata securizată",
+      prepareCheckout: "Pregătește predarea către plată",
+      inProgress: "{action} în curs…",
+      rejected: "{reason}. Sesiunea live nu a fost avansată.",
+      nothingChanged: "Nu s-a modificat nimic. Reîncearcă această acțiune când ești pregătit.",
+      departureSelected: "Plecare aleasă. Adaugă datele călătorului pentru a începe.",
+      itineraryCreated: "Sesiunea de itinerariu a fost creată. Verifică datele călătorului, apoi cere o ofertă fermă.",
+    },
 
     plurals: {
       days: { one: "{count} zi", few: "{count} zile", other: "{count} de zile" },
@@ -433,6 +567,48 @@ const DICTIONARIES: Record<string, Messages> = {
     backTo: "Retour à {name}",
     pageNotFound: "Page introuvable",
 
+    booking: {
+      eyebrowLive: "Réservation en direct sécurisée",
+      eyebrowItinerary: "Réservation d'itinéraire sécurisée",
+      headingLive: "Composez votre réservation",
+      headingItinerary: "Réservez le tout ensemble",
+      intro: "Les dates, les tarifs, les options et le paiement sont résolus en direct. Ils ne sont pas stockés dans cette page publiée.",
+      departureReference: "Référence du départ",
+      departureHint: "Choisissez une date en direct ci-dessus ou saisissez sa référence.",
+      adults: "Adultes",
+      firstName: "Prénom",
+      lastName: "Nom",
+      email: "E-mail",
+      steps: "Étapes de réservation",
+      start: "Commencer la réservation",
+      update: "Mettre à jour",
+      getQuote: "Obtenir un devis ferme",
+      holdPlace: "Réserver une place",
+      continueToCheckout: "Continuer vers le paiement",
+      checkStatus: "Vérifier l'état de la réservation",
+      paymentQuestion: "Comment souhaitez-vous continuer ?",
+      card: "Carte",
+      bankTransfer: "Virement bancaire",
+      inquiry: "Envoyer une demande",
+      renew: "Garder la session active",
+      abandon: "Abandonner la réservation",
+      stateSession: "Session",
+      stateKind: "État",
+      stateRevision: "Révision",
+      stateQuote: "Devis",
+      stateHold: "Option",
+      notStarted: "Non commencée",
+      waiting: "En attente",
+      checkoutReady: "Votre paiement sécurisé est prêt.",
+      openCheckout: "Ouvrir le paiement sécurisé",
+      prepareCheckout: "Préparer le passage au paiement",
+      inProgress: "{action} en cours…",
+      rejected: "{reason}. La session en direct n'a pas été avancée.",
+      nothingChanged: "Rien n'a été modifié. Réessayez cette action lorsque vous serez prêt.",
+      departureSelected: "Départ sélectionné. Ajoutez les coordonnées du voyageur pour commencer.",
+      itineraryCreated: "Session d'itinéraire créée. Vérifiez les coordonnées du voyageur, puis demandez un devis ferme.",
+    },
+
     plurals: {
       days: { one: "{count} jour", other: "{count} jours" },
       nights: { one: "{count} nuit", other: "{count} nuits" },
@@ -536,6 +712,48 @@ const DICTIONARIES: Record<string, Messages> = {
     backTo: "Zurück zu {name}",
     pageNotFound: "Seite nicht gefunden",
 
+    booking: {
+      eyebrowLive: "Sichere Live-Buchung",
+      eyebrowItinerary: "Sichere Reiseverlauf-Buchung",
+      headingLive: "Buchung zusammenstellen",
+      headingItinerary: "Alles zusammen buchen",
+      intro: "Termine, Preise, Optionen und Zahlung werden live ermittelt. Sie werden nicht in dieser veröffentlichten Seite gespeichert.",
+      departureReference: "Abfahrtsreferenz",
+      departureHint: "Wählen Sie oben einen Live-Termin oder geben Sie dessen Referenz ein.",
+      adults: "Erwachsene",
+      firstName: "Vorname",
+      lastName: "Nachname",
+      email: "E-Mail",
+      steps: "Buchungsschritte",
+      start: "Buchung starten",
+      update: "Angaben aktualisieren",
+      getQuote: "Verbindliches Angebot",
+      holdPlace: "Einen Platz reservieren",
+      continueToCheckout: "Weiter zur Zahlung",
+      checkStatus: "Buchungsstatus prüfen",
+      paymentQuestion: "Wie möchten Sie fortfahren?",
+      card: "Karte",
+      bankTransfer: "Banküberweisung",
+      inquiry: "Anfrage senden",
+      renew: "Sitzung aktiv halten",
+      abandon: "Buchung abbrechen",
+      stateSession: "Sitzung",
+      stateKind: "Status",
+      stateRevision: "Revision",
+      stateQuote: "Angebot",
+      stateHold: "Reservierung",
+      notStarted: "Nicht begonnen",
+      waiting: "Wartet",
+      checkoutReady: "Ihre sichere Zahlung ist bereit.",
+      openCheckout: "Sichere Zahlung öffnen",
+      prepareCheckout: "Übergabe zur Zahlung vorbereiten",
+      inProgress: "{action} läuft…",
+      rejected: "{reason}. Die Live-Sitzung wurde nicht fortgeführt.",
+      nothingChanged: "Es wurde nichts geändert. Wiederholen Sie diese Aktion, wenn Sie bereit sind.",
+      departureSelected: "Abfahrt gewählt. Fügen Sie die Reisedaten hinzu, um zu beginnen.",
+      itineraryCreated: "Reiseverlauf-Sitzung erstellt. Prüfen Sie die Reisedaten und fordern Sie dann ein verbindliches Angebot an.",
+    },
+
     plurals: {
       days: { one: "{count} Tag", other: "{count} Tage" },
       nights: { one: "{count} Nacht", other: "{count} Nächte" },
@@ -638,6 +856,48 @@ const DICTIONARIES: Record<string, Messages> = {
     backTo: "Volver a {name}",
     pageNotFound: "Página no encontrada",
 
+    booking: {
+      eyebrowLive: "Reserva en directo segura",
+      eyebrowItinerary: "Reserva de itinerario segura",
+      headingLive: "Crea tu reserva",
+      headingItinerary: "Reserva todo junto",
+      intro: "Las fechas, los precios, las retenciones y el pago se resuelven en directo. No se almacenan en esta página publicada.",
+      departureReference: "Referencia de la salida",
+      departureHint: "Elige una fecha en directo arriba o introduce su referencia.",
+      adults: "Adultos",
+      firstName: "Nombre",
+      lastName: "Apellidos",
+      email: "Correo electrónico",
+      steps: "Pasos de la reserva",
+      start: "Iniciar la reserva",
+      update: "Actualizar los datos",
+      getQuote: "Obtener presupuesto en firme",
+      holdPlace: "Retener una plaza",
+      continueToCheckout: "Continuar al pago",
+      checkStatus: "Comprobar el estado de la reserva",
+      paymentQuestion: "¿Cómo quieres continuar?",
+      card: "Tarjeta",
+      bankTransfer: "Transferencia bancaria",
+      inquiry: "Enviar una consulta",
+      renew: "Mantener la sesión activa",
+      abandon: "Abandonar la reserva",
+      stateSession: "Sesión",
+      stateKind: "Estado",
+      stateRevision: "Revisión",
+      stateQuote: "Presupuesto",
+      stateHold: "Retención",
+      notStarted: "Sin iniciar",
+      waiting: "En espera",
+      checkoutReady: "Tu pago seguro está listo.",
+      openCheckout: "Abrir el pago seguro",
+      prepareCheckout: "Preparar el paso al pago",
+      inProgress: "{action} en curso…",
+      rejected: "{reason}. La sesión en directo no avanzó.",
+      nothingChanged: "No se cambió nada. Reintenta esta acción cuando estés listo.",
+      departureSelected: "Salida seleccionada. Añade los datos del viajero para empezar.",
+      itineraryCreated: "Sesión de itinerario creada. Revisa los datos del viajero y luego pide un presupuesto en firme.",
+    },
+
     plurals: {
       days: { one: "{count} día", other: "{count} días" },
       nights: { one: "{count} noche", other: "{count} noches" },
@@ -739,6 +999,48 @@ const DICTIONARIES: Record<string, Messages> = {
     nothingPublished: "Qui non è ancora pubblicato nulla.",
     backTo: "Torna a {name}",
     pageNotFound: "Pagina non trovata",
+
+    booking: {
+      eyebrowLive: "Prenotazione live sicura",
+      eyebrowItinerary: "Prenotazione itinerario sicura",
+      headingLive: "Componi la tua prenotazione",
+      headingItinerary: "Prenota tutto insieme",
+      intro: "Date, prezzi, opzioni e pagamento sono risolti live. Non sono memorizzati in questa pagina pubblicata.",
+      departureReference: "Riferimento della partenza",
+      departureHint: "Scegli una data live qui sopra o inserisci il suo riferimento.",
+      adults: "Adulti",
+      firstName: "Nome",
+      lastName: "Cognome",
+      email: "Email",
+      steps: "Passaggi della prenotazione",
+      start: "Avvia la prenotazione",
+      update: "Aggiorna i dati",
+      getQuote: "Ottieni un preventivo vincolante",
+      holdPlace: "Blocca un posto",
+      continueToCheckout: "Continua al pagamento",
+      checkStatus: "Verifica lo stato della prenotazione",
+      paymentQuestion: "Come vuoi continuare?",
+      card: "Carta",
+      bankTransfer: "Bonifico bancario",
+      inquiry: "Invia una richiesta",
+      renew: "Mantieni la sessione attiva",
+      abandon: "Abbandona la prenotazione",
+      stateSession: "Sessione",
+      stateKind: "Stato",
+      stateRevision: "Revisione",
+      stateQuote: "Preventivo",
+      stateHold: "Opzione",
+      notStarted: "Non avviata",
+      waiting: "In attesa",
+      checkoutReady: "Il tuo pagamento sicuro è pronto.",
+      openCheckout: "Apri il pagamento sicuro",
+      prepareCheckout: "Prepara il passaggio al pagamento",
+      inProgress: "{action} in corso…",
+      rejected: "{reason}. La sessione live non è stata avanzata.",
+      nothingChanged: "Non è stato modificato nulla. Riprova questa azione quando sei pronto.",
+      departureSelected: "Partenza selezionata. Aggiungi i dati del viaggiatore per iniziare.",
+      itineraryCreated: "Sessione itinerario creata. Controlla i dati del viaggiatore, poi richiedi un preventivo vincolante.",
+    },
 
     plurals: {
       days: { one: "{count} giorno", other: "{count} giorni" },
