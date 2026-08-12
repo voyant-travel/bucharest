@@ -20,8 +20,10 @@ import type {
   ShipDetailContext,
 } from "@voyant-travel/theme"
 import JourneyCard from "~/components/cards/JourneyCard.astro"
+import PlaceCard from "~/components/cards/PlaceCard.astro"
 import PageLead from "~/components/primitives/PageLead.astro"
-import { coverOf } from "~/lib/catalog"
+import Photo from "~/components/primitives/Photo.astro"
+import { coverOf, dayPhotoOf, illustrated, placesOf } from "~/lib/catalog"
 import { formatDate, formatDateRange } from "~/lib/dates"
 import { counted, fill, messagesFor } from "~/lib/messages"
 
@@ -46,6 +48,10 @@ const body = "u-shell pb-24 pt-14 md:pb-32 md:pt-20"
 
 const cruiseCover = cruise ? coverOf(cruise) : undefined
 const shipCover = ship ? coverOf(ship) : undefined
+// A sailing could not carry a photograph before SDK 1.1.0, so this page opened
+// on a blank canvas however good the cruise's photography was one level up.
+const sailingCover = sailing ? coverOf(sailing) : undefined
+const ports = placesOf(cruise?.ports)
 
 /*
  * Whether a list is worth showing as photography.
@@ -229,13 +235,29 @@ const sailingFacts = sailing
             {cruise.ports.length > 0 && (
               <section class="mt-16">
                 <h2 class={heading}>{t.whereYouGo}</h2>
-                <ul class="mt-8 flex flex-wrap gap-2.5">
-                  {cruise.ports.map((port) => (
-                    <li class="rounded-pill border border-line px-5 py-2.5 text-[0.875rem] text-ink-muted">
-                      {port.name}
-                    </li>
-                  ))}
-                </ul>
+                {illustrated(ports) ? (
+                  <ul class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                    {ports.map((port) => (
+                      <li>
+                        <PlaceCard
+                          image={port.photo?.src}
+                          imageAlt={port.photo?.alt}
+                          title={port.name}
+                          ratio="aspect-[4/5]"
+                          sizes="(min-width: 768px) 26vw, 46vw"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <ul class="mt-8 flex flex-wrap gap-2.5">
+                    {ports.map((port) => (
+                      <li class="rounded-pill border border-line px-5 py-2.5 text-[0.875rem] text-ink-muted">
+                        {port.name}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
             )}
           </div>
@@ -393,6 +415,8 @@ const sailingFacts = sailing
         eyebrow={t.sailing}
         backHref="/cruises"
         backLabel={t.backToCruises}
+        image={sailingCover?.src}
+        imageAlt={sailingCover?.alt}
       />
 
       <div class={body}>
@@ -441,6 +465,15 @@ const sailingFacts = sailing
                       </h3>
                       {day.descriptionHtml && (
                         <div class="prose mt-3 text-[0.9375rem]" set:html={day.descriptionHtml} />
+                      )}
+                      {dayPhotoOf(day) && (
+                        <Photo
+                          src={dayPhotoOf(day)!.src}
+                          alt={dayPhotoOf(day)!.alt}
+                          ratio="aspect-[16/9]"
+                          class="mt-5 rounded-card"
+                          sizes="(min-width: 1024px) 46vw, 92vw"
+                        />
                       )}
                     </div>
                   </li>

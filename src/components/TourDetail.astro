@@ -12,11 +12,15 @@
  * the sidebar is fetched live from the capability endpoints at request time.
  */
 import type { TourDetailContext } from "@voyant-travel/theme"
+import PlaceCard from "~/components/cards/PlaceCard.astro"
 import Photo from "~/components/primitives/Photo.astro"
 import { cn } from "~/lib/cn"
 import {
   coverOf,
+  dayPhotoOf,
   daysOf,
+  illustrated,
+  placesOf,
   faqsOf,
   featuresOf,
   galleryOf,
@@ -47,6 +51,7 @@ const days = daysOf(product.itinerary)
 const features = featuresOf(product.features)
 const faqs = faqsOf(product.faqs)
 const destinations = namesOf(product.destinations)
+const places = placesOf(product.destinations)
 const categories = namesOf(product.categories)
 const sections = productSections(product)
 
@@ -229,6 +234,23 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
                           {day.description}
                         </p>
                       )}
+                      {
+                        /*
+                         * A day's photograph sits under its copy rather than
+                         * beside it: at this column width a floated thumbnail
+                         * leaves a two-word ragged edge, and the picture is
+                         * illustrating the day, not competing with it.
+                         */
+                      }
+                      {dayPhotoOf(day) && (
+                        <Photo
+                          src={dayPhotoOf(day)!.src}
+                          alt={dayPhotoOf(day)!.alt}
+                          ratio="aspect-[16/9]"
+                          class="mt-5 rounded-card"
+                          sizes="(min-width: 1024px) 46vw, 92vw"
+                        />
+                      )}
                     </div>
                   </li>
                 ))}
@@ -267,13 +289,37 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
           destinations.length > 0 && (
             <section id="destinations" class="mt-14 scroll-mt-40">
               <h2 class={sectionHeading}>{t.whereYouGo}</h2>
-              <ul class="mt-8 flex flex-wrap gap-2.5">
-                {destinations.map((destination) => (
-                  <li class="rounded-pill border border-line px-5 py-2.5 text-[0.875rem] text-ink-muted">
-                    {destination}
-                  </li>
-                ))}
-              </ul>
+              {
+                /*
+                 * Destinations only gained a `coverMedia` in SDK 1.1.0, so a
+                 * publication cut before that has names and nothing else. With
+                 * photography they are places worth looking at; without, they
+                 * stay the labels they have always been.
+                 */
+              }
+              {illustrated(places) ? (
+                <ul class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                  {places.map((place) => (
+                    <li>
+                      <PlaceCard
+                        image={place.photo?.src}
+                        imageAlt={place.photo?.alt}
+                        title={place.name}
+                        ratio="aspect-[4/5]"
+                        sizes="(min-width: 768px) 30vw, 46vw"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul class="mt-8 flex flex-wrap gap-2.5">
+                  {destinations.map((destination) => (
+                    <li class="rounded-pill border border-line px-5 py-2.5 text-[0.875rem] text-ink-muted">
+                      {destination}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           )
         }

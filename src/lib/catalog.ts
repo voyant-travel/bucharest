@@ -91,10 +91,39 @@ export function galleryOf(product: {
   return imagesOf(product.media).filter((photo) => photo.src !== cover?.src)
 }
 
-export type Named = { id: string; name: string; slug?: string; sortOrder?: number | undefined }
+export type Named = {
+  id: string
+  name: string
+  slug?: string
+  coverMedia?: ProductMedia | null | undefined
+  sortOrder?: number | undefined
+}
 
 export function namesOf(items: readonly Named[] = []): string[] {
   return byOrder(items).map((item) => item.name)
+}
+
+export type Place = { name: string; slug?: string | undefined; photo?: Photo | undefined }
+
+/**
+ * Destinations and ports with whatever photography they carry.
+ *
+ * A taxonomy record only gained a `coverMedia` in contract v1 / SDK 1.1.0, so
+ * a publication cut before that has names and nothing else. Both shapes have
+ * to render: the caller checks `illustrated` and picks a layout rather than
+ * committing to cards and hoping the operator filled them in.
+ */
+export function placesOf(items: readonly Named[] = []): Place[] {
+  return byOrder(items).map((item) => ({
+    name: item.name,
+    slug: item.slug,
+    photo: item.coverMedia ? toPhoto(item.coverMedia) : undefined,
+  }))
+}
+
+/** Whether any item in a list has a photograph worth building a grid around. */
+export function illustrated(places: readonly Place[]): boolean {
+  return places.some((place) => place.photo !== undefined)
 }
 
 export type Feature = {
@@ -126,7 +155,26 @@ export type ItineraryDay = {
   title?: string | null | undefined
   description?: string | null | undefined
   location?: string | null | undefined
+  coverMedia?: ProductMedia | null | undefined
+  /** @deprecated Superseded by `coverMedia`; still present on older publications. */
   thumbnailUrl?: string | null | undefined
+}
+
+/**
+ * A day's photograph.
+ *
+ * `coverMedia` first, then the deprecated `thumbnailUrl` a publication cut
+ * against an earlier contract may still carry. The bare URL has no dimensions
+ * and no description, so a day that only has one gets an empty alt — it is
+ * decorative beside the text it illustrates, and inventing a description would
+ * be worse than admitting there is none.
+ */
+export function dayPhotoOf(day: ItineraryDay): Photo | undefined {
+  if (day.coverMedia) return toPhoto(day.coverMedia)
+  if (typeof day.thumbnailUrl === "string" && isSafeSrc(day.thumbnailUrl)) {
+    return { src: day.thumbnailUrl, alt: "" }
+  }
+  return undefined
 }
 
 /** Days in the order they are travelled, whatever order they were published in. */

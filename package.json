@@ -6,9 +6,9 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "npx --yes @voyant-travel/cli@1.1.0 theme dev",
-    "theme:check": "npx --yes @voyant-travel/cli@1.1.0 theme check",
-    "build": "npx --yes @voyant-travel/cli@1.1.0 theme build",
+    "dev": "npx --yes @voyant-travel/cli@1.2.0 theme dev",
+    "theme:check": "npx --yes @voyant-travel/cli@1.2.0 theme check",
+    "build": "npx --yes @voyant-travel/cli@1.2.0 theme build",
     "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/*.test.mjs",
     "preview": "astro preview"
   },
@@ -18,7 +18,7 @@
     "@radix-ui/react-dialog": "^1.1.23",
     "@tailwindcss/vite": "^4.3.3",
     "@voyant-travel/astro": "1.0.2",
-    "@voyant-travel/theme": "1.0.0",
+    "@voyant-travel/theme": "1.1.0",
     "astro": "^7.1.6",
     "clsx": "^2.1.1",
     "react": "^19.2.8",
