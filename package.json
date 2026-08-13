@@ -18,7 +18,7 @@
     "@radix-ui/react-dialog": "^1.1.23",
     "@tailwindcss/vite": "^4.3.3",
     "@voyant-travel/astro": "1.0.2",
-    "@voyant-travel/theme": "1.1.0",
+    "@voyant-travel/theme": "1.4.0",
     "astro": "^7.1.6",
     "clsx": "^2.1.1",
     "react": "^19.2.8",
