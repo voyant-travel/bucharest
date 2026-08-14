@@ -27,6 +27,7 @@ type ImageValue = {
 export type CollectionValue =
   | { kind: "reference"; reference: ResolvedReference }
   | { kind: "image"; image: ImageValue }
+  | { kind: "markup"; markup: string }
   | { kind: "text"; text: string }
   | { kind: "list"; items: CollectionValue[] }
 
@@ -42,12 +43,31 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * intended outcome: showing the id is worse than showing the title and better
  * than silently showing nothing.
  */
-export function classifyCollectionValue(value: unknown): CollectionValue | null {
+export function classifyCollectionValue(
+  value: unknown,
+  type?: string,
+): CollectionValue | null {
   if (value === null || value === undefined || value === "") return null
+
+  // `richText` is the one declared type whose whole purpose is markup, so it is
+  // placed in the document as markup rather than escaped into a page of visible
+  // tags. Classifying by the DECLARED type instead of the shape of the value is
+  // what the contract publishes `type` for: a formatted paragraph and a plain
+  // sentence are both strings, and only the declaration separates them.
+  //
+  // Voyant does not sanitize this, and calling it sanitized would be a lie. The
+  // guarantee is narrower and true: only an operator with `cloud:manage` on
+  // their own organization can write it, a theme can never supply it, and every
+  // site answers on its own hostname, so it reaches that operator's visitors
+  // and nobody else's.
+  if (type === "richText" && typeof value === "string") {
+    const trimmed = value.trim()
+    return trimmed === "" ? null : { kind: "markup", markup: trimmed }
+  }
 
   if (Array.isArray(value)) {
     const items = value
-      .map(classifyCollectionValue)
+      .map((item) => classifyCollectionValue(item, type))
       .filter((item): item is CollectionValue => item !== null)
     return items.length > 0 ? { kind: "list", items } : null
   }
@@ -97,6 +117,12 @@ export function fieldLabel(id: string): string {
 export type CollectionFieldDefinition = {
   id: string
   label: string
+  /**
+   * The declared type, when the publication carries one. Absent on snapshots
+   * materialized before definitions shipped, where every value falls back to
+   * being read from its shape.
+   */
+  type?: string
 }
 
 /**
@@ -118,8 +144,8 @@ export function entryFields(
   values: Record<string, unknown>,
   fields?: readonly CollectionFieldDefinition[],
 ): Array<{ id: string; label: string; value: CollectionValue }> {
-  const present = (id: string, label: string) => {
-    const value = classifyCollectionValue(values[id])
+  const present = (id: string, label: string, type?: string) => {
+    const value = classifyCollectionValue(values[id], type)
     return value === null ? [] : [{ id, label, value }]
   }
 
@@ -131,7 +157,7 @@ export function entryFields(
 
   const declared = new Set(fields.map((field) => field.id))
   return [
-    ...fields.flatMap((field) => present(field.id, field.label)),
+    ...fields.flatMap((field) => present(field.id, field.label, field.type)),
     ...Object.keys(values)
       .filter((id) => !declared.has(id))
       .sort()
@@ -157,8 +183,27 @@ export function entryBlurb(
 
   for (const field of entryFields(entry.values, fields)) {
     if (field.value.kind === "text") return field.value.text
+    // A blurb is read inside a card, where markup has no business being. The
+    // text of a formatted field is still the best sentence available, so it is
+    // stripped rather than skipped.
+    if (field.value.kind === "markup") {
+      const stripped = plainText(field.value.markup)
+      if (stripped !== "") return stripped
+    }
   }
   return null
+}
+
+/** The readable text of a markup value, for the places that take no markup. */
+export function plainText(markup: string): string {
+  return markup
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim()
 }
 
 /** The byline to show, or null when the site maps none. */
