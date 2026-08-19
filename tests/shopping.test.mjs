@@ -35,7 +35,7 @@ test("uses only an available same-origin managed capability", () => {
   }
   assert.equal(
     capabilityEndpoint(live, "shopping.search.v1", "POST"),
-    "/v1/public/theme/shopping/search",
+    "/v1/public/shopping/search",
   )
   assert.equal(capabilityEndpoint(live, "shopping.search.v1", "GET"), undefined)
 })
@@ -43,8 +43,8 @@ test("uses only an available same-origin managed capability", () => {
 test("accepts server-clamped scope and never calculates presentation FX", async () => {
   const calls = []
   const client = createShoppingClient({
-    searchEndpoint: "/v1/public/theme/shopping/search",
-    tripsEndpoint: "/v1/public/theme/shopping/trip-selections",
+    searchEndpoint: "/v1/public/shopping/search",
+    tripsEndpoint: "/v1/public/trips/trip-selections",
     locale: "ro-RO",
     origin: "https://shop.example",
     fetchImpl: async (url, init) => {
@@ -92,8 +92,8 @@ test("accepts server-clamped scope and never calculates presentation FX", async 
 test("accepts live cruise offers and adds only their opaque reference to a Trip", async () => {
   const calls = []
   const client = createShoppingClient({
-    searchEndpoint: "/v1/public/theme/shopping/search",
-    tripsEndpoint: "/v1/public/theme/shopping/trip-selections",
+    searchEndpoint: "/v1/public/shopping/search",
+    tripsEndpoint: "/v1/public/trips/trip-selections",
     locale: "en-GB",
     origin: "https://shop.example",
     fetchImpl: async (url, init) => {
@@ -570,9 +570,9 @@ test("declares the published managed shopping capability routes", async () => {
   assert.match(source, /\{ id: "shopping\.search\.v1" \}/)
   assert.match(source, /\{ id: "shopping\.trip-selections\.v1" \}/)
   assert.match(source, /\{ id: "shopping\.trip-booking\.v1" \}/)
-  assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/search"/)
-  assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/trip-selections"/)
-  assert.match(source, /endpoint: "\/v1\/public\/theme\/shopping\/trip-selections\/book"/)
+  assert.match(source, /endpoint: PUBLIC_API_PATHS\.shoppingSearch/)
+  assert.match(source, /endpoint: PUBLIC_API_PATHS\.tripSelections/)
+  assert.match(source, /endpoint: PUBLIC_API_PATHS\.tripSelectionBook/)
   assert.match(source, /\{ id: "cruise\.search\.v1" \}/)
   assert.match(source, /pattern: "\/cruises"/)
   assert.match(source, /pattern: "\/ships\/\[slug\]"/)

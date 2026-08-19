@@ -14,7 +14,7 @@ function response(body, status = 200) {
   })
 }
 
-test("runs the closed booking session action envelope with advanced revisions", async () => {
+test("runs canonical booking-session resource actions with advanced revisions", async () => {
   const calls = []
   const replies = [
     { kind: "session_created", session: { id: "bses_1", revision: 1, state: "active" } },
@@ -41,8 +41,8 @@ test("runs the closed booking session action envelope with advanced revisions", 
     },
   ]
   const journey = createBookingJourney({
-    endpoint: "/v1/public/theme/booking/session",
-    checkoutEndpoint: "/v1/public/theme/checkout",
+    endpoint: "/v1/public/catalog/booking-sessions",
+    checkoutEndpoint: "/v1/public/catalog/checkout/start",
     productId: "prod_1",
     randomUUID: () => "00000000-0000-4000-8000-000000000001",
     fetchImpl: async (url, init) => {
@@ -64,12 +64,20 @@ test("runs the closed booking session action envelope with advanced revisions", 
 
   assert.equal(calls[0].method, "POST")
   assert.deepEqual(calls[0].body.target, { kind: "product", productId: "prod_1" })
-  assert.deepEqual(calls.slice(1).map((call) => [call.body.action, call.body.revision]), [
-    ["update", 1], ["quote", 2], ["hold", 3], ["renew", 4], ["commit", 5],
+  assert.deepEqual(calls.map((call) => call.url), [
+    "/v1/public/catalog/booking-sessions",
+    "/v1/public/catalog/booking-sessions/bses_1",
+    "/v1/public/catalog/booking-sessions/bses_1/quote",
+    "/v1/public/catalog/booking-sessions/bses_1/hold",
+    "/v1/public/catalog/booking-sessions/bses_1/renew",
+    "/v1/public/catalog/booking-sessions/bses_1/commit",
   ])
+  assert.deepEqual(calls.slice(1).map((call) => call.body.expectedRevision), [1, 2, 3, 4, 5])
+  assert.equal(calls.slice(1).some((call) => "action" in call.body || "sessionId" in call.body || "revision" in call.body), false)
   assert.equal(calls[3].body.quoteId, "bqte_1")
   assert.equal(calls[5].body.holdId, "bhld_1")
   assert.equal(calls[5].body.requirementsFingerprint, "rqf_1")
+  assert.equal(calls[5].body.checkoutIntent, "card")
   assert.deepEqual(committed.state.handoff, { kind: "redirect", url: "https://pay.example/continue" })
   for (const call of calls) {
     assert.equal("path" in call.body, false)
@@ -148,7 +156,7 @@ test("continues a pending component commit with the same idempotency key", async
   assert.equal(completed.state.commitOutcome, "payment_required")
   assert.equal(journey.retryKey("commit"), undefined)
   assert.equal(calls[0].idempotencyKey, calls[1].idempotencyKey)
-  assert.deepEqual(calls.map((call) => call.revision), [2, 2])
+  assert.deepEqual(calls.map((call) => call.expectedRevision), [2, 2])
   assert.deepEqual(calls[0], calls[1])
 })
 
@@ -201,7 +209,7 @@ test("rotates a pending commit key after a revision rejection", async () => {
   await journey.perform("commit", { paymentIntent: "card" })
   assert.equal(calls[0].idempotencyKey, calls[1].idempotencyKey)
   assert.notEqual(calls[1].idempotencyKey, calls[2].idempotencyKey)
-  assert.deepEqual(calls.map((call) => call.revision), [2, 2, 3])
+  assert.deepEqual(calls.map((call) => call.expectedRevision), [2, 2, 3])
 })
 
 test("classifies only retry-safe commit outcomes as continuable", () => {
@@ -242,11 +250,10 @@ test("adopts a managed itinerary session and presents its ephemeral capability",
   await journey.perform("quote")
   assert.equal(calls[0].headers.get("voyant-booking-session-capability"), capability)
   assert.deepEqual(calls[0].body, {
-    sessionId: "bses_itinerary_1",
-    action: "quote",
-    revision: 1,
+    expectedRevision: 1,
     idempotencyKey: "theme-quote-00000000-0000-4000-8000-000000000001",
   })
+  assert.equal(calls[0].url, "/booking/bses_itinerary_1/quote")
   assert.equal("selectionRef" in calls[0].body, false)
 })
 
@@ -258,7 +265,7 @@ test("refuses a malformed itinerary booking capability before making a request",
   }), /capability is invalid/)
 })
 
-test("hands a payment-required session to the managed checkout capability", async () => {
+test("starts canonical checkout only for a committed booking", async () => {
   const calls = []
   const replies = [
     { kind: "session_created", session: { id: "bses_1", revision: 1 } },
@@ -267,12 +274,17 @@ test("hands a payment-required session to the managed checkout capability", asyn
       session: { id: "bses_1", revision: 2 },
       quote: { id: "bqte_1", requirementsFingerprint: "rqf_1" },
     },
-    { kind: "commit_result", outcome: { kind: "payment_required" } },
-    { redirectUrl: "https://checkout.example/managed" },
+    { kind: "commit_result", outcome: { kind: "committed", booking: { id: "bkg_1", status: "confirmed" } } },
+    {
+      kind: "card_redirect",
+      bookingId: "bkg_1",
+      paymentSessionId: "pays_1",
+      redirectUrl: "https://checkout.example/managed",
+    },
   ]
   const journey = createBookingJourney({
-    endpoint: "/booking",
-    checkoutEndpoint: "/checkout",
+    endpoint: "/v1/public/catalog/booking-sessions",
+    checkoutEndpoint: "/v1/public/catalog/checkout/start",
     productId: "prod_1",
     randomUUID: () => "00000000-0000-4000-8000-000000000001",
     fetchImpl: async (url, init) => {
@@ -285,13 +297,30 @@ test("hands a payment-required session to the managed checkout capability", asyn
   await journey.perform("commit", { paymentIntent: "card" })
   const result = await journey.perform("checkout", { paymentIntent: "card" })
 
-  assert.deepEqual(calls[3].body, { sessionId: "bses_1", method: "card" })
+  assert.equal(calls[3].url, "/v1/public/catalog/checkout/start")
+  assert.deepEqual(calls[3].body, { bookingId: "bkg_1", paymentIntent: "card" })
   assert.match(calls[3].headers.get("idempotency-key"), /^theme-checkout-/)
   assert.deepEqual(result.state.handoff, {
     kind: "redirect",
     url: "https://checkout.example/managed",
   })
   assert.equal(result.state.lastOutcome, "checkout_ready")
+})
+
+test("does not translate a payment-required Booking Session into legacy checkout input", async () => {
+  const journey = createBookingJourney({
+    endpoint: "/v1/public/catalog/booking-sessions",
+    checkoutEndpoint: "/v1/public/catalog/checkout/start",
+    initialOutcome: {
+      kind: "commit_result",
+      outcome: { kind: "payment_required" },
+    },
+  })
+
+  await assert.rejects(
+    journey.perform("checkout", { paymentIntent: "card" }),
+    /Complete the booking/,
+  )
 })
 
 test("surfaces capability errors without advancing managed state", async () => {

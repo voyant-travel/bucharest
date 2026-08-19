@@ -186,18 +186,28 @@ export function createBookingJourney({
       }
     } else if (action === "checkout") {
       if (!checkoutEndpoint) throw new Error("Checkout is not available")
-      if (!state.sessionId) throw new Error("Start a booking first")
+      if (!state.bookingId) throw new Error("Complete the booking before starting checkout")
+      if (!new Set(["card", "bank_transfer"]).has(input.paymentIntent)) {
+        throw new Error("Checkout requires card or bank transfer")
+      }
       targetEndpoint = checkoutEndpoint
       method = "POST"
-      body = { sessionId: state.sessionId, method: input.paymentIntent }
+      body = {
+        bookingId: state.bookingId,
+        paymentIntent: input.paymentIntent,
+        ...(siteOrigin ? { returnOrigin: siteOrigin } : {}),
+      }
     } else {
       if (!state.sessionId || state.revision === undefined) {
         throw new Error("Start a booking first")
       }
+      const sessionEndpoint = `${endpoint.replace(/\/$/, "")}/${encodeURIComponent(state.sessionId)}`
+      targetEndpoint = action === "update"
+        ? sessionEndpoint
+        : `${sessionEndpoint}/${action}`
+      method = action === "update" ? "PATCH" : "POST"
       body = {
-        sessionId: state.sessionId,
-        action,
-        revision: state.revision,
+        expectedRevision: state.revision,
         idempotencyKey,
         ...(action === "update" ? { selection: input.selection } : {}),
         ...(action === "hold"
@@ -208,7 +218,7 @@ export function createBookingJourney({
               quoteId: state.quoteId,
               ...(state.holdId ? { holdId: state.holdId } : {}),
               requirementsFingerprint: state.requirementsFingerprint,
-              paymentIntent: input.paymentIntent,
+              checkoutIntent: input.paymentIntent,
               payment: input.payment,
             }
           : {}),
@@ -224,7 +234,7 @@ export function createBookingJourney({
         Accept: "application/json",
         "Content-Type": "application/json",
         "Idempotency-Key": idempotencyKey,
-        ...(capability && targetEndpoint === endpoint
+        ...(capability && action !== "checkout"
           ? { "Voyant-Booking-Session-Capability": capability }
           : {}),
       },

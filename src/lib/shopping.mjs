@@ -1,3 +1,5 @@
+import { canonicalPublicApiPath } from "./public-api-contracts.ts"
+
 const DICTIONARIES = {
   en: {
     shoppingEyebrow: "Plan with live Voyant inventory",
@@ -262,7 +264,7 @@ export function capabilityEndpoint(live, id, method) {
   const value = record(capability)
   if (typeof value?.endpoint !== "string" || !value.endpoint.startsWith("/")) return undefined
   if (method && Array.isArray(value.methods) && !value.methods.includes(method)) return undefined
-  return value.endpoint
+  return canonicalPublicApiPath(id) ?? value.endpoint
 }
 
 function safeEndpoint(endpoint, origin) {

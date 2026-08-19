@@ -1,5 +1,6 @@
 import { defineTheme } from "@voyant-travel/theme"
 import { sections as editorialSections } from "./src/theme/sections"
+import { PUBLIC_API_PATHS } from "./src/lib/public-api-contracts"
 
 export default defineTheme({
   contractVersion: "v1",
@@ -764,31 +765,31 @@ export default defineTheme({
             id: "shopping.search.v1",
             available: true,
             methods: ["POST"],
-            endpoint: "/v1/public/theme/shopping/search",
+            endpoint: PUBLIC_API_PATHS.shoppingSearch,
           },
           {
             id: "shopping.trip-selections.v1",
             available: true,
             methods: ["POST", "PATCH"],
-            endpoint: "/v1/public/theme/shopping/trip-selections",
+            endpoint: PUBLIC_API_PATHS.tripSelections,
           },
           {
             id: "shopping.trip-booking.v1",
             available: true,
             methods: ["POST"],
-            endpoint: "/v1/public/theme/shopping/trip-selections/book",
+            endpoint: PUBLIC_API_PATHS.tripSelectionBook,
           },
           {
             id: "booking.session.v1",
             available: true,
             methods: ["POST", "PATCH"],
-            endpoint: "/v1/public/theme/booking/session",
+            endpoint: PUBLIC_API_PATHS.bookingSessions,
           },
           {
             id: "checkout.v1",
             available: true,
             methods: ["POST"],
-            endpoint: "/v1/public/theme/checkout",
+            endpoint: PUBLIC_API_PATHS.checkoutStart,
           },
         ],
       },
@@ -958,13 +959,13 @@ export default defineTheme({
               id: "booking.session.v1",
               available: true,
               methods: ["POST", "PATCH"],
-              endpoint: "/v1/public/theme/booking/session",
+              endpoint: PUBLIC_API_PATHS.bookingSessions,
             },
             {
               id: "checkout.v1",
               available: true,
               methods: ["POST"],
-              endpoint: "/v1/public/theme/checkout",
+              endpoint: PUBLIC_API_PATHS.checkoutStart,
             },
           ],
         },
@@ -1048,11 +1049,11 @@ export default defineTheme({
       live: {
         capabilities: [
           { id: "cruise.search.v1", available: true, methods: ["GET"], endpoint: "/v1/public/theme/cruise/search" },
-          { id: "shopping.search.v1", available: true, methods: ["POST"], endpoint: "/v1/public/theme/shopping/search" },
-          { id: "shopping.trip-selections.v1", available: true, methods: ["POST", "PATCH"], endpoint: "/v1/public/theme/shopping/trip-selections" },
-          { id: "shopping.trip-booking.v1", available: true, methods: ["POST"], endpoint: "/v1/public/theme/shopping/trip-selections/book" },
-          { id: "booking.session.v1", available: true, methods: ["POST", "PATCH"], endpoint: "/v1/public/theme/booking/session" },
-          { id: "checkout.v1", available: true, methods: ["POST"], endpoint: "/v1/public/theme/checkout" },
+          { id: "shopping.search.v1", available: true, methods: ["POST"], endpoint: PUBLIC_API_PATHS.shoppingSearch },
+          { id: "shopping.trip-selections.v1", available: true, methods: ["POST", "PATCH"], endpoint: PUBLIC_API_PATHS.tripSelections },
+          { id: "shopping.trip-booking.v1", available: true, methods: ["POST"], endpoint: PUBLIC_API_PATHS.tripSelectionBook },
+          { id: "booking.session.v1", available: true, methods: ["POST", "PATCH"], endpoint: PUBLIC_API_PATHS.bookingSessions },
+          { id: "checkout.v1", available: true, methods: ["POST"], endpoint: PUBLIC_API_PATHS.checkoutStart },
         ],
       },
     },

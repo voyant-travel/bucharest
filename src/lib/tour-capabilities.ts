@@ -3,15 +3,19 @@ import type {
   ThemeLive,
   ThemeLiveCapability,
 } from "@voyant-travel/theme"
+import { canonicalPublicApiPath } from "./public-api-contracts"
 
 export function availableCapability(
   live: ThemeLive | undefined,
   id: ThemeCapabilityId,
 ): ThemeLiveCapability | undefined {
-  return live?.capabilities.find(
+  const capability = live?.capabilities.find(
     (capability) =>
       capability.id === id && capability.available && capability.endpoint,
   )
+  if (!capability) return undefined
+  const endpoint = canonicalPublicApiPath(id)
+  return endpoint ? { ...capability, endpoint } : capability
 }
 
 function record(value: unknown): Record<string, unknown> | undefined {
