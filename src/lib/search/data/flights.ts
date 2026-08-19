@@ -2,23 +2,32 @@
  * Bare flights, where the rail behaves differently from every other vertical.
  *
  * A stops filter with counts beside it tells the traveller nothing they can act
- * on — "38 de zboruri cu o escală" is noise. What decides the click is what the
+ * on — "38 flights with one stop" is noise. What decides the click is what the
  * compromise costs, so that facet carries a price hint instead of a total, and
  * the contract allows a `null` count precisely for this case.
  *
  * Prices are per party rather than per person: a fare is quoted for the seats
  * you asked for, and dividing it back out is how a site ends up advertising a
  * number nobody can buy.
+ *
+ * The rows are demo content, written in English, the theme's base language, and
+ * they carry only what a fare feed carries: airports, cities, carriers, times.
+ * The cabin, the baggage allowance and the word for a stop are the theme's own
+ * and are looked up per locale.
  */
 import type { ResultItem, SearchQuery } from "../contract"
+import type { Copy } from "../copy"
 import {
   CURRENCY,
   type Catalog,
   type FacetValueSpec,
+  counted,
+  countedRange,
+  fill,
   inBand,
+  labelFor,
   matchesPlace,
   money,
-  nameOf,
 } from "./catalog"
 
 export interface FlightRow {
@@ -60,30 +69,57 @@ export const AIRLINES: FacetValueSpec[] = [
 ]
 
 export const CABINS: FacetValueSpec[] = [
-  { value: "economy", name: "Economy" },
-  { value: "premium", name: "Premium Economy" },
-  { value: "business", name: "Business" },
+  { value: "economy", label: (copy) => copy.cabins.economy },
+  { value: "premium", label: (copy) => copy.cabins.premium },
+  { value: "business", label: (copy) => copy.cabins.business },
 ]
 
 const STOPS: FacetValueSpec[] = [
-  { value: "0", name: "Direct" },
-  { value: "1", name: "O escală" },
-  { value: "2", name: "Două sau mai multe escale" },
+  { value: "0", label: (copy) => copy.stops.direct },
+  { value: "1", label: (copy) => copy.stops.one },
+  { value: "2", label: (copy) => copy.stops.twoPlus },
 ]
 
-/** Bands in minutes, cut so no itinerary can land in two of them at once. */
+/**
+ * What a fare includes in the hold, which is the single line that separates two
+ * otherwise identical fares on this vertical. The row carries the operator's
+ * code and the sentence is the theme's.
+ */
+const BAGGAGE: FacetValueSpec[] = [
+  { value: "underseat", label: (copy) => copy.baggage.underseat },
+  { value: "cabin", label: (copy) => copy.baggage.cabin },
+  { value: "checked23", label: (copy) => copy.baggage.checked23 },
+  { value: "checked30", label: (copy) => copy.baggage.checked30 },
+  { value: "twochecked", label: (copy) => copy.baggage.twochecked },
+]
+
+/**
+ * Bands in minutes, cut so no itinerary can land in two of them at once.
+ *
+ * The token stays in minutes because that is what `durationMin` measures and
+ * what `inBand` compares; the label speaks hours, because nobody shops for a
+ * flight under 179 minutes.
+ */
 const DURATIONS: FacetValueSpec[] = [
-  { value: "0-179", name: "Sub 3 ore" },
-  { value: "180-359", name: "3-6 ore" },
-  { value: "360-719", name: "6-12 ore" },
-  { value: "720-", name: "Peste 12 ore" },
+  {
+    value: "0-179",
+    label: (copy, locale) =>
+      fill(copy.bands.under, { value: counted(locale, copy.plurals.hours, 3) }),
+  },
+  { value: "180-359", label: (copy, locale) => countedRange(locale, copy.plurals.hours, 3, 6) },
+  { value: "360-719", label: (copy, locale) => countedRange(locale, copy.plurals.hours, 6, 12) },
+  {
+    value: "720-",
+    label: (copy, locale) =>
+      fill(copy.bands.over, { value: counted(locale, copy.plurals.hours, 12) }),
+  },
 ]
 
 export const FLIGHT_ROWS: FlightRow[] = [
   {
     id: "fl-otp-cdg-af",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "CDG",
     destinationCity: "Paris",
     airline: "airfrance",
@@ -94,13 +130,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 205,
     returnDate: "2026-09-21",
     cabin: "economy",
-    baggage: "Bagaj de mână inclus",
+    baggage: "cabin",
     price: 268,
   },
   {
     id: "fl-otp-cdg-w6",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "BVA",
     destinationCity: "Paris",
     airline: "wizz",
@@ -111,16 +147,16 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 200,
     returnDate: "2026-09-21",
     cabin: "economy",
-    baggage: "Doar bagaj mic de cabină",
+    baggage: "underseat",
     price: 189,
     seatsLeft: 4,
   },
   {
     id: "fl-otp-lhr-ba",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "LHR",
-    destinationCity: "Londra",
+    destinationCity: "London",
     airline: "tarom",
     stops: 0,
     departDate: "2026-09-14",
@@ -129,15 +165,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 215,
     returnDate: "2026-09-20",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 312,
   },
   {
     id: "fl-otp-stn-fr",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "STN",
-    destinationCity: "Londra",
+    destinationCity: "London",
     airline: "ryanair",
     stops: 0,
     departDate: "2026-09-15",
@@ -146,14 +182,14 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 225,
     returnDate: "2026-09-22",
     cabin: "economy",
-    baggage: "Doar bagaj mic de cabină",
+    baggage: "underseat",
     price: 148,
     seatsLeft: 2,
   },
   {
     id: "fl-otp-bcn-w6",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "BCN",
     destinationCity: "Barcelona",
     airline: "wizz",
@@ -164,13 +200,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 215,
     returnDate: "2026-09-24",
     cabin: "economy",
-    baggage: "Bagaj de mână inclus",
+    baggage: "cabin",
     price: 176,
   },
   {
     id: "fl-otp-mad-lh",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "MAD",
     destinationCity: "Madrid",
     airline: "lufthansa",
@@ -181,15 +217,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 445,
     returnDate: "2026-09-24",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 341,
   },
   {
     id: "fl-otp-fco-tarom",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "FCO",
-    destinationCity: "Roma",
+    destinationCity: "Rome",
     airline: "tarom",
     stops: 0,
     departDate: "2026-09-12",
@@ -198,15 +234,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 125,
     returnDate: "2026-09-16",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 214,
   },
   {
     id: "fl-otp-fco-w6",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "FCO",
-    destinationCity: "Roma",
+    destinationCity: "Rome",
     airline: "wizz",
     stops: 0,
     departDate: "2026-09-12",
@@ -215,16 +251,16 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 125,
     returnDate: "2026-09-16",
     cabin: "economy",
-    baggage: "Doar bagaj mic de cabină",
+    baggage: "underseat",
     price: 118,
     seatsLeft: 6,
   },
   {
     id: "fl-otp-vie-os",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "VIE",
-    destinationCity: "Viena",
+    destinationCity: "Vienna",
     airline: "austrian",
     stops: 0,
     departDate: "2026-09-10",
@@ -233,15 +269,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 100,
     returnDate: "2026-09-13",
     cabin: "economy",
-    baggage: "Bagaj de mână inclus",
+    baggage: "cabin",
     price: 196,
   },
   {
     id: "fl-otp-vie-business",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "VIE",
-    destinationCity: "Viena",
+    destinationCity: "Vienna",
     airline: "austrian",
     stops: 0,
     departDate: "2026-09-10",
@@ -250,13 +286,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 100,
     returnDate: "2026-09-13",
     cabin: "business",
-    baggage: "Două bagaje de cală incluse",
+    baggage: "twochecked",
     price: 642,
   },
   {
     id: "fl-otp-ams-klm",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "AMS",
     destinationCity: "Amsterdam",
     airline: "klm",
@@ -267,13 +303,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 190,
     returnDate: "2026-09-22",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 289,
   },
   {
     id: "fl-otp-ist-tk",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "IST",
     destinationCity: "Istanbul",
     airline: "turkish",
@@ -284,13 +320,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 105,
     returnDate: "2026-10-06",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 178,
   },
   {
     id: "fl-otp-dxb-ek",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "DXB",
     destinationCity: "Dubai",
     airline: "emirates",
@@ -301,13 +337,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 515,
     returnDate: "2026-11-26",
     cabin: "economy",
-    baggage: "Bagaj de cală 30 kg inclus",
+    baggage: "checked30",
     price: 486,
   },
   {
     id: "fl-otp-dxb-fz",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "DXB",
     destinationCity: "Dubai",
     airline: "turkish",
@@ -318,14 +354,14 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 595,
     returnDate: "2026-11-26",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 412,
     seatsLeft: 3,
   },
   {
     id: "fl-otp-doh-qr",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "DOH",
     destinationCity: "Doha",
     airline: "qatar",
@@ -336,13 +372,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 350,
     returnDate: "2026-12-11",
     cabin: "economy",
-    baggage: "Bagaj de cală 30 kg inclus",
+    baggage: "checked30",
     price: 528,
   },
   {
     id: "fl-otp-bkk-qr",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "BKK",
     destinationCity: "Bangkok",
     airline: "qatar",
@@ -353,13 +389,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 940,
     returnDate: "2027-01-23",
     cabin: "economy",
-    baggage: "Bagaj de cală 30 kg inclus",
+    baggage: "checked30",
     price: 742,
   },
   {
     id: "fl-otp-jfk-lh",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "JFK",
     destinationCity: "New York",
     airline: "lufthansa",
@@ -370,13 +406,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 825,
     returnDate: "2026-10-25",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 689,
   },
   {
     id: "fl-otp-jfk-hisky",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "JFK",
     destinationCity: "New York",
     airline: "hisky",
@@ -387,13 +423,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 875,
     returnDate: "2026-10-25",
     cabin: "premium",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 918,
   },
   {
     id: "fl-otp-nrt-tk",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "NRT",
     destinationCity: "Tokyo",
     airline: "turkish",
@@ -404,15 +440,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 1130,
     returnDate: "2027-04-14",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 964,
   },
   {
     id: "fl-otp-gru-af",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "GRU",
-    destinationCity: "São Paulo",
+    destinationCity: "Sao Paulo",
     airline: "airfrance",
     stops: 2,
     departDate: "2027-02-06",
@@ -421,15 +457,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 1390,
     returnDate: "2027-02-20",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 1148,
   },
   {
     id: "fl-otp-ath-a3",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "ATH",
-    destinationCity: "Atena",
+    destinationCity: "Athens",
     airline: "tarom",
     stops: 0,
     departDate: "2026-09-26",
@@ -437,15 +473,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     arriveTime: "12:20",
     durationMin: 95,
     cabin: "economy",
-    baggage: "Bagaj de mână inclus",
+    baggage: "cabin",
     price: 132,
   },
   {
     id: "fl-otp-mxp-w6-oneway",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "MXP",
-    destinationCity: "Milano",
+    destinationCity: "Milan",
     airline: "wizz",
     stops: 0,
     departDate: "2026-09-19",
@@ -453,16 +489,16 @@ export const FLIGHT_ROWS: FlightRow[] = [
     arriveTime: "22:30",
     durationMin: 135,
     cabin: "economy",
-    baggage: "Doar bagaj mic de cabină",
+    baggage: "underseat",
     price: 74,
     seatsLeft: 9,
   },
   {
     id: "fl-otp-otp-lis-tp",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "LIS",
-    destinationCity: "Lisabona",
+    destinationCity: "Lisbon",
     airline: "lufthansa",
     stops: 1,
     departDate: "2026-10-08",
@@ -471,7 +507,7 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 490,
     returnDate: "2026-10-14",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 358,
   },
   {
@@ -488,7 +524,7 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 205,
     returnDate: "2026-09-24",
     cabin: "economy",
-    baggage: "Bagaj de mână inclus",
+    baggage: "cabin",
     price: 164,
   },
   {
@@ -496,7 +532,7 @@ export const FLIGHT_ROWS: FlightRow[] = [
     origin: "CLJ",
     originCity: "Cluj-Napoca",
     destination: "MUC",
-    destinationCity: "München",
+    destinationCity: "Munich",
     airline: "lufthansa",
     stops: 0,
     departDate: "2026-09-11",
@@ -505,7 +541,7 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 135,
     returnDate: "2026-09-15",
     cabin: "economy",
-    baggage: "Bagaj de mână inclus",
+    baggage: "cabin",
     price: 228,
   },
   {
@@ -513,7 +549,7 @@ export const FLIGHT_ROWS: FlightRow[] = [
     origin: "CLJ",
     originCity: "Cluj-Napoca",
     destination: "LHR",
-    destinationCity: "Londra",
+    destinationCity: "London",
     airline: "lot",
     stops: 1,
     departDate: "2026-09-14",
@@ -522,15 +558,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 375,
     returnDate: "2026-09-20",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 246,
   },
   {
     id: "fl-timisoara-vie-os",
     origin: "TSR",
-    originCity: "Timișoara",
+    originCity: "Timisoara",
     destination: "VIE",
-    destinationCity: "Viena",
+    destinationCity: "Vienna",
     airline: "austrian",
     stops: 0,
     departDate: "2026-09-10",
@@ -539,15 +575,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 100,
     returnDate: "2026-09-13",
     cabin: "economy",
-    baggage: "Bagaj de mână inclus",
+    baggage: "cabin",
     price: 184,
   },
   {
     id: "fl-timisoara-fco-w6",
     origin: "TSR",
-    originCity: "Timișoara",
+    originCity: "Timisoara",
     destination: "FCO",
-    destinationCity: "Roma",
+    destinationCity: "Rome",
     airline: "wizz",
     stops: 0,
     departDate: "2026-09-12",
@@ -556,13 +592,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 115,
     returnDate: "2026-09-16",
     cabin: "economy",
-    baggage: "Doar bagaj mic de cabină",
+    baggage: "underseat",
     price: 106,
   },
   {
     id: "fl-iasi-ist-tk",
     origin: "IAS",
-    originCity: "Iași",
+    originCity: "Iasi",
     destination: "IST",
     destinationCity: "Istanbul",
     airline: "turkish",
@@ -573,13 +609,13 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 115,
     returnDate: "2026-10-06",
     cabin: "economy",
-    baggage: "Bagaj de cală 23 kg inclus",
+    baggage: "checked23",
     price: 198,
   },
   {
     id: "fl-iasi-cdg-anima",
     origin: "IAS",
-    originCity: "Iași",
+    originCity: "Iasi",
     destination: "CDG",
     destinationCity: "Paris",
     airline: "animawings",
@@ -590,15 +626,15 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 405,
     returnDate: "2026-09-21",
     cabin: "economy",
-    baggage: "Bagaj de mână inclus",
+    baggage: "cabin",
     price: 254,
   },
   {
     id: "fl-otp-zrh-lx",
     origin: "OTP",
-    originCity: "București",
+    originCity: "Bucharest",
     destination: "ZRH",
-    destinationCity: "Zürich",
+    destinationCity: "Zurich",
     airline: "swiss",
     stops: 0,
     departDate: "2026-09-24",
@@ -607,7 +643,7 @@ export const FLIGHT_ROWS: FlightRow[] = [
     durationMin: 155,
     returnDate: "2026-09-28",
     cabin: "business",
-    baggage: "Două bagaje de cală incluse",
+    baggage: "twochecked",
     price: 724,
   },
 ]
@@ -626,31 +662,29 @@ function hoursAndMinutes(total: number): string {
   return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`
 }
 
-function stopsLabel(stops: number): string {
-  if (stops === 0) return "Direct"
-  return stops === 1 ? "1 escală" : `${stops} escale`
+function stopsLabel(stops: number, copy: Copy, locale: string): string {
+  return stops === 0 ? copy.stops.direct : counted(locale, copy.plurals.stops, stops)
 }
 
-function result(row: FlightRow): ResultItem {
+function result(row: FlightRow, copy: Copy, locale: string): ResultItem {
   const roundTrip = row.returnDate !== undefined
+  const baggage = labelFor(BAGGAGE, row.baggage, copy, locale)
   return {
     id: row.id,
     title: `${row.originCity} → ${row.destinationCity}`,
     href: `/zboruri/${row.id}`,
     ...(row.seatsLeft !== undefined && row.seatsLeft <= 4
-      ? { badge: `Ultimele ${row.seatsLeft} locuri` }
+      ? { badge: counted(locale, copy.plurals.seatsLeft, row.seatsLeft) }
       : {}),
-    eyebrow: `${nameOf(AIRLINES, row.airline)} · ${nameOf(CABINS, row.cabin)}`,
+    eyebrow: `${labelFor(AIRLINES, row.airline, copy, locale)} · ${labelFor(CABINS, row.cabin, copy, locale)}`,
     place: `${row.origin} ${row.departTime} → ${row.destination} ${row.arriveTime}`,
-    inclusions: [row.baggage, roundTrip ? "Dus-întors" : "Doar dus"],
-    chips: [hoursAndMinutes(row.durationMin), stopsLabel(row.stops), row.baggage],
+    inclusions: [baggage, roundTrip ? copy.inclusions.roundTrip : copy.inclusions.oneWay],
+    chips: [hoursAndMinutes(row.durationMin), stopsLabel(row.stops, copy, locale), baggage],
     price: {
       amount: row.price,
       currency: CURRENCY,
       basis: "per_party",
-      footnote: roundTrip
-        ? "preț total dus-întors, taxe incluse"
-        : "preț total pentru un segment, taxe incluse",
+      footnote: roundTrip ? copy.footnotes.flightRoundTrip : copy.footnotes.flightOneWay,
     },
   }
 }
@@ -688,19 +722,19 @@ export const flightsCatalog: Catalog<FlightRow> = {
   facets: [
     {
       key: "stops",
-      name: "Escale",
+      name: (copy) => copy.facets.stops,
       type: "array",
       values: STOPS,
       match: (row, value) => (value === "2" ? row.stops >= 2 : row.stops === Number(value)),
-      hint: (matching) =>
+      hint: (matching, copy) =>
         matching.length === 0
-          ? "indisponibil"
-          : `de la ${money(Math.min(...matching.map((row) => row.price)))}`,
+          ? copy.unavailable
+          : fill(copy.from, { price: money(Math.min(...matching.map((row) => row.price))) }),
       expanded: true,
     },
     {
       key: "airlines",
-      name: "Linii aeriene",
+      name: (copy) => copy.facets.airlines,
       type: "array",
       values: AIRLINES,
       match: (row, value) => row.airline === value,
@@ -709,14 +743,14 @@ export const flightsCatalog: Catalog<FlightRow> = {
     },
     {
       key: "price",
-      name: "Pret",
+      name: (copy) => copy.facets.price,
       type: "range",
       measure: (row) => row.price,
       expanded: true,
     },
     {
       key: "duration",
-      name: "Durata",
+      name: (copy) => copy.facets.duration,
       type: "array",
       values: DURATIONS,
       match: (row, value) => inBand(row.durationMin, value),
@@ -724,7 +758,7 @@ export const flightsCatalog: Catalog<FlightRow> = {
   ],
   compare: {
     /**
-     * "Cele mai bune" is the industry's only honest compromise sort: price and
+     * "Best overall" is the industry's only honest compromise sort: price and
      * time weighted together, because the cheapest fare on this route leaves at
      * 05:55 and the fastest costs three hundred euro more.
      */
