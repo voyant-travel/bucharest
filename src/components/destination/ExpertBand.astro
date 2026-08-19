@@ -1,0 +1,90 @@
+---
+/**
+ * The people, and the number.
+ *
+ * On a site that takes no bookings online this is the page's real product: the
+ * reader is being asked to start a conversation, and a face and a direct line
+ * are what make that feel like ringing a person rather than filing a ticket.
+ *
+ * The opening hours sit beside the number when the caller knows them. Only one
+ * of the three operators this page is modelled on does that, and it answers the
+ * question a reader has while their thumb is over the number — whether anyone
+ * will pick up — which is exactly the moment they would otherwise close the tab.
+ */
+import Photo from "~/components/primitives/Photo.astro"
+import { telHref } from "~/lib/site"
+import type { DestinationExpert } from "~/lib/destination"
+import EnquiryLink from "./EnquiryLink.astro"
+import type { Copy } from "./copy"
+
+interface Props {
+  experts: DestinationExpert[]
+  note?: string | undefined
+  phone?: string | undefined
+  hours?: string | undefined
+  enquiry?: string | undefined
+  copy: Copy
+}
+
+const { experts, note, phone, hours, enquiry, copy } = Astro.props
+---
+
+<section id="team" class="scroll-mt-40 bg-surface-sunk py-14 md:py-20">
+  <div class="u-shell grid gap-10 md:grid-cols-12 md:gap-16">
+    <div class="md:col-span-5">
+      <h2 class="u-display-sm text-[1.625rem] md:text-[2rem]">{copy.expertsHeading}</h2>
+      {note && <p class="mt-5 text-[1rem] leading-[1.8] text-ink-muted">{note}</p>}
+
+      {
+        phone && (
+          <div class="mt-8">
+            <p class="u-eyebrow text-ink-subtle">{copy.callUsDirect}</p>
+            <div class="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <a href={telHref(phone)} class="u-display-sm text-[1.5rem] md:text-[1.75rem]">
+                {phone}
+              </a>
+              {hours && <span class="text-[0.8125rem] text-ink-subtle">{hours}</span>}
+            </div>
+          </div>
+        )
+      }
+
+      {enquiry && <EnquiryLink href={enquiry} class="mt-8" copy={copy} />}
+    </div>
+
+    <div class="md:col-span-7">
+      <ul class="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3">
+        {
+          experts.map((expert) => (
+            <li>
+              {expert.image ? (
+                <Photo
+                  src={expert.image.src}
+                  alt={expert.image.alt}
+                  ratio="aspect-[4/5]"
+                  class="rounded-card"
+                  sizes="(min-width: 768px) 18vw, 44vw"
+                />
+              ) : (
+                /*
+                 * An initial rather than a silhouette icon. A generic avatar
+                 * reads as a missing record; a letter reads as a person whose
+                 * portrait has not been taken yet.
+                 */
+                <div class="grid aspect-[4/5] place-items-center rounded-card bg-surface">
+                  <span class="u-display text-[2.5rem] text-ink-subtle" aria-hidden="true">
+                    {expert.name.slice(0, 1)}
+                  </span>
+                </div>
+              )}
+              <h3 class="u-serif-body mt-3 text-[1rem]">{expert.name}</h3>
+              {expert.role && (
+                <p class="mt-1 text-[0.8125rem] text-ink-subtle">{expert.role}</p>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</section>

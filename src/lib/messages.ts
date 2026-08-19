@@ -9,9 +9,10 @@
  * section headings on a product page. Those are shipped with the theme, so the
  * theme has to translate them.
  *
- * Same shape and same language set as `messagesFor` in `shopping.mjs`, which
- * already solved this for the shopping surfaces. A second convention would be
- * a second place to forget a string.
+ * This is the only such dictionary now. There used to be a second one beside
+ * it, shipped with the cross-vertical shopping surfaces, and two conventions
+ * meant two places to forget a string. That surface has been removed and its
+ * dictionary with it.
  *
  * A locale with no dictionary falls back to English rather than rendering a
  * key: an operator publishing in a language this theme has never been
@@ -101,6 +102,16 @@ export type Messages = {
   submenu: string
   emailAddress: string
   subscribe: string
+  /** Chrome strings the header and footer islands render. */
+  emailPlaceholder: string
+  sending: string
+  subscribeDone: string
+  subscribeFailed: string
+  subscribeNotConnected: string
+  closeAnnouncement: string
+  announcementDefaultLink: string
+  language: string
+  currency: string
   gallery: string
   close: string
   previousPhoto: string
@@ -134,6 +145,10 @@ export type Messages = {
   format: string
   capacity: string
   dayNumber: string
+  /** Section headings for the module a product page is built around. */
+  departuresHeading: string
+  roomsAndRates: string
+  availabilityHeading: string
 
   // Live selling
   liveSelling: string
@@ -171,6 +186,14 @@ export type Messages = {
   noCruisesPublished: string
   cruiseLiveNote: string
 
+  /** Trust marks in the footer. */
+  accreditations: string
+  paymentHeading: string
+  consumerProtection: string
+  disputeResolution: string
+  markWithdrawn: string
+  withdrawnShort: string
+
   // Generic pages
   nothingPublished: string
   backTo: string
@@ -190,6 +213,15 @@ const DICTIONARIES: Record<string, Messages> = {
     submenu: "submenu",
     emailAddress: "Email address",
     subscribe: "Subscribe",
+    emailPlaceholder: "Your email address",
+    sending: "Sending…",
+    subscribeDone: "Done — check your inbox to confirm.",
+    subscribeFailed: "We could not send that address. Please try again.",
+    subscribeNotConnected: "Sign-up is not connected yet. Write to us and we will add you.",
+    closeAnnouncement: "Close announcement",
+    announcementDefaultLink: "View",
+    language: "Language",
+    currency: "Currency",
     gallery: "Gallery",
     close: "Close",
     previousPhoto: "Previous photograph",
@@ -221,6 +253,9 @@ const DICTIONARIES: Record<string, Messages> = {
     format: "Format",
     capacity: "Capacity",
     dayNumber: "Day {count}",
+    departuresHeading: "Dates and prices",
+    roomsAndRates: "Rooms and rates",
+    availabilityHeading: "Availability",
 
     liveSelling: "Live selling",
     datesAndPrice: "Dates and price",
@@ -259,6 +294,12 @@ const DICTIONARIES: Record<string, Messages> = {
       "Current availability and presentation-currency pricing are resolved in live cruise search and can be added to one managed itinerary without copying supplier state into this page.",
 
     nothingPublished: "Nothing published here yet.",
+    accreditations: "Membership and accreditation",
+    paymentHeading: "Payment",
+    consumerProtection: "Consumer protection",
+    disputeResolution: "Alternative dispute resolution",
+    markWithdrawn: "Withdrawn — the EU platform closed in July 2025",
+    withdrawnShort: "withdrawn",
     backTo: "Back to {name}",
     pageNotFound: "Page not found",
 
@@ -331,6 +372,15 @@ const DICTIONARIES: Record<string, Messages> = {
     submenu: "submeniu",
     emailAddress: "Adresă de email",
     subscribe: "Abonează-te",
+    emailPlaceholder: "Adresa ta de email",
+    sending: "Se trimite…",
+    subscribeDone: "Gata — verifică-ți emailul ca să confirmi abonarea.",
+    subscribeFailed: "Nu am putut trimite adresa. Încearcă din nou.",
+    subscribeNotConnected: "Abonarea nu este încă conectată. Scrie-ne și te adăugăm noi.",
+    closeAnnouncement: "Închide anunțul",
+    announcementDefaultLink: "Vezi",
+    language: "Limbă",
+    currency: "Monedă",
     gallery: "Galerie",
     close: "Închide",
     previousPhoto: "Fotografia anterioară",
@@ -362,6 +412,9 @@ const DICTIONARIES: Record<string, Messages> = {
     format: "Format",
     capacity: "Capacitate",
     dayNumber: "Ziua {count}",
+    departuresHeading: "Date și prețuri",
+    roomsAndRates: "Camere și tarife",
+    availabilityHeading: "Disponibilitate",
 
     liveSelling: "Vânzare live",
     datesAndPrice: "Date și preț",
@@ -400,6 +453,12 @@ const DICTIONARIES: Record<string, Messages> = {
       "Disponibilitatea curentă și prețurile în moneda de afișare sunt rezolvate în căutarea live de croaziere și pot fi adăugate într-un itinerariu gestionat, fără a copia starea furnizorului în această pagină.",
 
     nothingPublished: "Nimic publicat aici încă.",
+    accreditations: "Membru și acreditări",
+    paymentHeading: "Plată",
+    consumerProtection: "Protecția consumatorilor",
+    disputeResolution: "Soluționarea alternativă a litigiilor",
+    markWithdrawn: "Retrasă — platforma s-a închis în iulie 2025",
+    withdrawnShort: "retrasă",
     backTo: "Înapoi la {name}",
     pageNotFound: "Pagina nu a fost găsită",
 
@@ -494,6 +553,15 @@ const DICTIONARIES: Record<string, Messages> = {
     submenu: "sous-menu",
     emailAddress: "Adresse e-mail",
     subscribe: "S'abonner",
+    emailPlaceholder: "Votre adresse e-mail",
+    sending: "Envoi…",
+    subscribeDone: "Merci — confirmez depuis votre boîte mail.",
+    subscribeFailed: "Impossible d'envoyer cette adresse. Réessayez.",
+    subscribeNotConnected: "L'inscription n'est pas encore connectée. Écrivez-nous.",
+    closeAnnouncement: "Fermer l'annonce",
+    announcementDefaultLink: "Voir",
+    language: "Langue",
+    currency: "Devise",
     gallery: "Galerie",
     close: "Fermer",
     previousPhoto: "Photographie précédente",
@@ -525,6 +593,9 @@ const DICTIONARIES: Record<string, Messages> = {
     format: "Format",
     capacity: "Capacité",
     dayNumber: "Jour {count}",
+    departuresHeading: "Dates et tarifs",
+    roomsAndRates: "Chambres et tarifs",
+    availabilityHeading: "Disponibilité",
 
     liveSelling: "Vente en direct",
     datesAndPrice: "Dates et tarifs",
@@ -564,6 +635,12 @@ const DICTIONARIES: Record<string, Messages> = {
       "Les disponibilités actuelles et les tarifs dans la devise d'affichage sont résolus dans la recherche de croisières en direct et peuvent être ajoutés à un itinéraire géré, sans copier l'état du fournisseur dans cette page.",
 
     nothingPublished: "Rien de publié ici pour l'instant.",
+    accreditations: "Adhésions et accréditations",
+    paymentHeading: "Paiement",
+    consumerProtection: "Protection des consommateurs",
+    disputeResolution: "Règlement extrajudiciaire des litiges",
+    markWithdrawn: "Retirée — la plateforme européenne a fermé en juillet 2025",
+    withdrawnShort: "retirée",
     backTo: "Retour à {name}",
     pageNotFound: "Page introuvable",
 
@@ -639,6 +716,15 @@ const DICTIONARIES: Record<string, Messages> = {
     submenu: "Untermenü",
     emailAddress: "E-Mail-Adresse",
     subscribe: "Abonnieren",
+    emailPlaceholder: "Ihre E-Mail-Adresse",
+    sending: "Wird gesendet…",
+    subscribeDone: "Fertig — bitte bestätigen Sie in Ihrem Postfach.",
+    subscribeFailed: "Adresse konnte nicht gesendet werden. Bitte erneut versuchen.",
+    subscribeNotConnected: "Die Anmeldung ist noch nicht angebunden. Schreiben Sie uns.",
+    closeAnnouncement: "Hinweis schließen",
+    announcementDefaultLink: "Ansehen",
+    language: "Sprache",
+    currency: "Währung",
     gallery: "Galerie",
     close: "Schließen",
     previousPhoto: "Vorheriges Foto",
@@ -670,6 +756,9 @@ const DICTIONARIES: Record<string, Messages> = {
     format: "Format",
     capacity: "Kapazität",
     dayNumber: "Tag {count}",
+    departuresHeading: "Termine und Preise",
+    roomsAndRates: "Zimmer und Preise",
+    availabilityHeading: "Verfügbarkeit",
 
     liveSelling: "Live-Verkauf",
     datesAndPrice: "Termine und Preis",
@@ -709,6 +798,12 @@ const DICTIONARIES: Record<string, Messages> = {
       "Aktuelle Verfügbarkeit und Preise in der Anzeigewährung werden in der Live-Kreuzfahrtsuche ermittelt und können einem verwalteten Reiseverlauf hinzugefügt werden, ohne den Zustand des Anbieters in diese Seite zu kopieren.",
 
     nothingPublished: "Hier ist noch nichts veröffentlicht.",
+    accreditations: "Mitgliedschaften und Akkreditierungen",
+    paymentHeading: "Zahlung",
+    consumerProtection: "Verbraucherschutz",
+    disputeResolution: "Alternative Streitbeilegung",
+    markWithdrawn: "Zurückgezogen — die EU-Plattform wurde im Juli 2025 geschlossen",
+    withdrawnShort: "zurückgezogen",
     backTo: "Zurück zu {name}",
     pageNotFound: "Seite nicht gefunden",
 
@@ -784,6 +879,15 @@ const DICTIONARIES: Record<string, Messages> = {
     submenu: "submenú",
     emailAddress: "Dirección de correo electrónico",
     subscribe: "Suscribirse",
+    emailPlaceholder: "Tu dirección de correo",
+    sending: "Enviando…",
+    subscribeDone: "Listo — confirma desde tu correo.",
+    subscribeFailed: "No pudimos enviar esa dirección. Inténtalo de nuevo.",
+    subscribeNotConnected: "La suscripción aún no está conectada. Escríbenos.",
+    closeAnnouncement: "Cerrar el aviso",
+    announcementDefaultLink: "Ver",
+    language: "Idioma",
+    currency: "Moneda",
     gallery: "Galería",
     close: "Cerrar",
     previousPhoto: "Fotografía anterior",
@@ -815,6 +919,9 @@ const DICTIONARIES: Record<string, Messages> = {
     format: "Formato",
     capacity: "Capacidad",
     dayNumber: "Día {count}",
+    departuresHeading: "Fechas y precios",
+    roomsAndRates: "Habitaciones y tarifas",
+    availabilityHeading: "Disponibilidad",
 
     liveSelling: "Venta en directo",
     datesAndPrice: "Fechas y precio",
@@ -853,6 +960,12 @@ const DICTIONARIES: Record<string, Messages> = {
       "La disponibilidad actual y los precios en la moneda de presentación se resuelven en la búsqueda de cruceros en directo y pueden añadirse a un itinerario gestionado sin copiar el estado del proveedor en esta página.",
 
     nothingPublished: "Aquí todavía no hay nada publicado.",
+    accreditations: "Membresías y acreditaciones",
+    paymentHeading: "Pago",
+    consumerProtection: "Protección del consumidor",
+    disputeResolution: "Resolución alternativa de litigios",
+    markWithdrawn: "Retirada — la plataforma europea cerró en julio de 2025",
+    withdrawnShort: "retirada",
     backTo: "Volver a {name}",
     pageNotFound: "Página no encontrada",
 
@@ -928,6 +1041,15 @@ const DICTIONARIES: Record<string, Messages> = {
     submenu: "sottomenu",
     emailAddress: "Indirizzo email",
     subscribe: "Iscriviti",
+    emailPlaceholder: "Il tuo indirizzo email",
+    sending: "Invio…",
+    subscribeDone: "Fatto — conferma dalla tua casella di posta.",
+    subscribeFailed: "Non siamo riusciti a inviare l'indirizzo. Riprova.",
+    subscribeNotConnected: "L'iscrizione non è ancora collegata. Scrivici.",
+    closeAnnouncement: "Chiudi l'avviso",
+    announcementDefaultLink: "Vedi",
+    language: "Lingua",
+    currency: "Valuta",
     gallery: "Galleria",
     close: "Chiudi",
     previousPhoto: "Fotografia precedente",
@@ -959,6 +1081,9 @@ const DICTIONARIES: Record<string, Messages> = {
     format: "Formato",
     capacity: "Capacità",
     dayNumber: "Giorno {count}",
+    departuresHeading: "Date e prezzi",
+    roomsAndRates: "Camere e tariffe",
+    availabilityHeading: "Disponibilità",
 
     liveSelling: "Vendita live",
     datesAndPrice: "Date e prezzo",
@@ -997,6 +1122,12 @@ const DICTIONARIES: Record<string, Messages> = {
       "La disponibilità attuale e i prezzi nella valuta di presentazione sono risolti nella ricerca live delle crociere e possono essere aggiunti a un itinerario gestito senza copiare lo stato del fornitore in questa pagina.",
 
     nothingPublished: "Qui non è ancora pubblicato nulla.",
+    accreditations: "Adesioni e accreditamenti",
+    paymentHeading: "Pagamento",
+    consumerProtection: "Tutela dei consumatori",
+    disputeResolution: "Risoluzione alternativa delle controversie",
+    markWithdrawn: "Ritirata — la piattaforma UE ha chiuso a luglio 2025",
+    withdrawnShort: "ritirata",
     backTo: "Torna a {name}",
     pageNotFound: "Pagina non trovata",
 
@@ -1069,7 +1200,7 @@ const DICTIONARIES: Record<string, Messages> = {
  *
  * A publication may be `en-GB`, `ro-RO` or `de-AT`; the theme's own labels do
  * not differ by region, so they are keyed by language alone. Matches the
- * resolver `shopping.mjs` already uses.
+ * resolver this module owns.
  */
 function language(locale: string | undefined): string {
   return typeof locale === "string" ? (locale.split("-")[0] ?? "en").toLowerCase() : "en"

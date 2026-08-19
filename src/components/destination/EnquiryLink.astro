@@ -1,0 +1,69 @@
+---
+/**
+ * One call to action, written once.
+ *
+ * The page repeats this link six or seven times on the way down. Repeating the
+ * markup instead would guarantee that two of them eventually disagree about
+ * their height or their hover, and a button that changes shape as the reader
+ * scrolls stops reading as the same offer.
+ *
+ * There is no disabled state and no placeholder: a block with no target does
+ * not render this component at all.
+ */
+import { cn } from "~/lib/cn"
+import type { Copy } from "./copy"
+
+interface Props {
+  href: string
+  /**
+   * An operator's own wording, when they wrote some. The theme's label is the
+   * fallback, and it comes from the page's copy rather than from a literal here
+   * — a default baked into this component would be the one button on the page
+   * still speaking the previous language.
+   */
+  label?: string
+  /** `quiet` is the underlined editorial variant used inside running prose. */
+  variant?: "solid" | "outline" | "quiet"
+  class?: string
+  copy: Copy
+}
+
+const {
+  href,
+  variant = "solid",
+  class: className,
+  copy,
+  label = copy.requestQuote,
+} = Astro.props
+
+const base =
+  "inline-flex h-11 items-center justify-center rounded-pill px-6 text-[0.875rem] font-medium transition-colors duration-300"
+---
+
+{
+  variant === "quiet" ? (
+    <a
+      href={href}
+      class={cn(
+        "u-link u-eyebrow inline-flex items-center gap-2.5 text-ink transition-opacity duration-300 hover:opacity-70",
+        className,
+      )}
+    >
+      <span class="h-px w-5 bg-current" aria-hidden="true" />
+      {label}
+    </a>
+  ) : (
+    <a
+      href={href}
+      class={cn(
+        base,
+        variant === "solid"
+          ? "bg-accent text-accent-ink hover:bg-accent-hover"
+          : "border border-ink/25 text-ink hover:border-ink/60",
+        className,
+      )}
+    >
+      {label}
+    </a>
+  )
+}

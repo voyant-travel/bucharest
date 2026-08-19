@@ -20,7 +20,6 @@ import FeatureGrid from "./FeatureGrid.astro"
 import Gallery from "./Gallery.astro"
 import Hero from "./Hero.astro"
 import JourneyCards from "./JourneyCards.astro"
-import JourneySearch from "./JourneySearch.astro"
 import LogoStrip from "./LogoStrip.astro"
 import Newsletter from "./Newsletter.astro"
 import Prose from "./Prose.astro"
@@ -29,31 +28,25 @@ import StatBand from "./StatBand.astro"
 import Steps from "./Steps.astro"
 import Testimonials from "./Testimonials.astro"
 import TextMedia from "./TextMedia.astro"
+import TravelSearch from "./TravelSearch.astro"
 
 interface Props {
   sections: SectionInstance[]
   locale: string
-  searchEndpoint?: string
-  tripsEndpoint?: string
-  tripBookingEndpoint?: string
-  bookingEndpoint?: string
-  checkoutEndpoint?: string
 }
 
 const {
   sections,
   locale,
-  searchEndpoint,
-  tripsEndpoint,
-  tripBookingEndpoint,
-  bookingEndpoint,
-  checkoutEndpoint,
 } = Astro.props
 
 /**
- * Sections that take only their own instance. `journey-search` is kept out of
- * this table deliberately — it is the one section wired to live capability
- * endpoints, and passing those through a generic map would hide it.
+ * Sections that take only their own instance.
+ *
+ * Every section is in this table now. The cross-vertical journey search used to
+ * sit outside it because it alone was wired to live capability endpoints; it
+ * has been removed, and `travel-search` — which is what an operator actually
+ * puts on a home page — needs nothing but its own settings.
  */
 const SIMPLE = {
   "alternating-features": AlternatingFeatures,
@@ -73,6 +66,7 @@ const SIMPLE = {
   steps: Steps,
   testimonials: Testimonials,
   "text-media": TextMedia,
+  "travel-search": TravelSearch,
 } as const
 ---
 
@@ -81,19 +75,6 @@ const SIMPLE = {
     // Newsletter supplies one label of its own, so it needs the locale.
     if (section.type === "newsletter") {
       return <Newsletter section={section} locale={locale} />
-    }
-    if (section.type === "journey-search") {
-      return (
-        <JourneySearch
-          section={section}
-          locale={locale}
-          searchEndpoint={searchEndpoint}
-          tripsEndpoint={tripsEndpoint}
-          tripBookingEndpoint={tripBookingEndpoint}
-          bookingEndpoint={bookingEndpoint}
-          checkoutEndpoint={checkoutEndpoint}
-        />
-      )
     }
     const Component = SIMPLE[section.type as keyof typeof SIMPLE]
     return Component ? <Component section={section} /> : null

@@ -1,0 +1,107 @@
+---
+/**
+ * One destination, as a card in the grid.
+ *
+ * The whole card is the link — photograph, title and meta inside a single
+ * anchor — because a reader scanning an index aims at the picture, not at a
+ * "read more" underneath it, and two adjacent links to the same place also
+ * make a screen reader announce every destination twice.
+ *
+ * Everything below the title is optional, and each part is asked for
+ * separately. An operator who filled the blurbs but not the prices, or the
+ * prices for Europe and not for the long-haul rows, still gets a grid of
+ * complete-looking cards instead of a column of gaps.
+ */
+import Photo from "~/components/primitives/Photo.astro"
+import type { IndexedDestination } from "~/lib/destination-index"
+import type { Copy } from "./copy"
+import { money, trips } from "./format"
+
+interface Props {
+  destination: IndexedDestination
+  copy: Copy
+}
+
+const { destination, copy } = Astro.props
+
+/*
+ * The meta line is assembled rather than templated, because either half can be
+ * missing and the separator belongs to the join. A card with only a price must
+ * not print a leading "·", which reads as a value that failed to load.
+ *
+ * Both values are also range-checked, not merely presence-checked. A zero trip
+ * count and a zero from-price are what an unmapped CMS field looks like once it
+ * has been through a number parser, and "0 trips · from 0 €" is a worse card
+ * than one carrying no meta line at all.
+ */
+const meta: string[] = []
+if (destination.tripCount !== undefined && destination.tripCount > 0) {
+  meta.push(trips(destination.tripCount, copy))
+}
+if (destination.priceFrom !== undefined && destination.priceFrom > 0) {
+  meta.push(`${copy.from} ${money(destination.priceFrom, destination.currency)}`)
+}
+---
+
+<li class="flex">
+  <a href={destination.href} class="group flex w-full flex-col">
+    {
+      destination.image ? (
+        <Photo
+          src={destination.image.src}
+          alt={destination.image.alt}
+          ratio="aspect-[4/5]"
+          class="rounded-card"
+          sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
+        />
+      ) : (
+        /*
+         * The frame survives the missing photograph at exactly the same ratio.
+         * Collapsing it would lift this card's caption above its neighbours'
+         * and unpick the whole row — one absent asset would look like a broken
+         * grid rather than like one place that has not been shot yet.
+         */
+        <div class="aspect-[4/5] rounded-card bg-surface-sunk" />
+      )
+    }
+
+    <div class="mt-4 flex flex-1 flex-col">
+      {destination.region && <p class="u-eyebrow text-ink-subtle">{destination.region}</p>}
+
+      <h3
+        class:list={[
+          "u-display-sm text-[1.1875rem] transition-colors duration-300 group-hover:text-accent md:text-[1.3125rem]",
+          destination.region && "mt-2",
+        ]}
+      >
+        {destination.title}
+      </h3>
+
+      {
+        /*
+         * Clamped rather than truncated in the build: the blurbs are written by
+         * an operator to no length at all, and three lines is what keeps the
+         * meta lines of a row on one baseline. Cutting the string instead would
+         * bake a phone-sized measure into a desktop card.
+         */
+        destination.blurb && (
+          <p class="mt-2 line-clamp-3 text-[0.875rem] leading-[1.65] text-ink-muted">
+            {destination.blurb}
+          </p>
+        )
+      }
+
+      {
+        /*
+         * Pushed to the bottom of the card so the numbers across a row line up
+         * even when one blurb runs to three lines and its neighbour to one.
+         * They are the values a reader compares between destinations, and
+         * comparing them is only quick when they sit on the same baseline.
+         */
+        meta.length > 0 && (
+          <p class="mt-auto pt-3 text-[0.875rem] text-ink">{meta.join(" · ")}</p>
+        )
+      }
+    </div>
+  </a>
+</li>

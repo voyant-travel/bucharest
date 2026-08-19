@@ -1,0 +1,41 @@
+---
+/**
+ * One region, as an anchored section of cards.
+ *
+ * A grid rather than the destination page's rail, and the difference is not
+ * stylistic: a rail says "here are the six we would send you on", which is a
+ * curated promise, while an index is making the opposite one — that this is
+ * everything, and that the reader can scan it. Hiding half of Europe behind a
+ * horizontal scrollbar on an index is how a reader concludes the operator does
+ * not go where they want to go.
+ *
+ * The `id` is handed down rather than derived here so it cannot disagree with
+ * the jump-bar link that points at it. `scroll-mt-40` clears both sticky bars:
+ * without it the anchor lands the heading underneath the jump bar, so the
+ * reader arrives at what looks like the middle of the previous region.
+ */
+import type { IndexedDestination } from "~/lib/destination-index"
+import DestinationCard from "./DestinationCard.astro"
+import type { Copy } from "./copy"
+
+interface Props {
+  id: string
+  name: string
+  destinations: IndexedDestination[]
+  copy: Copy
+}
+
+const { id, name, destinations, copy } = Astro.props
+---
+
+<section id={id} class="u-shell scroll-mt-40 py-12 md:py-16">
+  <h2 class="u-display-sm text-[1.625rem] md:text-[2rem]">{name}</h2>
+
+  <ul class="mt-8 grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 md:gap-x-6 lg:grid-cols-3">
+    {
+      destinations.map((destination) => (
+        <DestinationCard destination={destination} copy={copy} />
+      ))
+    }
+  </ul>
+</section>

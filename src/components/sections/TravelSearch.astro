@@ -1,0 +1,74 @@
+---
+/**
+ * Search across whichever verticals the agency actually sells.
+ *
+ * One section rather than five, because an operator composing a home page is
+ * placing "search" once and deciding what it covers — and a traveller
+ * choosing between a package and a cruise should be able to compare them
+ * without navigating. Which verticals appear is a setting, so a boutique
+ * operator selling only escorted tours gets a single form with no tab strip.
+ */
+import TravelSearchIsland from "~/components/islands/search/TravelSearch"
+import {
+  choiceSetting,
+  visibleSetting,
+  type SectionInstance,
+} from "~/lib/sections"
+import { frame } from "~/lib/presentation"
+import Band from "~/components/primitives/Band.astro"
+import type { Vertical } from "~/lib/search/contract"
+import { suggestionsFor } from "~/lib/search/suggestions"
+
+interface Props {
+  section: SectionInstance
+}
+
+const { section } = Astro.props
+const settings = section.data.settings
+const { tone, spacing } = frame(settings)
+
+const ALL: Vertical[] = [
+  "packages",
+  "tours",
+  "stays",
+  "activities",
+  "cruises",
+  "flights",
+]
+
+/*
+ * Verticals are declared one boolean each rather than as a multi-select,
+ * because the contract's setting types have no multi-select and a comma list
+ * an operator types by hand is a support ticket waiting to happen.
+ */
+const verticals = ALL.filter(
+  (id) => settings[`vertical-${id}`] !== false,
+)
+
+const initial = choiceSetting(settings, "initial-vertical", ALL, verticals[0] ?? "packages")
+
+/*
+ * Suggestions are resolved on the server, once per vertical the operator
+ * sells. Doing it in the island would mean shipping every catalogue row to the
+ * browser to derive a list of place names from them.
+ */
+const suggestions = Object.fromEntries(
+  verticals.map((id) => [id, suggestionsFor(id)]),
+)
+
+const eyebrow = visibleSetting(settings, "eyebrow")
+const heading = visibleSetting(settings, "heading")
+const introduction = visibleSetting(settings, "introduction")
+---
+
+<Band tone={tone} spacing={spacing}>
+  <TravelSearchIsland
+    client:load
+    verticals={verticals}
+    initial={initial}
+    suggestions={suggestions}
+    eyebrow={eyebrow}
+    heading={heading}
+    introduction={introduction}
+  />
+</Band>

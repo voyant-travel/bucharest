@@ -1,0 +1,154 @@
+---
+/**
+ * Where to go, and where to stay — one module, two panels.
+ *
+ * The switch is a radio group styled with `:checked`, so it works with
+ * JavaScript unavailable, before hydration, and in a browser that failed to run
+ * the island it never had. That matters more here than anywhere else on the
+ * page: half this module's content is behind the inactive panel, and a tab bar
+ * that does nothing hides it permanently.
+ *
+ * The panels are deliberately not `role="tablist"`. ARIA tabs promise arrow-key
+ * navigation and a managed focus ring, which is scripted behaviour; a radio
+ * group already gives arrow keys for free and announces itself accurately. It
+ * is better to be a truthful radio group than a tab widget that lies.
+ *
+ * When only one of the two lists is filled the tabs disappear entirely — a
+ * single tab is a heading wearing a costume.
+ */
+import { cn } from "~/lib/cn"
+import type { DestinationTile } from "~/lib/destination"
+import TileCard from "./TileCard.astro"
+import type { Copy } from "./copy"
+
+interface Props {
+  places: DestinationTile[]
+  stays: DestinationTile[]
+  staysAllHref?: string | undefined
+  copy: Copy
+}
+
+const { places, stays, staysAllHref, copy } = Astro.props
+
+const both = places.length > 0 && stays.length > 0
+
+/*
+ * Both panels use the same photo ratio. They are never seen side by side, so
+ * the only place a difference would show is in the page jumping under the
+ * reader's cursor as they switch tabs.
+ */
+const ratio = "aspect-[4/3]"
+const sizes = "(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
+
+const grid = "grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"
+
+/*
+ * The `peer-checked/…` classes are written out in full rather than composed
+ * from a shared string. Tailwind reads source files as text and never runs
+ * them, so a class assembled at runtime is a class it never emits — the tabs
+ * would look inert and the cause would be invisible in the markup.
+ */
+const tab =
+  "cursor-pointer rounded-pill border border-line px-5 py-2.5 text-[0.875rem] text-ink-muted transition-colors duration-300 hover:text-ink"
+---
+
+<section id="where" class="u-shell scroll-mt-40 py-14 md:py-20">
+  <h2 class="u-display-sm text-[1.625rem] md:text-[2rem]">{copy.whereHeading}</h2>
+
+  {
+    both ? (
+      <div class="mt-8 flex flex-wrap items-center gap-2">
+        <input
+          type="radio"
+          name="destination-where"
+          id="destination-where-places"
+          class="peer/places sr-only"
+          checked
+        />
+        <input
+          type="radio"
+          name="destination-where"
+          id="destination-where-stays"
+          class="peer/stays sr-only"
+        />
+
+        {
+          /*
+           * The visible state lives on the labels, since the inputs themselves
+           * are screen-reader-only. The focus ring has to be forwarded the same
+           * way, or a keyboard reader arrows through an invisible control.
+           */
+        }
+        <label
+          for="destination-where-places"
+          class={cn(
+            tab,
+            "peer-checked/places:border-ink peer-checked/places:bg-ink peer-checked/places:text-canvas peer-checked/places:hover:text-canvas",
+            "peer-focus-visible/places:outline-2 peer-focus-visible/places:outline-offset-2 peer-focus-visible/places:outline-accent",
+          )}
+        >
+          {copy.whereToGo}
+        </label>
+        <label
+          for="destination-where-stays"
+          class={cn(
+            tab,
+            "peer-checked/stays:border-ink peer-checked/stays:bg-ink peer-checked/stays:text-canvas peer-checked/stays:hover:text-canvas",
+            "peer-focus-visible/stays:outline-2 peer-focus-visible/stays:outline-offset-2 peer-focus-visible/stays:outline-accent",
+          )}
+        >
+          {copy.whereToStay}
+        </label>
+
+        <div class="hidden w-full pt-8 peer-checked/places:block">
+          <ul class={grid}>
+            {places.map((tile) => (
+              <li>
+                <TileCard tile={tile} ratio={ratio} sizes={sizes} />
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div class="hidden w-full pt-8 peer-checked/stays:block">
+          <ul class={grid}>
+            {stays.map((tile) => (
+              <li>
+                <TileCard tile={tile} ratio={ratio} sizes={sizes} />
+              </li>
+            ))}
+          </ul>
+          {staysAllHref && (
+            <a
+              href={staysAllHref}
+              class="u-link mt-8 inline-block text-[0.875rem] text-ink-muted transition-colors duration-300 hover:text-ink"
+            >
+              {copy.viewAll}
+            </a>
+          )}
+        </div>
+      </div>
+    ) : (
+      <div class="mt-8">
+        <h3 class="u-eyebrow text-ink-subtle">
+          {places.length > 0 ? copy.whereToGo : copy.whereToStay}
+        </h3>
+        <ul class={cn(grid, "mt-6")}>
+          {(places.length > 0 ? places : stays).map((tile) => (
+            <li>
+              <TileCard tile={tile} ratio={ratio} sizes={sizes} />
+            </li>
+          ))}
+        </ul>
+        {stays.length > 0 && staysAllHref && (
+          <a
+            href={staysAllHref}
+            class="u-link mt-8 inline-block text-[0.875rem] text-ink-muted transition-colors duration-300 hover:text-ink"
+          >
+            {copy.viewAll}
+          </a>
+        )}
+      </div>
+    )
+  }
+</section>

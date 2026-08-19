@@ -1,0 +1,86 @@
+---
+/**
+ * The editorial run: what there is to see, one block at a time.
+ *
+ * Alternating sides rather than a stack, because the eye needs a reason to keep
+ * going and a column of identical blocks gives it none. Nothing else is added
+ * per block — no rules, no numbers, no eyebrows. The reference page ships
+ * eleven of these and reaches nine thousand pixels on a phone with only a
+ * picture and a paragraph each; any decoration here is multiplied by eleven.
+ *
+ * One paragraph per block is the contract's shape and also the right one: this
+ * is the section a reader skims, and a block they can finish is a block they
+ * read.
+ */
+import Photo from "~/components/primitives/Photo.astro"
+import type { DestinationStory } from "~/lib/destination"
+import EnquiryLink from "./EnquiryLink.astro"
+import type { Copy } from "./copy"
+
+interface Props {
+  stories: DestinationStory[]
+  enquiry?: string | undefined
+  copy: Copy
+}
+
+const { stories, enquiry, copy } = Astro.props
+
+/*
+ * A block gets a call to action when its author wrote one, and otherwise on
+ * every second block — which is about one per screen and a half of scrolling,
+ * the density this no-online-booking model needs. Putting one under all eleven
+ * would turn the section into a wall of buttons and stop any of them being read
+ * as an invitation.
+ */
+const ctaFor = (story: DestinationStory, index: number) =>
+  story.cta ??
+  (enquiry && index % 2 === 1 ? { label: copy.requestQuote, href: enquiry } : undefined)
+---
+
+<section id="see" class="u-shell scroll-mt-40 py-14 md:py-20">
+  <h2 class="u-display-sm text-[1.625rem] md:text-[2rem]">{copy.storiesHeading}</h2>
+
+  <div class="mt-10 space-y-16 md:mt-14 md:space-y-24">
+    {
+      stories.map((story, index) => {
+        const cta = ctaFor(story, index)
+        return (
+          <article class="grid items-center gap-6 md:grid-cols-2 md:gap-14">
+            {story.image && (
+              <div class:list={["md:col-span-1", index % 2 === 1 && "md:order-2"]}>
+                <Photo
+                  src={story.image.src}
+                  alt={story.image.alt}
+                  ratio="aspect-[4/3]"
+                  class="rounded-card"
+                  sizes="(min-width: 768px) 46vw, 92vw"
+                />
+              </div>
+            )}
+
+            {
+              /*
+               * Without a photograph the prose takes the full width rather than
+               * half of it beside empty canvas — a lone column floating in a
+               * two-column grid looks like the image failed to load.
+               */
+            }
+            <div class:list={[!story.image && "md:col-span-2 md:max-w-[62ch]"]}>
+              <h3 class="u-display-sm text-[1.375rem] md:text-[1.75rem]">{story.heading}</h3>
+              <p class="mt-4 text-[1rem] leading-[1.85] text-ink-muted">{story.body}</p>
+              {cta && (
+                <EnquiryLink
+                  href={cta.href}
+                  label={cta.label}
+                  variant="quiet"
+                  class="mt-6"
+                  copy={copy}
+                />
+              )}
+            </div>
+          </article>
+        )
+      })
+    }
+  </div>
+</section>

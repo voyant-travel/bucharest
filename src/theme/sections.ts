@@ -78,6 +78,81 @@ const linkPair: SectionSetting[] = [
 
 export const sections: ThemeSection[] = [
   {
+    id: "travel-search",
+    name: "Travel search",
+    description:
+      "Search across the verticals this agency sells, with facets that count.",
+    settings: [
+      { id: "eyebrow", label: "Eyebrow", type: "text" },
+      { id: "heading", label: "Heading", type: "inline_richtext" },
+      { id: "introduction", label: "Introduction", type: "textarea" },
+      {
+        id: "initial-vertical",
+        label: "Opens on",
+        type: "select",
+        default: "packages",
+        options: [
+          { label: "Packages", value: "packages" },
+          { label: "Tours", value: "tours" },
+          { label: "Stays", value: "stays" },
+          { label: "Activities", value: "activities" },
+          { label: "Cruises", value: "cruises" },
+          { label: "Flights", value: "flights" },
+        ],
+      },
+      /*
+       * One boolean per vertical rather than a multi-select, because the
+       * contract has no multi-select type and a comma-separated list an
+       * operator types by hand is a support ticket waiting to happen. Every
+       * one defaults on: an agency that sells only circuits turns five off
+       * once, which is a smaller ask than turning one on and wondering why
+       * the section looked empty.
+       */
+      { id: "vertical-packages", label: "Sell packages", type: "checkbox", default: true },
+      { id: "vertical-tours", label: "Sell tours", type: "checkbox", default: true },
+      { id: "vertical-stays", label: "Sell stays", type: "checkbox", default: true },
+      { id: "vertical-activities", label: "Sell activities", type: "checkbox", default: true },
+      { id: "vertical-cruises", label: "Sell cruises", type: "checkbox", default: true },
+      { id: "vertical-flights", label: "Sell flights", type: "checkbox", default: true },
+      tone("surface"),
+      spacing(),
+    ],
+    /*
+     * No blocks. Every repeatable thing here — destinations, departure cities,
+     * facet values — comes from the catalogue rather than from something an
+     * operator types, so there is nothing for a repeater to hold.
+     */
+    blocks: [],
+    presets: [
+      {
+        name: "Everything we sell",
+        settings: {
+          eyebrow: "Plan with live availability",
+          heading: "Search the whole journey",
+          introduction:
+            "Compare holidays, escorted tours, hotels, cruises and flights, then put them together as one trip.",
+          "initial-vertical": "packages",
+        },
+        blocks: [],
+      },
+      {
+        name: "Packages only",
+        settings: {
+          heading: "Find your holiday",
+          "initial-vertical": "packages",
+          "vertical-tours": false,
+          "vertical-stays": false,
+          "vertical-activities": false,
+          "vertical-cruises": false,
+          "vertical-flights": false,
+        },
+        blocks: [],
+      },
+    ],
+    templates: ["home"],
+  },
+
+  {
     id: "journey-cards",
     name: "Journeys",
     description:
@@ -432,7 +507,21 @@ export const sections: ThemeSection[] = [
       {
         name: "Photograph mosaic",
         settings: { heading: "Photographs from the last twelve months", layout: "mosaic" },
-        blocks: [{ type: "photograph", settings: {} }],
+        /*
+         * Four slots, because the preset selects the mosaic arrangement and a
+         * mosaic of one photograph is a photograph. The blocks are empty by
+         * necessity — the theme bundles no photography, and a preset that
+         * pointed at a remote image would put someone else's URL in an
+         * operator's content — so this scaffolds the shape and the operator
+         * fills it. The section stays hidden until they do, which is correct:
+         * a visitor should never meet an empty frame.
+         */
+        blocks: [
+          { type: "photograph", settings: {} },
+          { type: "photograph", settings: {} },
+          { type: "photograph", settings: {} },
+          { type: "photograph", settings: {} },
+        ],
       },
     ],
     templates: ["home"],
@@ -568,8 +657,25 @@ export const sections: ThemeSection[] = [
     presets: [
       {
         name: "As recommended in",
-        settings: { label: "As recommended in", layout: "static", spacing: "tight" },
-        blocks: [{ type: "mark", settings: {} }],
+        settings: { label: "Memberships and accreditations", layout: "static", spacing: "tight" },
+        /*
+         * Real marks, not empty slots. A preset whose blocks carry no image
+         * filters out of the render entirely, so an operator who inserted
+         * "Accreditations" saw the section appear in the editor and nothing at
+         * all on the page. These two ship with the theme, so the preset is
+         * visible the moment it is added and the operator swaps rather than
+         * hunts for why it is blank.
+         */
+        blocks: [
+          {
+            type: "mark",
+            settings: { image: "/badges/anat.svg", "image-alt": "Member of ANAT" },
+          },
+          {
+            type: "mark",
+            settings: { image: "/badges/iata.svg", "image-alt": "IATA accredited agency" },
+          },
+        ],
       },
     ],
     templates: ["home"],

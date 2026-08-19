@@ -1,0 +1,101 @@
+---
+/**
+ * Who this company actually is, and what it is licensed to sell.
+ *
+ * Plain text, in the footer, on every page — that is what Law 365/2002 and
+ * OUG 34/2014 ask for, and what a traveller checking an agency before wiring a
+ * deposit is looking for. Structured fields rather than one authored paragraph,
+ * because the same values feed the organisation's structured data, and because
+ * a paragraph cannot be validated.
+ */
+import type { SiteSettings } from "~/lib/site"
+import { telHref } from "~/lib/site"
+
+interface Props {
+  settings: SiteSettings
+}
+
+const { settings } = Astro.props
+const legal = settings.legal
+
+const has =
+  legal.name ||
+  legal.registration ||
+  legal.address ||
+  legal.licence ||
+  legal.insolvency ||
+  legal.emergencyPhone
+---
+
+{
+  has && (
+    <div class="grid gap-x-12 gap-y-6 text-[0.8125rem] leading-relaxed text-ink-subtle md:grid-cols-2">
+      <div class="space-y-1">
+        {legal.name && <p class="text-ink-muted">{legal.name}</p>}
+        {legal.address && <p class="whitespace-pre-line">{legal.address}</p>}
+        {legal.registration && <p>{legal.registration}</p>}
+        {legal.capital && <p>Capital social: {legal.capital}</p>}
+      </div>
+
+      <div class="space-y-1">
+        {legal.licence && (
+          <p>
+            {legal.licenceUrl ? (
+              <a href={legal.licenceUrl} rel="noopener" class="u-link">
+                {legal.licence}
+              </a>
+            ) : (
+              legal.licence
+            )}
+          </p>
+        )}
+
+        {legal.insolvency && (
+          <p>
+            {legal.insolvencyUrl ? (
+              <a href={legal.insolvencyUrl} rel="noopener" class="u-link">
+                {legal.insolvency}
+              </a>
+            ) : (
+              legal.insolvency
+            )}
+            {
+              /*
+               * Cover that has lapsed is worse than no claim of cover, and the
+               * operator is the last person to notice. Said out loud, in the
+               * place the claim is made.
+               */
+            }
+            {legal.insolvencyStatus === "lapsed" && (
+              <span class="ml-2 rounded-card border border-dashed border-ink-subtle/60 px-2 py-0.5 text-[0.6875rem] uppercase tracking-[0.08em]">
+                expirată
+              </span>
+            )}
+            {legal.insolvencyStatus === "expiring" && (
+              <span class="ml-2 rounded-card border border-dashed border-ink-subtle/60 px-2 py-0.5 text-[0.6875rem] uppercase tracking-[0.08em]">
+                expiră curând
+              </span>
+            )}
+          </p>
+        )}
+
+        {legal.travellerRights && (
+          <p>
+            <a href={legal.travellerRights} class="u-link">
+              Drepturile călătorului
+            </a>
+          </p>
+        )}
+
+        {legal.emergencyPhone && (
+          <p>
+            Urgențe:{" "}
+            <a href={telHref(legal.emergencyPhone)} class="u-link">
+              {legal.emergencyPhone}
+            </a>
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}

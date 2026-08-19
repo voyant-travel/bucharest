@@ -1,0 +1,14 @@
+---
+/**
+ * The gallery root, which is not itself a place.
+ *
+ * Redirecting rather than rendering keeps one canonical URL per view: there is
+ * exactly one address for the primary sweep, so a link someone pastes and a
+ * link the rail generates are the same string.
+ */
+import { overviewPath } from "~/lib/gallery"
+
+if (!import.meta.env.DEV) return new Response(null, { status: 404 })
+
+return Astro.redirect(`${overviewPath("primary")}${Astro.url.search}`)
+---

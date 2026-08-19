@@ -1,0 +1,178 @@
+---
+/**
+ * A destination, as an editorial page.
+ *
+ * The order below is not a taste decision. It is the order the high-end
+ * operators in this market converged on — photograph, sticky nav, the argument
+ * for the place, the trips that sell it, what you do, what you see, where you
+ * stay, who you talk to, what you are still wondering — and it tracks the
+ * sequence of questions a reader asks rather than the sequence a CMS stores
+ * things in.
+ *
+ * Two things are absent on purpose:
+ *
+ * There is no month-by-month climate grid. It is the first module anyone asks
+ * for on a destination page and the one every operator selling tailor-made
+ * travel has removed, because a grid of green and red months advertises the
+ * half of the year not to come and argues against a page whose whole premise is
+ * that the trip is built around the traveller. Seasonality lives in one FAQ
+ * answer, in prose, where it can be qualified.
+ *
+ * There is no "why go" module either. That job belongs to the intro's
+ * standfirst and single paragraph; a second block making the same argument only
+ * moves the photographs further down.
+ *
+ * Every section renders only when the content behind it exists. A destination
+ * that fills three of the ten is a legitimate destination and must come out as
+ * a shorter page — never as an empty heading or a placeholder card, both of
+ * which read as a broken import rather than as an edited page.
+ */
+import { destinationSections, type Destination } from "~/lib/destination"
+import DestinationFaq from "./DestinationFaq.astro"
+import DestinationHero from "./DestinationHero.astro"
+import DestinationIntro from "./DestinationIntro.astro"
+import DestinationNav from "./DestinationNav.astro"
+import ExperienceTiles from "./ExperienceTiles.astro"
+import ExpertBand from "./ExpertBand.astro"
+import PlacesAndStays from "./PlacesAndStays.astro"
+import SiblingRail from "./SiblingRail.astro"
+import StoryRun from "./StoryRun.astro"
+import TripRail from "./TripRail.astro"
+import { copyFor } from "./copy"
+import { enquiryTarget } from "./enquiry"
+
+interface Props {
+  destination: Destination
+  /** The page's own title, used for the H1 when the content names no heading. */
+  title: string
+  phone?: string | undefined
+  enquiryHref?: string | undefined
+  /**
+   * Opening hours, printed beside the number in the experts band. The theme
+   * cannot derive these — they are an operator setting — so the page shows them
+   * only when the caller knows them, and the number alone when it does not.
+   */
+  hours?: string | undefined
+  /**
+   * The publication's language, which decides the words the theme supplies.
+   *
+   * Defaults to English rather than to the operator's market: a caller that
+   * says nothing is a caller that does not know, and an English label beside
+   * English operator copy is the one combination that is never wrong. A page
+   * must never mix the two languages, which is why this is resolved here, once,
+   * instead of in each block.
+   */
+  locale?: string
+}
+
+const { destination, title, phone, enquiryHref, hours, locale = "en" } = Astro.props
+
+const copy = copyFor(locale)
+
+/*
+ * `heading` is the SEO headline and is not the same string as the page title —
+ * an operator writes "The most beautiful places in Tuscany" there and leaves
+ * the title as the place name. The headline wins when it exists because it is
+ * the one written to be read at 68px.
+ */
+const heading = destination.heading ?? title
+
+/*
+ * The ids are the contract, the labels are not. `destinationSections` decides
+ * which sections exist and what fragment each answers to — those are URL
+ * fragments, and translating one would break every link anyone has shared into
+ * a section — so the label is swapped for this page's language while the id is
+ * carried through untouched. A section this template has no word for keeps the
+ * label it was handed rather than rendering an empty link.
+ */
+const sections = destinationSections(destination).map((section) => ({
+  id: section.id,
+  label: copy.sectionLabels[section.id] ?? section.label,
+}))
+
+const enquiry = enquiryTarget(enquiryHref, destination.enquiryHref, phone)
+
+const intro = destination.intro
+const hasIntro = Boolean(intro?.standfirst || intro?.body || intro?.cta)
+---
+
+<article>
+  <DestinationHero heading={heading} image={destination.hero} />
+
+  {
+    /*
+     * One link is not a navigation — it is a heading the reader has already
+     * scrolled past. The product page draws the line in the same place, and a
+     * page filling a single section is short enough to read straight through.
+     */
+    sections.length > 1 && (
+      <DestinationNav sections={sections} enquiry={enquiry} copy={copy} />
+    )
+  }
+
+  {hasIntro && <DestinationIntro intro={intro} enquiry={enquiry} copy={copy} />}
+
+  {
+    destination.trips.length > 0 && (
+      <TripRail
+        trips={destination.trips}
+        allHref={destination.tripsAllHref}
+        enquiry={enquiry}
+        copy={copy}
+      />
+    )
+  }
+
+  {
+    destination.experiences.length > 0 && (
+      <ExperienceTiles
+        experiences={destination.experiences}
+        phone={phone}
+        enquiry={enquiry}
+        copy={copy}
+      />
+    )
+  }
+
+  {
+    destination.stories.length > 0 && (
+      <StoryRun stories={destination.stories} enquiry={enquiry} copy={copy} />
+    )
+  }
+
+  {
+    (destination.places.length > 0 || destination.stays.length > 0) && (
+      <PlacesAndStays
+        places={destination.places}
+        stays={destination.stays}
+        staysAllHref={destination.staysAllHref}
+        copy={copy}
+      />
+    )
+  }
+
+  {
+    destination.experts.length > 0 && (
+      <ExpertBand
+        experts={destination.experts}
+        note={destination.expertNote}
+        phone={phone}
+        hours={hours}
+        enquiry={enquiry}
+        copy={copy}
+      />
+    )
+  }
+
+  {
+    destination.questions.length > 0 && (
+      <DestinationFaq questions={destination.questions} copy={copy} />
+    )
+  }
+
+  {
+    destination.siblings.length > 0 && (
+      <SiblingRail siblings={destination.siblings} copy={copy} />
+    )
+  }
+</article>

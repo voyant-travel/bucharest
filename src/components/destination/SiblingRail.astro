@@ -1,0 +1,43 @@
+---
+/**
+ * The way out of a page the reader has decided against.
+ *
+ * Last, and plain: name over photograph, nothing else. A reader reaching this
+ * point either wants a different country or has already enquired, and neither
+ * of them is served by a third paragraph. It reuses the site's own place card
+ * so a neighbouring destination looks the same here as it does on the home
+ * page — this is the one block on the page that is not about this destination.
+ */
+import PlaceCard from "~/components/cards/PlaceCard.astro"
+import type { DestinationTile } from "~/lib/destination"
+import type { Copy } from "./copy"
+
+interface Props {
+  siblings: DestinationTile[]
+  copy: Copy
+}
+
+const { siblings, copy } = Astro.props
+---
+
+<section class="u-shell py-14 md:py-20">
+  <h2 class="u-display-sm text-[1.625rem] md:text-[2rem]">{copy.siblingsHeading}</h2>
+
+  <ul class="u-no-scrollbar mt-8 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 md:-mx-10 md:px-10 xl:-mx-14 xl:px-14">
+    {
+      siblings.map((tile) => (
+        <li class="w-[62vw] max-w-[18rem] shrink-0 snap-start sm:w-[16rem]">
+          <PlaceCard
+            image={tile.image?.src}
+            imageAlt={tile.image?.alt}
+            title={tile.title}
+            meta={tile.hook}
+            href={tile.href}
+            ratio="aspect-[3/4]"
+            sizes="(min-width: 640px) 16rem, 62vw"
+          />
+        </li>
+      ))
+    }
+  </ul>
+</section>

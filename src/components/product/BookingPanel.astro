@@ -1,0 +1,139 @@
+---
+/**
+ * The hand-off to the booking engine.
+ *
+ * This theme does not take bookings. They are taken by the managed booking
+ * engine on the Voyant platform, and this panel's whole job is to carry the
+ * reader there with the product — and, where they have chosen one, the
+ * departure or rate — already attached.
+ *
+ * It is a link, not a form. That is the difference that matters: a link can be
+ * opened in a new tab, copied, and followed with JavaScript broken, and it
+ * never collects a name or a card number in a page that has no way to protect
+ * either. An inline form that resembles a checkout but hands off anyway is the
+ * worst of both, because it asks for trust it does not use.
+ */
+import { cn } from "~/lib/cn"
+import { bookingHref, type BookingTarget } from "~/lib/product/booking"
+import type { Money } from "~/lib/product/adapter"
+import { telHref } from "~/lib/site"
+import { copyFor } from "./copy"
+
+interface Props {
+  target: BookingTarget
+  /** The cheapest price the page may advertise, when one is known. */
+  from?: Money | undefined
+  /** False when the operator confirms this product by hand. */
+  instantBook: boolean
+  phone?: string | undefined
+  enquiryHref?: string | undefined
+  class?: string
+  /**
+   * The publication's language, which decides the words this panel supplies.
+   *
+   * Defaults to English rather than to the operator's market: a caller that
+   * says nothing is a caller that does not know, and this is the last thing a
+   * reader looks at before they leave for the booking engine — a button in a
+   * language the rest of the page is not in is where they stop believing the
+   * two systems belong to the same company.
+   */
+  locale?: string
+}
+
+const {
+  target,
+  from,
+  instantBook,
+  phone,
+  enquiryHref,
+  class: className,
+  locale = "en",
+} = Astro.props
+
+const copy = copyFor(locale)
+
+const href = bookingHref(target)
+
+/*
+ * Three routes out, in order of how much the operator has actually enabled.
+ * A product sold on request never gets the booking link even when one is
+ * configured — the operator has said a human confirms it, and a button that
+ * says "Book" would be contradicting them.
+ */
+const mode = !instantBook ? "enquire" : href ? "book" : "enquire"
+const fallback = enquiryHref ?? (phone ? telHref(phone) : undefined)
+
+const money = (value: Money) =>
+  new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: value.currency,
+    maximumFractionDigits: 0,
+  }).format(value.amount)
+
+const cta =
+  "inline-flex h-12 w-full items-center justify-center rounded-pill px-6 text-[0.9375rem] font-medium transition-colors duration-300"
+---
+
+<section class={cn("rounded-card border border-line bg-surface p-6 md:p-7", className)}>
+  <p class="u-eyebrow text-ink-subtle">{copy.eyebrow}</p>
+
+  {
+    from && (
+      <p class="mt-3 flex flex-wrap items-baseline gap-x-2">
+        <span class="text-[0.8125rem] text-ink-subtle">{copy.from}</span>
+        <span class="u-display-sm text-[1.75rem]">{money(from)}</span>
+        <span class="text-[0.8125rem] text-ink-muted">{copy.basis[from.basis] ?? ""}</span>
+      </p>
+    )
+  }
+
+  <p class="mt-3 text-[0.875rem] leading-relaxed text-ink-muted">
+    {mode === "book" ? copy.bookIntro : copy.enquireIntro}
+  </p>
+
+  <div class="mt-6">
+    {
+      mode === "book" && href ? (
+        <a href={href} class={cn(cta, "bg-accent text-accent-ink hover:bg-accent-hover")}>
+          {copy.book}
+        </a>
+      ) : fallback ? (
+        <a
+          href={fallback}
+          class={cn(cta, "border border-ink/25 text-ink hover:border-ink/50")}
+        >
+          {copy.requestQuote}
+        </a>
+      ) : (
+        /*
+         * Nothing is configured and there is no telephone either. Saying so is
+         * the only honest option left; a disabled button would leave the reader
+         * guessing whether they had done something wrong.
+         */
+        <p class="text-[0.875rem] text-ink-muted">{copy.contactAgency}</p>
+      )
+    }
+  </div>
+
+  {
+    phone && mode === "book" && (
+      <p class="mt-4 text-[0.8125rem] text-ink-subtle">
+        {copy.preferPhone}{" "}
+        <a href={telHref(phone)} class="text-ink underline underline-offset-2">
+          {phone}
+        </a>
+      </p>
+    )
+  }
+
+  {
+    /*
+     * Said once, plainly. Prices and availability are resolved live by the
+     * engine, so nothing on this page is a quotation — and a reader who is
+     * about to leave for a checkout deserves to know that before they go.
+     */
+  }
+  <p class="mt-5 border-t border-line pt-4 text-[0.75rem] leading-relaxed text-ink-subtle">
+    {copy.priceNote}
+  </p>
+</section>

@@ -1,0 +1,137 @@
+---
+/**
+ * What the palette actually is.
+ *
+ * Every swatch is a `var(--token)` rather than a hex someone transcribed, so
+ * this page cannot drift from `global.css`. The all-palettes view works the
+ * same way: `data-palette` is an attribute selector, so five nested divs give
+ * five real palettes on one screen without a line of JavaScript.
+ */
+import { PALETTES } from "~/lib/site"
+
+interface Props {
+  variant: string
+}
+
+const { variant } = Astro.props
+
+const TOKENS = [
+  { id: "canvas", use: "The page itself. Every section sits on this unless it asks otherwise." },
+  { id: "surface", use: "A card or panel lifted off the canvas." },
+  { id: "surface-sunk", use: "A well pressed into the canvas — image placeholders, quiet bands." },
+  { id: "ink", use: "Body and headings. The only text color that carries full contrast." },
+  { id: "ink-muted", use: "Supporting prose, standfirsts, captions with something to say." },
+  { id: "ink-subtle", use: "Labels, eyebrows, metadata. Never a sentence worth reading closely." },
+  { id: "line", use: "Every rule and border. One value, so hairlines never disagree." },
+  { id: "accent", use: "The brand. Buttons, links, the one thing on a page asking to be clicked." },
+  { id: "accent-hover", use: "Accent under the cursor. Derived, so a custom accent still has one." },
+  { id: "accent-ink", use: "Text on accent, checked against it rather than guessed." },
+  { id: "accent-wash", use: "Accent at band strength, for a section that wants to feel warmer." },
+  { id: "brass", use: "The one metallic note: rules under a heading, a rating, a flourish." },
+]
+
+const PAIRS = [
+  { bg: "canvas", fg: "ink", label: "Body on canvas" },
+  { bg: "canvas", fg: "ink-muted", label: "Supporting prose" },
+  { bg: "canvas", fg: "ink-subtle", label: "Labels and metadata" },
+  { bg: "surface", fg: "ink", label: "Body on a card" },
+  { bg: "surface-sunk", fg: "ink", label: "Body in a well" },
+  { bg: "accent", fg: "accent-ink", label: "Text on the accent" },
+  { bg: "accent-wash", fg: "ink", label: "Body on an accent band" },
+]
+---
+
+<div class="u-shell py-12">
+  {
+    variant === "tokens" && (
+      <>
+        <h1 class="u-display-sm text-[1.5rem]">Palette tokens</h1>
+        <p class="mt-2 max-w-[46rem] text-[0.9375rem] leading-relaxed text-ink-muted">
+          Twelve names, aliased onto the palette on <code>&lt;html data-palette&gt;</code>.
+          A component reads the name and never the value, which is why one
+          attribute repaints the whole theme.
+        </p>
+
+        <ul class="mt-8 grid list-none grid-cols-1 gap-x-8 gap-y-5 p-0 md:grid-cols-2">
+          {TOKENS.map((token) => (
+            <li class="flex items-start gap-4">
+              <span
+                class="mt-0.5 h-11 w-11 shrink-0 rounded-card border border-line"
+                style={`background:var(--${token.id})`}
+              />
+              <span class="min-w-0">
+                <code class="text-[0.8125rem] text-ink">--{token.id}</code>
+                <span class="mt-1 block text-[0.8125rem] leading-relaxed text-ink-subtle">
+                  {token.use}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+
+  {
+    variant === "palettes" && (
+      <>
+        <h1 class="u-display-sm text-[1.5rem]">All palettes</h1>
+        <p class="mt-2 max-w-[46rem] text-[0.9375rem] leading-relaxed text-ink-muted">
+          Each row is a real palette, not a picture of one — the attribute that
+          drives the site drives these too. Midnight is the only dark canvas,
+          and it uses the same token names as the rest.
+        </p>
+
+        <div class="mt-8 grid gap-5">
+          {PALETTES.map((palette) => (
+            <div data-palette={palette} class="rounded-card border border-line bg-canvas p-5">
+              <p class="u-eyebrow text-ink-subtle">{palette}</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {TOKENS.map((token) => (
+                  <span
+                    title={`--${token.id}`}
+                    class="h-9 w-9 rounded-card border border-line"
+                    style={`background:var(--${token.id})`}
+                  />
+                ))}
+              </div>
+              <p class="mt-4 text-[0.875rem] text-ink">
+                Body text on this canvas.{" "}
+                <span class="text-ink-muted">Supporting prose beside it.</span>
+              </p>
+            </div>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  {
+    variant === "pairs" && (
+      <>
+        <h1 class="u-display-sm text-[1.5rem]">Contrast pairs</h1>
+        <p class="mt-2 max-w-[46rem] text-[0.9375rem] leading-relaxed text-ink-muted">
+          The combinations the theme actually puts on screen. Switch the palette
+          above: every pair here has to stay readable in all five, which is the
+          constraint that decides whether a new palette is allowed to ship.
+        </p>
+
+        <div class="mt-8 grid gap-3 md:grid-cols-2">
+          {PAIRS.map((pair) => (
+            <div
+              class="rounded-card border border-line p-5"
+              style={`background:var(--${pair.bg});color:var(--${pair.fg})`}
+            >
+              <p class="text-[1rem] leading-relaxed">
+                {pair.label} — the quick brown fox jumps over the lazy dog.
+              </p>
+              <code class="mt-2 block text-[0.75rem] opacity-70">
+                --{pair.fg} on --{pair.bg}
+              </code>
+            </div>
+          ))}
+        </div>
+      </>
+    )
+  }
+</div>

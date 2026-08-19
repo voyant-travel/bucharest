@@ -1,0 +1,54 @@
+---
+/**
+ * The lead: one photograph, one headline.
+ *
+ * Nothing else — no standfirst, no facts strip, no scroll cue. Every operator
+ * this page is modelled on lands on the same austerity, and the reason is
+ * structural rather than fashionable: the first thing below the fold is a
+ * sticky nav that has to be reachable, and anything stacked into the hero
+ * pushes it off the first screen on a phone. The standfirst already has a home
+ * in the intro, one scroll away.
+ *
+ * The photograph is decorative here. Its subject is named by the H1 sitting on
+ * top of it, so alt text would only make a screen reader say the place twice.
+ */
+import Photo from "~/components/primitives/Photo.astro"
+import type { DestinationImage } from "~/lib/destination"
+
+interface Props {
+  heading: string
+  image?: DestinationImage | undefined
+}
+
+const { heading, image } = Astro.props
+
+const title =
+  "u-display max-w-[16ch] text-[2.5rem] sm:text-[3.25rem] md:text-[4.25rem]"
+---
+
+{
+  image ? (
+    <header class="u-frame u-scrim-hero u-scrim-top relative flex min-h-[28rem] items-end md:min-h-[42rem]">
+      <Photo
+        src={image.src}
+        alt={image.alt}
+        class="absolute inset-0"
+        priority
+        sizes="100vw"
+        decorative
+      />
+      <div class="u-shell relative z-[2] w-full pb-12 pt-32 md:pb-20">
+        <h1 class={`${title} text-white`}>{heading}</h1>
+      </div>
+    </header>
+  ) : (
+    /*
+     * Without a photograph the page still needs a lead, and a grey placeholder
+     * box would advertise the missing asset. Type on the canvas is the honest
+     * fallback and the one that still looks deliberate.
+     */
+    <header class="u-shell pb-10 pt-24 md:pb-14 md:pt-32">
+      <h1 class={title}>{heading}</h1>
+    </header>
+  )
+}

@@ -1,0 +1,37 @@
+---
+/**
+ * A section or chrome part without a variant is not a place — it resolves to
+ * the variant worth seeing first, so `/dev/gallery/hero` is a URL you can type
+ * from memory and still land somewhere canonical.
+ */
+import {
+  chromePart,
+  foundationPage,
+  primaryVariant,
+  sectionDecl,
+  variantPath,
+} from "~/lib/gallery"
+
+if (!import.meta.env.DEV) return new Response(null, { status: 404 })
+
+const doc = foundationPage(Astro.params.section)
+if (doc) {
+  return Astro.redirect(
+    `${variantPath(doc.id, doc.variants[0].id)}${Astro.url.search}`,
+  )
+}
+
+const part = chromePart(Astro.params.section)
+if (part) {
+  return Astro.redirect(
+    `${variantPath(part.id, part.variants[0].id)}${Astro.url.search}`,
+  )
+}
+
+const decl = sectionDecl(Astro.params.section)
+if (!decl) return new Response(null, { status: 404 })
+
+return Astro.redirect(
+  `${variantPath(decl.id, primaryVariant(decl))}${Astro.url.search}`,
+)
+---

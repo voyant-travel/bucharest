@@ -1,0 +1,61 @@
+---
+/**
+ * The jump bar: one link per region, and nothing else.
+ *
+ * An index of thirty destinations is several screens of photographs with no
+ * other structure a reader can steer by, so this is the page's navigation
+ * rather than a convenience. It borrows the destination page's sticky
+ * treatment verbatim — `top-[var(--header-h)]`, the same border, the same
+ * translucent canvas — because the header measures itself into that variable at
+ * load; a hardcoded offset would leave a strip of page showing between the two
+ * bars on any site that turns on an announcement row.
+ *
+ * The links arrive already filtered by `indexGroups`, never assembled here: a
+ * link that scrolls nowhere is worse than an absent one, and the caller is the
+ * only place that knows which regions ended up with cards under them.
+ */
+import { cn } from "~/lib/cn"
+import type { Copy } from "./copy"
+
+interface Props {
+  groups: { id: string; name: string }[]
+  copy: Copy
+}
+
+const { groups, copy } = Astro.props
+---
+
+<nav
+  class="sticky top-[var(--header-h)] z-30 border-b border-line bg-[var(--canvas)]/92 backdrop-blur-lg"
+  aria-label={copy.regionsNavLabel}
+>
+  <div class="u-shell">
+    <ul
+      class={cn(
+        "u-no-scrollbar -ml-5 flex min-w-0 gap-1 overflow-x-auto pl-5 pr-5 md:ml-0 md:pl-0 md:pr-0",
+        /*
+         * A phone fits about four labels and an index carries more regions than
+         * that, so this row is always scrolled mid-word at that size. Without a
+         * fade the clipped label reads as a rendering fault rather than as more
+         * content — the edge is hard and it lands at the screen edge, where a
+         * reader expects a boundary. The mask lifts at the width where the
+         * overflow stops existing.
+         */
+        "[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] md:[mask-image:none]",
+      )}
+    >
+      {
+        groups.map((group) => (
+          <li>
+            <a
+              href={`#${group.id}`}
+              class="inline-flex h-12 items-center whitespace-nowrap px-3 text-[0.8125rem] text-ink-muted transition-colors duration-300 hover:text-ink md:px-4"
+            >
+              {group.name}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</nav>

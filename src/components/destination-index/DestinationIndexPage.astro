@@ -1,0 +1,105 @@
+---
+/**
+ * The destinations index, as an editorial page.
+ *
+ * The sibling of the destination page rather than a listing screen: photograph,
+ * one sentence, a sticky bar of regions, then the regions themselves. There is
+ * no filter rail, no sort control and no result count, because none of them
+ * belongs on an index of this size — a tailor-made operator publishes a few
+ * dozen destinations, which is a page a reader scans faster than they can
+ * operate a facet, and a filter that returns nothing is a dead end where a
+ * scroll never is.
+ *
+ * The page is assembled from what the content actually filled. Every block
+ * below asks whether it has anything to show, because an index is exactly the
+ * shape of content that arrives half-mapped — a region added in the CMS before
+ * its destinations, a group of drafts that have not been published — and each
+ * of those must come out as a shorter page, never as a heading over blank
+ * canvas.
+ */
+import type { DestinationIndex } from "~/lib/destination-index"
+import DestinationCardGroup from "./GroupSection.astro"
+import EnquiryBand from "./EnquiryBand.astro"
+import IndexHero from "./IndexHero.astro"
+import IndexNav from "./IndexNav.astro"
+import { copyFor } from "./copy"
+import { indexGroups } from "./groups"
+
+interface Props {
+  index: DestinationIndex
+  /** The page's own title, used for the H1 when the content names no heading. */
+  title: string
+  phone?: string | undefined
+  /**
+   * The publication's language, which decides the words the theme supplies.
+   *
+   * Defaults to English rather than to the operator's market: a caller that
+   * says nothing is a caller that does not know, and English labels beside
+   * English operator copy is the one combination that is never wrong. Resolved
+   * here, once, so no two blocks on the page can end up in different languages.
+   */
+  locale?: string
+}
+
+const { index, title, phone, locale = "en" } = Astro.props
+
+const copy = copyFor(locale)
+
+/*
+ * `heading` is the SEO headline and is rarely the page title — an operator
+ * writes "Where we can take you" there and leaves the title as "Destinations".
+ * The headline wins when it exists because it is the line written to be read at
+ * 68px; the title is the fallback that is always present.
+ */
+const heading = index.heading ?? title
+
+const groups = indexGroups(index.groups)
+---
+
+<article>
+  <IndexHero heading={heading} image={index.hero} />
+
+  {
+    index.standfirst && (
+      <section class="u-shell pb-2 pt-10 md:pb-4 md:pt-14">
+        <p class="u-serif-body max-w-[54ch] text-[1.375rem] italic leading-[1.4] text-ink md:text-[1.75rem]">
+          {index.standfirst}
+        </p>
+      </section>
+    )
+  }
+
+  {
+    /*
+     * One link is not a navigation — it is a heading the reader is about to
+     * scroll past anyway, and a sticky bar holding it costs a permanent strip
+     * of a phone screen for nothing. The destination page draws the line in the
+     * same place.
+     */
+    groups.length > 1 && <IndexNav groups={groups} copy={copy} />
+  }
+
+  {
+    groups.map((group) => (
+      <DestinationCardGroup
+        id={group.id}
+        name={group.name}
+        destinations={group.destinations}
+        copy={copy}
+      />
+    ))
+  }
+
+  {
+    /*
+     * The closing band goes with the destinations. An index that resolved to no
+     * groups is a page whose content has not landed yet, and the enquiry would
+     * then be the only thing on it — which stops reading as an offer and starts
+     * reading as the point of the page, under a headline promising destinations
+     * that are not there.
+     */
+    groups.length > 0 && (
+      <EnquiryBand enquiryHref={index.enquiryHref} phone={phone} copy={copy} />
+    )
+  }
+</article>

@@ -1,0 +1,64 @@
+---
+/**
+ * The "why go" block, which is not a separate module.
+ *
+ * One italic sentence and one paragraph, and that is the entire argument for
+ * the place. The reference pages all resist expanding this into a bulleted
+ * pitch, because the photographs below are doing the persuading and a second
+ * paragraph here only delays them.
+ *
+ * The heading is an eyebrow rather than a display line. The section still needs
+ * a real H2 — the sticky nav points at it and a screen-reader outline should
+ * not skip a level — but a large "Overview" would compete with the standfirst
+ * it introduces.
+ */
+import EnquiryLink from "./EnquiryLink.astro"
+import type { Destination } from "~/lib/destination"
+import type { Copy } from "./copy"
+
+interface Props {
+  intro: Destination["intro"]
+  enquiry?: string | undefined
+  copy: Copy
+}
+
+const { intro, enquiry, copy } = Astro.props
+
+/*
+ * The operator's own wording wins. A CTA they wrote names what happens next in
+ * the language of this destination; the theme's label is the fallback for the
+ * common case where the field was left empty.
+ */
+const cta = intro?.cta ?? (enquiry ? { label: copy.requestQuote, href: enquiry } : undefined)
+---
+
+<section id="overview" class="u-shell scroll-mt-40 py-14 md:py-24">
+  <div class="grid gap-8 md:grid-cols-12 md:gap-16">
+    <div class="md:col-span-3">
+      <h2 class="u-eyebrow text-ink-subtle md:sticky md:top-40">{copy.introHeading}</h2>
+    </div>
+
+    <div class="md:col-span-9 md:max-w-[62ch]">
+      {
+        intro?.standfirst && (
+          <p class="u-serif-body text-[1.375rem] italic leading-[1.4] text-ink md:text-[1.75rem]">
+            {intro.standfirst}
+          </p>
+        )
+      }
+      {
+        intro?.body && (
+          <p
+            class:list={[
+              "text-[1rem] leading-[1.85] text-ink-muted md:text-[1.0625rem]",
+              intro.standfirst && "mt-7",
+            ]}
+          >
+            {intro.body}
+          </p>
+        )
+      }
+      {cta && <EnquiryLink href={cta.href} label={cta.label} class="mt-9" copy={copy} />}
+    </div>
+  </div>
+</section>
