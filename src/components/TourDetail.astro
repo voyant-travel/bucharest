@@ -507,7 +507,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
                 data-tour-live
                 data-product-id={product.id}
                 data-locale={context.locale}
-                data-availability-endpoint={availability?.endpoint}
+                data-legacy-availability-endpoint={availability?.endpoint}
                 data-pricing-endpoint={pricing?.endpoint}
                 data-messages={liveMessages}
               >
@@ -560,6 +560,11 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
 </article>
 
 <script>
+  import { createPublicApiClient } from "@voyant-travel/public-api-client"
+  import {
+    isPublicApiCompatibilityUnavailable,
+    loadPublicTourAvailability,
+  } from "../lib/public-api-catalog"
   import { responseRows, rowText } from "../lib/tour-capabilities"
 
   const card = document.querySelector("[data-tour-live]")
@@ -611,36 +616,85 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
     }
 
     card.querySelector("[data-load-availability]")?.addEventListener("click", async () => {
-      const payload = await request(card.dataset.availabilityEndpoint, { productId, locale })
-      if (!payload || !(result instanceof HTMLElement)) return
-      const rows = responseRows(payload)
-      if (rows.length === 0) {
-        result.textContent = copy.noDates
-        return
-      }
-      const list = document.createElement("ul")
-      list.className = "live-options"
-      for (const row of rows) {
-        const item = document.createElement("li")
-        const date = rowText(row, "startsAt", "dateLocal", "startDate") ?? copy.toBeConfirmed
-        const remaining = typeof row.remainingPax === "number" ? plural(copy.places, row.remainingPax) : undefined
-        const copy = document.createElement("span")
-        copy.textContent = remaining ? `${date} · ${remaining}` : date
-        item.append(copy)
-        const departureSlotId = rowText(row, "id", "slotId", "departureSlotId")
-        if (departureSlotId) {
+      if (
+        !(status instanceof HTMLElement) ||
+        !(result instanceof HTMLElement) ||
+        !productId
+      ) return
+      status.textContent = copy.checking
+      result.replaceChildren()
+      try {
+        let rows: Awaited<ReturnType<typeof loadPublicTourAvailability>>
+        try {
+          const client = createPublicApiClient({
+            managed: true,
+            baseUrl: window.location.origin,
+          })
+          rows = await loadPublicTourAvailability(client, {
+            productId,
+            locale,
+          })
+        } catch (canonicalError) {
+          // Managed production still supplies the v1 Theme capability. Keep
+          // this explicit fallback until canonical dispatcher routing lands.
+          const endpoint = card.dataset.legacyAvailabilityEndpoint
+          if (
+            !endpoint ||
+            !isPublicApiCompatibilityUnavailable(canonicalError)
+          ) throw canonicalError
+          const payload = await request(endpoint, { productId, locale })
+          if (!payload) return
+          rows = responseRows(payload).map((row) => {
+            const startsAt = rowText(
+              row,
+              "startsAt",
+              "dateLocal",
+              "startDate",
+            )
+            return {
+              id: rowText(row, "id", "slotId", "departureSlotId") ?? "",
+              ...(startsAt ? { startsAt } : {}),
+              ...(typeof row.remainingPax === "number"
+                ? { remaining: row.remainingPax }
+                : {}),
+            }
+          })
+        }
+        status.textContent = copy.updated
+        if (rows.length === 0) {
+          result.textContent = copy.noDates
+          return
+        }
+        const list = document.createElement("ul")
+        list.className = "live-options"
+        for (const row of rows) {
+          const item = document.createElement("li")
+          const date = row.startsAt ?? copy.toBeConfirmed
+          const remaining =
+            typeof row.remaining === "number"
+              ? plural(copy.places, row.remaining)
+              : undefined
+          const label = document.createElement("span")
+          label.textContent = remaining ? `${date} · ${remaining}` : date
+          item.append(label)
           const choose = document.createElement("button")
           choose.type = "button"
           choose.className = "secondary choose-date"
           choose.textContent = copy.choose
           choose.addEventListener("click", () => {
-            document.dispatchEvent(new CustomEvent("voyant:departure-selected", { detail: { departureSlotId } }))
+            document.dispatchEvent(
+              new CustomEvent("voyant:departure-selected", {
+                detail: { departureSlotId: row.id },
+              }),
+            )
           })
           item.append(choose)
+          list.append(item)
         }
-        list.append(item)
+        result.append(list)
+      } catch (error) {
+        status.textContent = error instanceof Error ? error.message : copy.unavailable
       }
-      result.append(list)
     })
 
     card.querySelector("[data-load-pricing]")?.addEventListener("click", async () => {
