@@ -23,6 +23,16 @@ interface Props {
   decorative?: boolean
   width?: number
   height?: number
+  /**
+   * Whether the photograph lifts under the cursor.
+   *
+   * On by default because most photographs here sit inside a card that is one
+   * big link, where the movement is feedback for something clickable. A
+   * background image is not clickable, and a full-bleed one reacting to a
+   * cursor that merely crossed the page reads as a glitch rather than an
+   * invitation.
+   */
+  zoom?: boolean
 }
 
 const {
@@ -35,6 +45,7 @@ const {
   decorative = false,
   width,
   height,
+  zoom = true,
 } = Astro.props
 
 /**
@@ -67,7 +78,7 @@ function srcsetFor(source: string): string | undefined {
 const srcset = srcsetFor(src)
 ---
 
-<div class={cn("u-frame", ratio ?? "h-full w-full", className)}>
+<div class={cn("u-frame", !zoom && "u-frame-still", ratio ?? "h-full w-full", className)}>
   <img
     src={src}
     srcset={srcset}

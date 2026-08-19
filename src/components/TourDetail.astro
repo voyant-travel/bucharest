@@ -5,11 +5,16 @@
  * The anatomy is the one a tour operator's product page actually needs:
  * a cinematic lead, a sticky in-page nav, then the editorial sections in the
  * order a reader asks about them — what it is, what happens each day, what is
- * included, where it goes — with the live booking panel alongside.
+ * included, where it goes — with the hand-off to the booking engine alongside.
+ *
+ * Which module the page is built around comes from `bookingMode`, not from the
+ * route: a hotel, an experience and a circuit all arrive here, and the contract
+ * has already said which is which.
  *
  * No price or departure date is read from the publication. The contract strips
- * commercial values from a snapshot on purpose, so everything commercial in
- * the sidebar is fetched live from the capability endpoints at request time.
+ * commercial values from a snapshot on purpose, so everything commercial is
+ * resolved live — and the booking itself is taken by the managed engine, which
+ * is why the panel links out rather than collecting anything here.
  */
 import type { TourDetailContext } from "@voyant-travel/theme"
 import PlaceCard from "~/components/cards/PlaceCard.astro"
@@ -24,13 +29,18 @@ import {
   faqsOf,
   featuresOf,
   galleryOf,
-  humanize,
   namesOf,
   productSections,
 } from "~/lib/catalog"
 import { counted, fill, messagesFor } from "~/lib/messages"
+import { STAY_NIGHTS, load } from "~/lib/product/adapter"
+import { personalityOf, typeLabelOf } from "~/lib/product/mode"
+import { readSettings } from "~/lib/site"
 import { availableCapability } from "~/lib/tour-capabilities"
-import BookingJourney from "./BookingJourney.astro"
+import AvailabilityPicker from "./islands/product/activity/AvailabilityPicker"
+import DeparturesTable from "./islands/product/departures/DeparturesTable"
+import RoomRateTable from "./islands/product/stay/RoomRateTable"
+import BookingPanel from "./product/BookingPanel.astro"
 
 interface Props {
   context: TourDetailContext
@@ -42,8 +52,6 @@ const t = messagesFor(context.locale)
 
 const availability = availableCapability(context.live, "catalog.availability.v1")
 const pricing = availableCapability(context.live, "catalog.pricing.v1")
-const booking = availableCapability(context.live, "booking.session.v1")
-const checkout = availableCapability(context.live, "checkout.v1")
 
 const cover = coverOf(product)
 const gallery = galleryOf(product)
@@ -55,6 +63,26 @@ const places = placesOf(product.destinations)
 const categories = namesOf(product.categories)
 const sections = productSections(product)
 
+/*
+ * What kind of thing this is, and therefore how the page behaves. The contract
+ * states it in `bookingMode`; the page must not re-derive it from the route or
+ * from a category name.
+ */
+const personality = personalityOf(product)
+const typeLabel = typeLabelOf(product)
+
+/*
+ * The commercial half of the page. A publication snapshot carries no prices and
+ * no departures by contract, so this comes from the live layer — fixture-backed
+ * until an operator's endpoints are reachable, and swappable behind one call.
+ *
+ * The clock is read once here rather than inside the adapter so that everything
+ * on a single render agrees about what "today" is; a module that asked the
+ * clock itself could straddle midnight and date two sections differently.
+ */
+const commerce = load(product, new Date())
+const { phone, bookingUrl } = readSettings(context.settings)
+
 const facts = [
   destinations.length > 0
     ? { label: t.where, value: destinations.join(" · ") }
@@ -62,8 +90,19 @@ const facts = [
   days.length > 0
     ? { label: t.length, value: counted(context.locale, t, "days", days.length) }
     : undefined,
-  { label: t.format, value: humanize(product.bookingMode) },
-  { label: t.capacity, value: humanize(product.capacityMode) },
+  /*
+   * The operator's own word for this product when they gave one — "Sejur",
+   * "Experiență". `bookingMode` is a machine value, and `humanize` turns
+   * `date_time` into "Date time", which is not a thing anybody sells.
+   */
+  typeLabel ? { label: t.format, value: typeLabel } : undefined,
+  /*
+   * `capacityMode` is deliberately absent. It is a supply concept — free sale,
+   * limited, on request — and rendering it put "Free sale" in front of a
+   * traveller as though it were a feature of their holiday. What it actually
+   * governs is whether this page may offer to book at all, which it now does
+   * through `personality.instantBook` rather than by being printed.
+   */
 ].filter((fact): fact is { label: string; value: string } => fact !== undefined)
 
 /*
@@ -151,7 +190,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
      */
     sections.length > 1 && (
       <nav
-        class="sticky top-[4.5rem] z-30 border-b border-line bg-[var(--canvas)]/92 backdrop-blur-lg md:top-[5.25rem]"
+        class="sticky top-[var(--header-h)] z-30 border-b border-line bg-[var(--canvas)]/92 backdrop-blur-lg"
         aria-label={t.onThisPage}
       >
         <div class="u-shell">
@@ -255,6 +294,76 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
                   </li>
                 ))}
               </ol>
+            </section>
+          )
+        }
+
+        {
+          /*
+           * The module the page is really built around, placed where the reader
+           * asks for it: after they know what the thing is and what happens on
+           * it, and before the small print. Which module appears is decided by
+           * `bookingMode` alone — a product page does not infer what it is
+           * selling from the route it was reached through.
+           *
+           * `client:visible` rather than `client:load`: this is below the fold
+           * on every screen size, and it is the heaviest island on the page.
+           */
+          personality.defining === "departures" && commerce.departures.length > 0 && (
+            <section id="departures" class="mt-14 scroll-mt-40">
+              <h2 class={sectionHeading}>{t.departuresHeading}</h2>
+              <DeparturesTable
+                client:visible
+                departures={commerce.departures}
+                currency={commerce.currency}
+                instantBook={personality.instantBook}
+                phone={phone}
+                bookingBase={bookingUrl}
+                productId={product.id}
+                productSlug={product.slug}
+                locale={context.locale}
+              />
+            </section>
+          )
+        }
+
+        {
+          personality.defining === "rates" && commerce.roomTypes.length > 0 && (
+            <section id="rates" class="mt-14 scroll-mt-40">
+              <h2 class={sectionHeading}>{t.roomsAndRates}</h2>
+              <RoomRateTable
+                client:visible
+                roomTypes={commerce.roomTypes}
+                currency={commerce.currency}
+                nights={STAY_NIGHTS}
+                rooms={1}
+                adults={2}
+                phone={phone}
+                bookingBase={bookingUrl}
+                productId={product.id}
+                productSlug={product.slug}
+                locale={context.locale}
+              />
+            </section>
+          )
+        }
+
+        {
+          personality.defining === "slots" && commerce.options.length > 0 && (
+            <section id="availability" class="mt-14 scroll-mt-40">
+              <h2 class={sectionHeading}>{t.availabilityHeading}</h2>
+              <AvailabilityPicker
+                client:visible
+                options={commerce.options}
+                availableDates={commerce.availableDates}
+                currency={commerce.currency}
+                withTimes={personality.mode === "date_time"}
+                phone={phone}
+                bookingBase={bookingUrl}
+                productId={product.id}
+                productSlug={product.slug}
+                locale={context.locale}
+              />
             </section>
           )
         }
@@ -437,18 +546,13 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
             )
           }
 
-          {
-            booking && (
-              <div class="[&_.booking-journey]:rounded-card">
-                <BookingJourney
-                  productId={product.id}
-                  locale={context.locale}
-                  bookingEndpoint={booking.endpoint}
-                  checkoutEndpoint={checkout?.endpoint}
-                />
-              </div>
-            )
-          }
+          <BookingPanel
+            target={{ base: bookingUrl, productId: product.id, productSlug: product.slug }}
+            from={commerce.from}
+            instantBook={personality.instantBook}
+            phone={phone}
+            locale={context.locale}
+          />
         </div>
       </aside>
     </div>

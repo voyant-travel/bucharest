@@ -1,0 +1,57 @@
+---
+/**
+ * A foundations page, in its own document.
+ *
+ * Not wrapped in `Layout`: these pages document the theme's decisions rather
+ * than demonstrate a page, so a fixed header over them would be noise. They do
+ * load `global.css` and carry `data-palette`, because a swatch that is not the
+ * real token is worse than no swatch at all.
+ */
+import type { FoundationPage, Frame } from "~/lib/gallery"
+import ColorDoc from "./ColorDoc.astro"
+import TypeDoc from "./TypeDoc.astro"
+import "~/styles/global.css"
+
+interface Props {
+  page: FoundationPage
+  variant: string
+  frame: Frame
+  frameKey: string
+}
+
+const { page, variant, frame, frameKey } = Astro.props
+---
+
+<!doctype html>
+<html lang="en" data-palette={frame.palette} data-corners={frame.corners}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{page.name} — {variant}</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <style is:global>
+      astro-dev-toolbar {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body class:list={["bg-canvas text-ink", frame.grain && "u-grain"]}>
+    <main id="main">
+      {page.id === "foundation-color" && <ColorDoc variant={variant} />}
+      {page.id === "foundation-type" && <TypeDoc variant={variant} />}
+    </main>
+
+    <script is:inline define:vars={{ key: frameKey }}>
+      const report = () => {
+        const height = Math.ceil(document.documentElement.scrollHeight)
+        parent.postMessage(
+          { type: "gallery:height", key, height, empty: false },
+          "*",
+        )
+      }
+      new ResizeObserver(report).observe(document.documentElement)
+      addEventListener("load", report)
+      report()
+    </script>
+  </body>
+</html>

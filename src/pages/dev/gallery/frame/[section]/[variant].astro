@@ -1,0 +1,123 @@
+---
+/**
+ * One section — or one piece of site chrome — alone, in a document of its own.
+ *
+ * The gallery renders every frame through an iframe rather than stacking
+ * things on one page, for two reasons. Sections style themselves against the
+ * document — full-bleed heroes, background tones, sticky behaviour — and a
+ * shared page lets one leak into the next, which is exactly the bug a gallery
+ * is supposed to catch rather than cause. And a real viewport is the only
+ * honest way to look at a responsive section; a CSS-scaled box is not.
+ *
+ * It goes through `Layout` and `HomeSections` — the same shell and the same
+ * dispatch a published page goes through — so what appears here is what an
+ * operator gets.
+ */
+import HomeSections from "~/components/sections/HomeSections.astro"
+import Layout from "~/layouts/Layout.astro"
+import DocFrame from "../../../_gallery/doc/DocFrame.astro"
+import {
+  chromeOverridesFrom,
+  chromePart,
+  chromeSiteSettings,
+  foundationPage,
+  frameContext,
+  instanceFor,
+  overridesFrom,
+  readFrame,
+  sectionDecl,
+} from "~/lib/gallery"
+import { opensFullBleed } from "~/lib/section-registry"
+
+if (!import.meta.env.DEV) return new Response(null, { status: 404 })
+
+const params = Astro.url.searchParams
+const variant = Astro.params.variant ?? "empty"
+const frame = readFrame(params)
+
+/** Echoed back with the measured height so the parent knows which frame grew. */
+const key = params.get("frame") ?? `${Astro.params.section}--${variant}`
+
+const doc = foundationPage(Astro.params.section)
+const part = doc ? undefined : chromePart(Astro.params.section)
+const decl = doc || part ? undefined : sectionDecl(Astro.params.section)
+if (!doc && !part && !decl) return new Response(null, { status: 404 })
+
+/*
+ * Chrome has no content of its own, so it is given some. The header only tells
+ * you anything over the thing it has to stay legible against: a photographic
+ * hero for the transparent variant, ordinary content for the opaque ones. The
+ * footer wants a short page above it so it sits where it really sits.
+ */
+const backdropId = part
+  ? part.id === "site-header" && variant === "over-hero"
+    ? "hero"
+    : "feature-grid"
+  : undefined
+const backdrop = backdropId ? sectionDecl(backdropId) : undefined
+
+const instance = doc
+  ? undefined
+  : part
+    ? backdrop
+      ? instanceFor(backdrop, "fixture")
+      : undefined
+    : instanceFor(decl!, variant, overridesFrom(params, decl!))
+
+const site = part
+  ? chromeSiteSettings(part, variant, chromeOverridesFrom(params, part))
+  : {}
+
+/*
+ * The header may only sit over the page when the section beneath it opens with
+ * a photograph — the same test the real page runs on its first section. Get it
+ * wrong here and the gallery would show white nav type on the ivory canvas,
+ * which is a bug in the gallery rather than one worth reporting.
+ */
+const overHero = instance
+  ? opensFullBleed(instance.type, instance.data.settings)
+  : false
+---
+
+{
+  doc ? (
+    <DocFrame page={doc} variant={variant} frame={frame} frameKey={key} />
+  ) : (
+<Layout context={frameContext(frame, site)} authoredHome overHero={overHero}>
+  {instance && <HomeSections sections={[instance]} locale="und" />}
+
+  <style is:global>
+    /*
+     * The dev toolbar belongs to the page you are working on, not to twenty
+     * frames inside it, where it draws a floating pill over every section and
+     * lands in screenshots.
+     */
+    astro-dev-toolbar {
+      display: none !important;
+    }
+  </style>
+
+  <script is:inline define:vars={{ key, isChrome: Boolean(part) }}>
+    const report = () => {
+      /*
+       * Emptiness is measured on `<main>`, not on the document. Every frame
+       * carries a header and a footer, so a body with children proves nothing
+       * — the question is whether the section put anything between them.
+       * `src/theme/sections.ts` requires that it does. Chrome frames are
+       * exempt: their `main` is only a backdrop, and an empty one is the
+       * point rather than a fault.
+       */
+      const main = document.getElementById("main")
+      const empty = isChrome
+        ? false
+        : !main || !main.querySelector(":scope > *:not(script)")
+      const height = Math.ceil(document.documentElement.scrollHeight)
+      parent.postMessage({ type: "gallery:height", key, height, empty }, "*")
+    }
+    new ResizeObserver(report).observe(document.documentElement)
+    addEventListener("load", report)
+    report()
+  </script>
+</Layout>
+  )
+}

@@ -1,0 +1,52 @@
+---
+/**
+ * The lead: one photograph, one headline.
+ *
+ * Deliberately the same austerity as the destination page's hero, and for the
+ * same structural reason rather than for symmetry: the first thing below the
+ * fold is a sticky jump bar the reader has to be able to reach, and anything
+ * stacked into the hero — a count of destinations, a standfirst, a search box —
+ * pushes that bar off the first screen on a phone. The standfirst has its own
+ * home one scroll down.
+ *
+ * The photograph is decorative. Whatever it shows is named by the H1 lying on
+ * top of it, so alt text would only make a screen reader say it twice.
+ */
+import Photo from "~/components/primitives/Photo.astro"
+
+interface Props {
+  heading: string
+  image?: { src: string; alt: string } | undefined
+}
+
+const { heading, image } = Astro.props
+
+const title = "u-display max-w-[18ch] text-[2.5rem] sm:text-[3.25rem] md:text-[4.25rem]"
+---
+
+{
+  image ? (
+    <header class="u-frame u-scrim-hero u-scrim-top relative flex min-h-[26rem] items-end md:min-h-[38rem]">
+      <Photo
+        src={image.src}
+        alt={image.alt}
+        class="absolute inset-0"
+        priority
+        sizes="100vw"
+        decorative
+      />
+      <div class="u-shell relative z-[2] w-full pb-12 pt-32 md:pb-20">
+        <h1 class={`${title} text-white`}>{heading}</h1>
+      </div>
+    </header>
+  ) : (
+    /*
+     * Without a photograph the page still needs a lead, and a grey box the width
+     * of the screen would advertise the asset nobody uploaded. Type on the
+     * canvas is the honest fallback and the only one that still looks edited.
+     */
+    <header class="u-shell pb-10 pt-24 md:pb-14 md:pt-32">
+      <h1 class={title}>{heading}</h1>
+    </header>
+  )
+}

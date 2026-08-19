@@ -1,23 +1,95 @@
 ---
-import MobileNav from "~/components/islands/MobileNav"
+import SiteAnnouncement from "~/components/islands/SiteAnnouncement"
+import SiteNav, { type NavUtility } from "~/components/islands/SiteNav"
 import { cn } from "~/lib/cn"
 import type { Messages } from "~/lib/messages"
-import type { MenuItem, SiteSettings } from "~/lib/site"
-import { telHref } from "~/lib/site"
+import type { NavItem } from "~/lib/navigation"
+import { utilityMenu, type MenuItem, type SiteSettings } from "~/lib/site"
 
 interface Props {
+  /** Read for the `utility` menu, which is a menu rather than a setting. */
+  context: { menus?: Record<string, unknown> }
   siteName: string
   logo?: { src: string; alt: string } | undefined
-  items: MenuItem[]
+  items: NavItem[]
   settings: SiteSettings
   /** Only a page that opens with a full-bleed hero can host a clear header. */
   overHero: boolean
   messages: Messages
 }
 
-const { siteName, logo, items, settings, overHero, messages } = Astro.props
+const { context, siteName, logo, items, settings, overHero, messages } = Astro.props
+
+/*
+ * Only the strings the nav actually renders cross into the island.
+ *
+ * Everything handed to a `client:` component is serialised into the HTML of
+ * every page that mounts it. Passing the whole dictionary shipped roughly a
+ * hundred and fifty strings — plural tables, product-page headings, the labels
+ * of a booking form that no longer exists — to a component that renders six of
+ * them, on every request, twice over once the drawer is counted.
+ */
+const navMessages = {
+  primaryNav: messages.primaryNav,
+  menu: messages.menu,
+  closeMenu: messages.closeMenu,
+  submenu: messages.submenu,
+  showAll: messages.showAll,
+  backTo: messages.backTo,
+  language: messages.language,
+  currency: messages.currency,
+}
 
 const transparent = overHero && settings.headerStyle === "over-hero"
+
+/**
+ * The navigation, in whichever shape reached this component.
+ *
+ * A publication that predates the panelled menu still sends a flat list with a
+ * nested `items` array on each entry. Lifting those children into a single
+ * column is enough for the behaviour rule to read them as a dropdown, and it is
+ * done here rather than by re-parsing the item, which would strip the
+ * provenance the editor selects an authored label by. Without this a site that
+ * upgrades the theme without touching its menu silently loses its second level.
+ */
+const menu: NavItem[] = items.map((item) => {
+  const legacy = (item as NavItem & { items?: MenuItem[] }).items
+  if (!legacy?.length || (item.columns?.length ?? 0) > 0) return item
+  return {
+    ...item,
+    columns: [{ links: legacy.map(({ label, href }) => ({ label, href })) }],
+  }
+})
+
+/**
+ * The utility bar, assembled from whatever the operator actually published.
+ *
+ * It is only worth its height when it carries something, so it is built and
+ * then discarded if it came out empty — a bar holding one link is worse than
+ * no bar, because it still costs the reader a row of the page.
+ */
+const utilityLinks = utilityMenu(context)
+
+const assembled: NavUtility = {
+  phone: settings.phone,
+  phoneNote: settings.phoneNote,
+  locator: settings.locator,
+  account: settings.account,
+  languages: settings.languages,
+  links: utilityLinks,
+  currencies: settings.currencyMode === "switcher" ? settings.currencies : [],
+}
+
+const utility: NavUtility | undefined =
+  settings.utilityBar &&
+  (assembled.phone ||
+    assembled.locator ||
+    assembled.account ||
+    assembled.links.length > 0 ||
+    assembled.languages.length > 0 ||
+    assembled.currencies.length > 0)
+    ? assembled
+    : undefined
 ---
 
 {
@@ -30,7 +102,23 @@ const transparent = overHero && settings.headerStyle === "over-hero"
    * every frame of every scroll for the life of the page.
    */
 }
-<div data-header-sentinel aria-hidden="true"></div>
+{
+  /*
+   * The sentinel has height, and is out of flow.
+   *
+   * A zero-height marker cannot work here: shrunk by the root margin, the
+   * observation area starts 72px down the viewport, so a marker sitting at
+   * y=0 is never inside it and the header reports itself stuck before the
+   * reader has scrolled at all. Giving the sentinel roughly the hero's height
+   * makes "still intersecting" mean "still over the photograph", which is the
+   * question actually being asked. Absolute so it adds nothing to the layout.
+   */
+}
+<div
+  data-header-sentinel
+  aria-hidden="true"
+  class="pointer-events-none absolute inset-x-0 top-0 h-[80svh]"
+></div>
 
 <header
   data-header
@@ -38,136 +126,81 @@ const transparent = overHero && settings.headerStyle === "over-hero"
   class={cn(
     "group/header fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,box-shadow] duration-500 ease-[var(--ease-out-expo)]",
     transparent
-      ? "border-b border-transparent bg-transparent text-white data-[stuck=true]:border-line data-[stuck=true]:bg-[var(--canvas)]/92 data-[stuck=true]:text-ink data-[stuck=true]:backdrop-blur-lg"
+      ? cn(
+          "border-b border-transparent bg-transparent text-white",
+          "data-[stuck=true]:border-line data-[stuck=true]:bg-[var(--canvas)]/92 data-[stuck=true]:text-ink data-[stuck=true]:backdrop-blur-lg",
+          /*
+           * An open panel is the second reason to drop the transparency, and
+           * the island sets the flag rather than painting a background of its
+           * own: two components describing the same opacity is how they end up
+           * disagreeing about it.
+           */
+          "data-[nav-open=true]:border-line data-[nav-open=true]:bg-[var(--canvas)] data-[nav-open=true]:text-ink",
+        )
       : cn(
           "bg-[var(--canvas)]/92 text-ink backdrop-blur-lg",
           settings.headerStyle === "bordered" && "border-b border-line",
         ),
   )}
 >
-  <div class="u-shell flex h-[4.5rem] items-center justify-between gap-6 md:h-[5.25rem]">
-    <a href="/" class="flex shrink-0 items-center gap-3" aria-label={siteName}>
-      {
-        logo ? (
-          <img
-            src={logo.src}
-            alt={logo.alt || siteName}
-            class="h-7 w-auto max-w-[11rem] object-contain md:h-8"
-          />
-        ) : (
-          <span class="u-display-sm text-[1.25rem] tracking-[-0.01em] md:text-[1.375rem]">
-            {siteName}
-          </span>
-        )
-      }
-    </a>
+  {
+    /*
+     * Inside the fixed header, not above it: a strip in normal flow would be
+     * covered by a header pinned to the top of the viewport. `client:only`
+     * because it decides what to render from storage, and a server-rendered
+     * strip would flash for anyone who has already dismissed it.
+     */
+  }
+  {settings.announcement && (
+    <SiteAnnouncement
+      client:only="react"
+      announcement={settings.announcement}
+      closeLabel={messages.closeAnnouncement}
+      defaultLinkLabel={messages.announcementDefaultLink}
+    />
+  )}
 
-    <nav class="hidden lg:block" aria-label={messages.primaryNav}>
-      <ul class="flex items-center gap-1">
-        {
-          items.map((item) => (
-            <li class="group/nav relative">
-              <a
-                href={item.href}
-                class="flex items-center gap-1.5 rounded-pill px-3.5 py-2.5 text-[0.8125rem] font-medium tracking-[0.06em] uppercase transition-opacity duration-300 hover:opacity-60"
-              >
-                {item.label}
-                {item.items && item.items.length > 0 && (
-                  <svg
-                    class="h-3 w-3 opacity-60 transition-transform duration-400 group-hover/nav:rotate-180"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    aria-hidden="true"
-                  >
-                    <path d="m8 10 4 4 4-4" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                )}
-              </a>
-
-              {
-                /*
-                 * The submenu opens on hover and on keyboard focus alike.
-                 * `focus-within` is what makes the second level reachable by
-                 * tab; hover alone would strand a keyboard user on the parent.
-                 */
-              }
-              {item.items && item.items.length > 0 && (
-                <div class="invisible absolute left-0 top-full pt-2 opacity-0 transition-[opacity,visibility] duration-300 group-hover/nav:visible group-hover/nav:opacity-100 group-focus-within/nav:visible group-focus-within/nav:opacity-100">
-                  <ul class="min-w-[15rem] rounded-card border border-line bg-[var(--canvas)] p-2 text-ink shadow-[0_24px_50px_-30px_rgba(0,0,0,0.4)]">
-                    {item.items.map((child) => (
-                      <li>
-                        <a
-                          href={child.href}
-                          class="block rounded-[calc(var(--corner)+2px)] px-3.5 py-2.5 text-[0.875rem] text-ink-muted transition-colors duration-200 hover:bg-accent-wash hover:text-ink"
-                        >
-                          {child.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
-
-    <div class="flex items-center gap-1.5">
-      {
-        settings.phone && (
-          <a
-            href={telHref(settings.phone)}
-            class="hidden rounded-pill px-3 py-2 text-[0.8125rem] tracking-[0.02em] transition-opacity duration-300 hover:opacity-60 xl:block"
-          >
-            {settings.phone}
-          </a>
-        )
-      }
-      {
-        settings.headerCtaLabel && (
-          <a
-            href={settings.headerCtaHref}
-            class={cn(
-              "hidden h-10 items-center rounded-pill px-5 text-[0.8125rem] font-medium transition-colors duration-300 lg:inline-flex",
-              transparent
-                ? "border border-white/40 text-white hover:bg-white hover:text-ink group-data-[stuck=true]/header:border-transparent group-data-[stuck=true]/header:bg-accent group-data-[stuck=true]/header:text-accent-ink"
-                : "bg-accent text-accent-ink hover:bg-accent-hover",
-            )}
-          >
-            {settings.headerCtaLabel}
-          </a>
-        )
-      }
-      {
-        /*
-         * Hydrated only where the drawer can actually be opened. The trigger
-         * is hidden above `lg`, so `client:idle` would download React and the
-         * Radix dialog on every desktop page load to power a button nobody can
-         * see. `client:media` also re-evaluates on resize, so narrowing the
-         * window still gets a working drawer.
-         */
-      }
-      <MobileNav
-        client:media="(max-width: 1023px)"
-        items={items}
-        menuLabel={messages.menu}
-        closeLabel={messages.closeMenu}
-        submenuLabel={messages.submenu}
-        siteName={siteName}
-        ctaLabel={settings.headerCtaLabel}
-        ctaHref={settings.headerCtaHref}
-        phone={settings.phone}
-      />
-    </div>
-  </div>
+  <SiteNav
+    client:load
+    items={menu}
+    siteName={siteName}
+    logo={logo}
+    settings={settings}
+    messages={navMessages}
+    overHero={transparent}
+    utility={utility}
+  />
 </header>
 
+{
+  /*
+   * The utility bar makes the fixed header taller than the padding the layout
+   * reserves for it, so a page that does not open with a photograph gets that
+   * height back as flow. It stays put when the bar collapses on scroll: the
+   * header is fixed, so a spacer that shrank with it would drag the whole page
+   * up under the reader.
+   */
+  !transparent && (
+    <>
+      {utility && <div aria-hidden="true" class="hidden h-9 lg:block"></div>}
+      {settings.announcement && <div aria-hidden="true" class="h-9"></div>}
+    </>
+  )
+}
+
 <script>
-  const header = document.querySelector<HTMLElement>("[data-header]")
-  const sentinel = document.querySelector<HTMLElement>("[data-header-sentinel]")
+  /*
+   * Plain JavaScript, deliberately.
+   *
+   * A type annotation here is not free: this project's script pipeline emits
+   * `document.querySelector < HTMLElement > "[data-header]"` for the annotated
+   * form — valid JavaScript that compares two things and discards the call, so
+   * `header` becomes `false`, the observer is never created and the header
+   * stays transparent forever. It fails silently, with no console error, which
+   * is the worst way for a thing to fail. Nothing in here needs types.
+   */
+  const header = document.querySelector("[data-header]")
+  const sentinel = document.querySelector("[data-header-sentinel]")
 
   if (header && sentinel) {
     // A small root margin flips the state just before the sentinel is fully
@@ -179,5 +212,36 @@ const transparent = overHero && settings.headerStyle === "over-hero"
       { rootMargin: "-72px 0px 0px 0px" },
     )
     observer.observe(sentinel)
+  }
+
+  /*
+   * The header publishes its own height, because nothing else can know it.
+   *
+   * It is three bands tall with an announcement and a utility bar, two without,
+   * and it loses a band when the utility bar hides on scroll — so any sticky
+   * thing below it that hard-codes an offset is guessing. The in-page section
+   * navs guessed 4.5rem against a header that is routinely 156px, which put the
+   * only navigation on a 8,600px page entirely behind the header: present in
+   * the DOM, sticky, correct in every respect except visible.
+   *
+   * Measured rather than computed from the band count, since an announcement
+   * can wrap to two lines at narrow widths and a computed sum would be right
+   * only at the widths someone happened to check.
+   */
+  if (header) {
+    const publishHeight = () => {
+      const height = Math.round(header.getBoundingClientRect().height)
+      if (height > 0) {
+        document.documentElement.style.setProperty("--header-h", height + "px")
+      }
+    }
+    publishHeight()
+    if ("ResizeObserver" in window) {
+      new ResizeObserver(publishHeight).observe(header)
+    } else {
+      /* Older engines still get a correct value on the two events that change it. */
+      window.addEventListener("resize", publishHeight)
+      window.addEventListener("orientationchange", publishHeight)
+    }
   }
 </script>

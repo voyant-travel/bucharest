@@ -4,6 +4,19 @@ import SiteFooter from "~/components/SiteFooter.astro"
 import SiteHeader from "~/components/SiteHeader.astro"
 import { cn } from "~/lib/cn"
 import { messagesFor } from "~/lib/messages"
+import { navItems } from "~/lib/navigation"
+import {
+  absoluteUrl,
+  alternateLinks,
+  breadcrumbLd,
+  breadcrumbTrail,
+  defaultAlternate,
+  ldScript,
+  organizationLd,
+  pageEntityLd,
+  webPageLd,
+  webSiteLd,
+} from "~/lib/seo"
 import { footerMenus, primaryMenu, readSettings } from "~/lib/site"
 import "~/styles/global.css"
 
@@ -43,9 +56,93 @@ const settings = readSettings(context.settings ?? {})
 // The theme's own labels, in the language this publication resolved to.
 const t = messagesFor(context.locale)
 const navigation = primaryMenu(context)
+/*
+ * The header reads the panelled shape, the footer the flat one. They are the
+ * same published menu seen at two depths: a footer column is a sitemap and has
+ * no use for a mega panel's cards, while a header that flattened them would
+ * throw away the only structure that makes a 200-destination catalogue
+ * navigable.
+ */
+const menu = navItems(
+  (context as { menus?: Record<string, unknown> }).menus?.primary ??
+    (context as { navigation?: unknown }).navigation,
+)
 const columns = footerMenus(context)
 const injection = "codeInjection" in context ? context.codeInjection : undefined
 const canonical = new URL(context.path, Astro.url).toString()
+const origin = Astro.url.origin
+
+/*
+ * The image, resolved against the request origin before it is advertised.
+ * Both Open Graph and the Twitter card are read by a fetcher that has no
+ * document to resolve a relative path against, so `/og/cover.jpg` published by
+ * an operator becomes nothing at all in a preview unless it is made absolute
+ * here. A source that will not parse is dropped rather than emitted broken:
+ * a card with no image degrades to `summary`, a card with a dead one does not.
+ */
+const openGraphImage = context.openGraph?.image
+  ? absoluteUrl(context.openGraph.image.src, origin)
+  : undefined
+/* Dimensions belong to an image that survived resolution, not to the field. */
+const openGraphImageSize = openGraphImage ? context.openGraph?.image : undefined
+
+/*
+ * The card reuses what Open Graph already resolved and falls back to the
+ * document's own title and description rather than recomputing either. A
+ * Twitter card with no title falls back to the `<title>` anyway, so the only
+ * thing a second derivation could add is a way for the two to disagree.
+ */
+const twitterTitle = openGraphTitle ?? documentTitle
+const twitterDescription = openGraphDescription ?? metadataDescription
+
+/**
+ * Whether a crawler should be told anything about this page beyond "go away".
+ *
+ * Structured data, and an `hreflang` cluster, describe a page for an index
+ * this one has asked to stay out of. Emitting them on a `noindex` page is at
+ * best ignored; at worst it feeds an entity graph from a page nobody can
+ * reach, which is how a soft 404 acquires a breadcrumb.
+ */
+const indexable = !context.seo.noIndex && context.kind !== "notFound"
+
+const organization = indexable
+  ? organizationLd(settings, context.site.name, origin)
+  : undefined
+const webSite = indexable
+  ? webSiteLd(context.site.name, origin, context.locale)
+  : undefined
+const webPage = indexable
+  ? webPageLd(
+      {
+        path: context.path,
+        title: context.title,
+        description,
+        locale: context.locale,
+      },
+      origin,
+    )
+  : undefined
+/*
+ * `journeys` and `cruises` rather than the "All journeys" / "Back to cruises"
+ * wording on the visible link: a breadcrumb crumb names a destination, and the
+ * two labels point at the same two routes the templates already link to.
+ */
+const breadcrumb = indexable
+  ? breadcrumbLd(
+      breadcrumbTrail(context, { journeys: t.journeys, cruises: t.cruises }),
+      origin,
+    )
+  : undefined
+/*
+ * No `FAQPage` is built here. The destination template already emits one from
+ * the questions it renders, and a second `FAQPage` on the same document is not
+ * additive — the two compete to describe the page and a validator reports the
+ * conflict rather than merging them.
+ */
+const entity = indexable ? pageEntityLd(context, origin) : undefined
+
+const alternates = indexable ? alternateLinks(settings.languages, origin) : []
+const fallbackAlternate = defaultAlternate(alternates)
 
 /**
  * The operator's accent, applied as a variable override rather than written
@@ -122,28 +219,74 @@ const accentStyle = settings.accent
     {openGraphDescription && (
       <meta property="og:description" content={openGraphDescription} />
     )}
-    {context.openGraph?.image && (
-      <meta property="og:image" content={context.openGraph.image.src} />
-    )}
-    {openGraphImageAlt && (
+    {openGraphImage && <meta property="og:image" content={openGraphImage} />}
+    {openGraphImage && openGraphImageAlt && (
       <meta property="og:image:alt" content={openGraphImageAlt} />
     )}
-    {context.openGraph?.image?.width && (
+    {openGraphImageSize?.width && (
       <meta
         property="og:image:width"
-        content={String(context.openGraph.image.width)}
+        content={String(openGraphImageSize.width)}
       />
     )}
-    {context.openGraph?.image?.height && (
+    {openGraphImageSize?.height && (
       <meta
         property="og:image:height"
-        content={String(context.openGraph.image.height)}
+        content={String(openGraphImageSize.height)}
       />
     )}
     <meta
       name="twitter:card"
-      content={context.openGraph?.image ? "summary_large_image" : "summary"}
+      content={openGraphImage ? "summary_large_image" : "summary"}
     />
+    <meta name="twitter:title" content={twitterTitle} />
+    {twitterDescription && (
+      <meta name="twitter:description" content={twitterDescription} />
+    )}
+    {openGraphImage && <meta name="twitter:image" content={openGraphImage} />}
+    {openGraphImage && openGraphImageAlt && (
+      <meta name="twitter:image:alt" content={openGraphImageAlt} />
+    )}
+
+    {
+      /*
+       * The operator's own language versions, mirroring the switcher this page
+       * renders. `x-default` points at the one they marked current, because
+       * that is the version their bare hostname serves.
+       */
+      alternates.map((alternate) => (
+        <link
+          rel="alternate"
+          hreflang={alternate.hreflang}
+          href={alternate.href}
+        />
+      ))
+    }
+    {fallbackAlternate && (
+      <link rel="alternate" hreflang="x-default" href={fallbackAlternate.href} />
+    )}
+
+    {
+      /*
+       * One script per entity rather than one graph, so a page that can only
+       * describe some of itself still emits the parts it can. The nodes are
+       * joined by `@id`, which is what lets a consumer walk from the page to
+       * the site to the agency without them sharing a payload.
+       */
+      organization && (
+        <script type="application/ld+json" set:html={ldScript(organization)} />
+      )
+    }
+    {webSite && (
+      <script type="application/ld+json" set:html={ldScript(webSite)} />
+    )}
+    {webPage && (
+      <script type="application/ld+json" set:html={ldScript(webPage)} />
+    )}
+    {breadcrumb && (
+      <script type="application/ld+json" set:html={ldScript(breadcrumb)} />
+    )}
+    {entity && <script type="application/ld+json" set:html={ldScript(entity)} />}
 
     {
       /*
@@ -167,9 +310,10 @@ const accentStyle = settings.accent
     </a>
 
     <SiteHeader
+      context={context}
       siteName={context.site.name}
       logo={context.site.logo}
-      items={navigation}
+      items={menu}
       settings={settings}
       overHero={overHero}
       messages={t}

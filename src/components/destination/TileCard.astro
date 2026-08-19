@@ -1,0 +1,63 @@
+---
+/**
+ * The image-led tile shared by experiences, places and stays.
+ *
+ * All three arrive as the same `DestinationTile` and all three are read the
+ * same way — look at the photograph, read the name, decide whether to read the
+ * sentence — so they are one component. Giving each section its own card
+ * invites three slightly different photo ratios, which is what makes a long
+ * page feel assembled rather than designed.
+ *
+ * The whole tile is the link, but only when the row carried an `href`. Most of
+ * them do not: a place inside a destination is frequently just a place, and a
+ * tile that looks clickable and is not costs more trust than the extra click
+ * would have earned.
+ */
+import Photo from "~/components/primitives/Photo.astro"
+import { cn } from "~/lib/cn"
+import type { DestinationTile } from "~/lib/destination"
+
+interface Props {
+  tile: DestinationTile
+  ratio?: string
+  sizes?: string
+  class?: string
+}
+
+const { tile, ratio = "aspect-[4/3]", sizes, class: className } = Astro.props
+
+const Tag = tile.href ? "a" : "div"
+---
+
+<Tag href={tile.href} class={cn("group block", className)}>
+  {
+    tile.image ? (
+      <Photo src={tile.image.src} alt={tile.image.alt} ratio={ratio} class="rounded-card" sizes={sizes} />
+    ) : (
+      /*
+       * A tile with no photograph keeps the frame anyway. Collapsing it would
+       * pull the neighbouring tiles' captions out of line, which reads as a
+       * layout bug rather than as a missing image.
+       */
+      <div class={cn("rounded-card bg-surface-sunk", ratio)} />
+    )
+  }
+
+  <div class="mt-4">
+    {tile.hook && <p class="u-eyebrow text-ink-subtle">{tile.hook}</p>}
+    <h3
+      class={cn(
+        "u-display-sm text-[1.25rem] md:text-[1.375rem]",
+        tile.hook && "mt-2",
+        tile.href && "transition-colors duration-300 group-hover:text-accent",
+      )}
+    >
+      {tile.title}
+    </h3>
+    {
+      tile.body && (
+        <p class="mt-2.5 text-[0.9375rem] leading-[1.7] text-ink-muted">{tile.body}</p>
+      )
+    }
+  </div>
+</Tag>

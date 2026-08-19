@@ -1,0 +1,87 @@
+---
+/**
+ * The only navigation this page has.
+ *
+ * A filled destination runs to something like ten thousand pixels, most of it
+ * photographs, and a reader who arrives wanting stays has no other way to get
+ * there than scrolling past everything else. That makes this the load-bearing
+ * component on the page rather than a convenience, which is why it borrows the
+ * product page's offsets verbatim — `top-[4.5rem]` clears the site header at
+ * mobile height, `md:top-[5.25rem]` at desktop — instead of inventing numbers
+ * that would leave a gap of canvas showing between the two sticky bars.
+ *
+ * The links come from `destinationSections`, never from a hard-coded list: a
+ * link that scrolls nowhere is worse than an absent one, and on a page this
+ * long the reader cannot even see that nothing happened.
+ *
+ * The enquiry sits at the right and stays there at every width. It is the
+ * page's only conversion, and a reader eleven screens deep will not scroll back
+ * to find one. Its label stays two words on a phone so the scroller beside it
+ * keeps room to be scrolled.
+ */
+import { cn } from "~/lib/cn"
+import type { Copy } from "./copy"
+
+interface Props {
+  /**
+   * The sections, already labelled in the reader's language by the page. The
+   * label is rendered as handed over: this component must not translate an id
+   * itself, or the nav and the page it points at could disagree about which
+   * sections exist.
+   */
+  sections: { id: string; label: string }[]
+  enquiry?: string | undefined
+  copy: Copy
+}
+
+const { sections, enquiry, copy } = Astro.props
+---
+
+<nav
+  class="sticky top-[var(--header-h)] z-30 border-b border-line bg-[var(--canvas)]/92 backdrop-blur-lg"
+  aria-label={copy.navLabel}
+>
+  <div class="u-shell flex items-center gap-3 md:gap-6">
+    <ul
+      class={cn(
+        "u-no-scrollbar -ml-5 flex min-w-0 flex-1 gap-1 overflow-x-auto pl-5 md:ml-0 md:pl-0",
+        // A trailing gutter so the last link does not sit flush against the
+        // CTA when the row is scrolled to its end.
+        "pr-2",
+        /*
+         * The row holds seven labels and a phone is about four wide, so it is
+         * always scrolled mid-word at this size. Without a fade the clipped
+         * label reads as a rendering fault rather than as more content: the
+         * edge is hard, and it lands beside a button, which is exactly where a
+         * reader expects a boundary and not a continuation. The mask only
+         * applies where the overflow actually exists.
+         */
+        "[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] md:[mask-image:none]",
+      )}
+    >
+      {
+        sections.map((section) => (
+          <li>
+            <a
+              href={`#${section.id}`}
+              class="inline-flex h-12 items-center whitespace-nowrap px-3 text-[0.8125rem] text-ink-muted transition-colors duration-300 hover:text-ink md:px-4"
+            >
+              {section.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    {
+      enquiry && (
+        <a
+          href={enquiry}
+          class="inline-flex h-9 shrink-0 items-center rounded-pill bg-accent px-4 text-[0.8125rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover md:h-10 md:px-5"
+        >
+          {copy.requestQuote}
+        </a>
+      )
+    }
+  </div>
+</nav>

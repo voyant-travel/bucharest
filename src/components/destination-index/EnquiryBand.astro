@@ -1,0 +1,74 @@
+---
+/**
+ * The way off an index the reader could not choose from.
+ *
+ * The failure state of a page like this is a reader who liked four of the
+ * thirty and closed the tab, and on a site that takes no booking online the
+ * only answer to that is a conversation. So the band is last, after every
+ * region, where "none of these is quite it" is the thought the reader is
+ * actually having.
+ *
+ * It renders nothing at all when it has neither a form nor a number. A band
+ * headed "Tell us where you want to go" above a button wired to `#` is worse
+ * than an absent band: the reader spends their one click on it and lands back
+ * at the top of the page, which is indistinguishable from a broken site.
+ */
+import { telHref } from "~/lib/site"
+import type { Copy } from "./copy"
+
+interface Props {
+  enquiryHref?: string | undefined
+  phone?: string | undefined
+  copy: Copy
+}
+
+const { enquiryHref, phone, copy } = Astro.props
+---
+
+{
+  (enquiryHref || phone) && (
+    <section class="bg-surface-sunk py-14 md:py-20">
+      <div class="u-shell grid gap-8 md:grid-cols-12 md:gap-16">
+        <div class="md:col-span-6">
+          <h2 class="u-display-sm text-[1.625rem] md:text-[2rem]">
+            {copy.undecidedHeading}
+          </h2>
+          <p class="mt-5 max-w-[46ch] text-[1rem] leading-[1.8] text-ink-muted">
+            {copy.undecidedBody}
+          </p>
+        </div>
+
+        <div class="flex flex-col justify-end gap-6 md:col-span-6 md:items-start">
+          {phone && (
+            <div>
+              <p class="u-eyebrow text-ink-subtle">{copy.callUsDirect}</p>
+              <a
+                href={telHref(phone)}
+                class="u-display-sm mt-3 inline-block text-[1.5rem] md:text-[1.75rem]"
+              >
+                {phone}
+              </a>
+            </div>
+          )}
+
+          {
+            /*
+             * The written enquiry only appears when the caller knows the route
+             * to it. Falling back to the phone number behind a "Request a quote"
+             * label would promise a form and open a dialler, which on a desktop
+             * does nothing visible at all.
+             */
+          }
+          {enquiryHref && (
+            <a
+              href={enquiryHref}
+              class="inline-flex h-11 items-center justify-center rounded-pill bg-accent px-6 text-[0.875rem] font-medium text-accent-ink transition-colors duration-300 hover:bg-accent-hover"
+            >
+              {copy.requestQuote}
+            </a>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}

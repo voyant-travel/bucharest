@@ -21,12 +21,18 @@ function record(value: unknown): Record<string, unknown> | undefined {
 }
 
 export function responseRows(value: unknown): Record<string, unknown>[] {
-  if (Array.isArray(value)) return value.map(record).filter(Boolean)
+  if (Array.isArray(value)) return value.flatMap((row: unknown) => {
+      const parsed = record(row)
+      return parsed ? [parsed] : []
+    })
   const envelope = record(value)
   if (!envelope) return []
   for (const key of ["data", "rows", "products", "items"] as const) {
     const rows = envelope[key]
-    if (Array.isArray(rows)) return rows.map(record).filter(Boolean)
+    if (Array.isArray(rows)) return rows.flatMap((row: unknown) => {
+      const parsed = record(row)
+      return parsed ? [parsed] : []
+    })
   }
   return []
 }

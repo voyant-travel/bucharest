@@ -1,9 +1,10 @@
 ---
 import CollectionValue from "../components/CollectionValue.astro"
+import DestinationPage from "../components/destination/DestinationPage.astro"
+import DestinationIndexPage from "../components/destination-index/DestinationIndexPage.astro"
 import CruisePage from "../components/CruisePage.astro"
 import PageLead from "../components/primitives/PageLead.astro"
 import HomeSections from "../components/sections/HomeSections.astro"
-import ShoppingExperience from "../components/ShoppingExperience.astro"
 import TourDetail from "../components/TourDetail.astro"
 import TourIndex from "../components/TourIndex.astro"
 import Layout from "../layouts/Layout.astro"
@@ -11,10 +12,12 @@ import {
   entryBlurb,
   entryFields,
 } from "../lib/collection-values"
+import { readDestination } from "../lib/destination"
+import { readDestinationIndex } from "../lib/destination-index"
 import { fill, messagesFor } from "../lib/messages"
+import { readSettings } from "../lib/site"
 import { sectionInstances } from "../lib/sections"
 import { isKnownSection, opensFullBleed } from "../lib/section-registry"
-import { capabilityEndpoint } from "../lib/shopping.mjs"
 import { resolveThemeContext } from "virtual:voyant-theme"
 
 // Context is resolved per request. On a published hostname it comes from the
@@ -37,30 +40,32 @@ const entryParent =
     ? context.path.slice(0, context.path.lastIndexOf("/")) || "/"
     : undefined
 
+/*
+ * A destination page is a content page the platform assigned an alternate
+ * template to. The theme branches on the id it was given rather than sniffing
+ * the path or the settings: which pages read as places is the operator's
+ * decision, published through assignment rules the theme never sees.
+ */
+const isDestination =
+  context.kind === "content" && context.templateId === "destination"
+const destination = isDestination ? readDestination(context.settings) : undefined
+
+/* The listing that gathers those pages. Same seam, a second template id. */
+const isDestinationIndex =
+  context.kind === "content" && context.templateId === "destination-index"
+const destinationIndex = isDestinationIndex
+  ? readDestinationIndex(context.settings)
+  : undefined
+const { phone: sitePhone, bookingUrl: siteBookingUrl } = readSettings(
+  context.settings,
+)
+
 const homeSections =
   context.kind === "home"
     ? sectionInstances(context.sections).filter((section) =>
         isKnownSection(section.type),
       )
     : []
-const live = "live" in context ? context.live : undefined
-const shoppingSearchEndpoint = capabilityEndpoint(
-  live,
-  "shopping.search.v1",
-  "POST",
-)
-const shoppingTripsEndpoint = capabilityEndpoint(
-  live,
-  "shopping.trip-selections.v1",
-  "PATCH",
-)
-const shoppingTripBookingEndpoint = capabilityEndpoint(
-  live,
-  "shopping.trip-booking.v1",
-  "POST",
-)
-const bookingEndpoint = capabilityEndpoint(live, "booking.session.v1", "PATCH")
-const checkoutEndpoint = capabilityEndpoint(live, "checkout.v1", "POST")
 /**
  * Whether the header may sit over the page rather than above it. Only true
  * when the first thing on the page is a hero that actually carries a
@@ -71,9 +76,6 @@ const overHero = firstSection
   ? opensFullBleed(firstSection.type, firstSection.data.settings)
   : false
 
-const hasAuthoredJourneySearch = homeSections.some(
-  (section) => section.type === "journey-search",
-)
 
 // A listing shows the first text a reader can scan, so an index is not a wall
 // of bare titles. "First" follows the operator's declared order when the
@@ -92,27 +94,12 @@ const hasAuthoredJourneySearch = homeSections.some(
     <HomeSections
       sections={homeSections}
       locale={context.locale}
-      searchEndpoint={shoppingSearchEndpoint}
-      tripsEndpoint={shoppingTripsEndpoint}
-      tripBookingEndpoint={shoppingTripBookingEndpoint}
-      bookingEndpoint={bookingEndpoint}
-      checkoutEndpoint={checkoutEndpoint}
     />
   )}
   {context.kind === "home" && homeSections.length === 0 && <h1>{context.title}</h1>}
-  {context.kind === "home" && !hasAuthoredJourneySearch && (
-    <ShoppingExperience
-      locale={context.locale}
-      searchEndpoint={shoppingSearchEndpoint}
-      tripsEndpoint={shoppingTripsEndpoint}
-      tripBookingEndpoint={shoppingTripBookingEndpoint}
-      bookingEndpoint={bookingEndpoint}
-      checkoutEndpoint={checkoutEndpoint}
-    />
-  )}
   {["content", "notFound", "collectionIndex", "collectionEntry"].includes(
     context.kind,
-  ) && (
+  ) && !isDestination && !isDestinationIndex && (
     <PageLead
       title={context.title}
       eyebrow={context.kind === "collectionIndex" ? collection?.name : undefined}
@@ -124,7 +111,24 @@ const hasAuthoredJourneySearch = homeSections.some(
       }
     />
   )}
-  {context.kind === "content" && (
+  {isDestination && destination && (
+    <DestinationPage
+      destination={destination}
+      title={context.title}
+      phone={sitePhone}
+      enquiryHref={destination.enquiryHref}
+      locale={context.locale}
+    />
+  )}
+  {isDestinationIndex && destinationIndex && (
+    <DestinationIndexPage
+      index={destinationIndex}
+      title={context.title}
+      phone={sitePhone}
+      locale={context.locale}
+    />
+  )}
+  {context.kind === "content" && !isDestination && !isDestinationIndex && (
     <div class="u-shell pb-24 md:pb-32">
       {context.summary && (
         <p class="u-serif-body max-w-[42rem] text-[1.25rem] leading-[1.55] text-ink md:text-[1.4375rem]">
@@ -158,17 +162,6 @@ const hasAuthoredJourneySearch = homeSections.some(
     context.kind === "shipDetail" ||
     context.kind === "sailingDetail") && (
     <CruisePage context={context} />
-  )}
-  {context.kind === "cruiseIndex" && (
-    <ShoppingExperience
-      locale={context.locale}
-      searchEndpoint={shoppingSearchEndpoint}
-      tripsEndpoint={shoppingTripsEndpoint}
-      tripBookingEndpoint={shoppingTripBookingEndpoint}
-      bookingEndpoint={bookingEndpoint}
-      checkoutEndpoint={checkoutEndpoint}
-      initialKind="cruise"
-    />
   )}
 
   {

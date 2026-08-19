@@ -1,0 +1,76 @@
+---
+/**
+ * What you actually do there.
+ *
+ * A grid rather than a rail, unlike the trips: these are not products competing
+ * for one click, they are the texture of the place, and a reader is meant to
+ * read all of them rather than pick one. Three columns keep the photographs
+ * large enough to carry that.
+ *
+ * The contact banner interrupts on purpose. This is roughly the third screen of
+ * a very long page and the point at which a reader who is convinced starts
+ * looking for the way out; the next enquiry after this one is several thousand
+ * pixels further down.
+ */
+import { telHref } from "~/lib/site"
+import type { DestinationTile } from "~/lib/destination"
+import EnquiryLink from "./EnquiryLink.astro"
+import TileCard from "./TileCard.astro"
+import type { Copy } from "./copy"
+
+interface Props {
+  experiences: DestinationTile[]
+  phone?: string | undefined
+  enquiry?: string | undefined
+  copy: Copy
+}
+
+const { experiences, phone, enquiry, copy } = Astro.props
+---
+
+<section id="experiences" class="u-shell scroll-mt-40 py-14 md:py-20">
+  <h2 class="u-display-sm text-[1.625rem] md:text-[2rem]">{copy.experiencesHeading}</h2>
+
+  <ul class="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 md:gap-y-12">
+    {
+      experiences.map((tile) => (
+        <li>
+          <TileCard
+            tile={tile}
+            ratio="aspect-[4/3]"
+            sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
+          />
+        </li>
+      ))
+    }
+  </ul>
+
+  {
+    /*
+     * A telephone number is the whole banner when there is one. This model sells
+     * by conversation, and an operator's number is the shortest route into one —
+     * so it is written out rather than hidden behind a verb, because a reader on
+     * a desktop has to be able to read it before they can dial it.
+     */
+    (phone || enquiry) && (
+      <div class="mt-12 flex flex-col items-start gap-5 rounded-card bg-surface-sunk px-6 py-8 md:mt-16 md:flex-row md:items-center md:justify-between md:px-10">
+        <div>
+          <p class="u-serif-body text-[1.125rem] md:text-[1.3125rem]">
+            {copy.experiencesPrompt}
+          </p>
+          {phone && (
+            <p class="mt-2 text-[0.9375rem] text-ink-muted">
+              {copy.callUsAt}{" "}
+              <a href={telHref(phone)} class="u-link text-ink">
+                {phone}
+              </a>
+            </p>
+          )}
+        </div>
+        {enquiry && (
+          <EnquiryLink href={enquiry} variant="outline" class="shrink-0" copy={copy} />
+        )}
+      </div>
+    )
+  }
+</section>

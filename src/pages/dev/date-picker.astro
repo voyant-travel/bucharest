@@ -1,0 +1,133 @@
+---
+/**
+ * The date picker, in the states worth looking at.
+ *
+ * Standalone rather than a gallery entry: the gallery is built from the section
+ * manifest, and this is a component the sections use, not a section.
+ *
+ * The page is one `<form method="get">` on purpose. Submitting it puts every
+ * field in the query string, which is the only way to see the thing that
+ * actually matters — that the picker posts an ISO day under the same name a
+ * native date input would, hydrated or not.
+ */
+import DatePicker from "~/components/islands/DatePicker"
+import "~/styles/global.css"
+
+if (!import.meta.env.DEV) return new Response(null, { status: 404 })
+
+const submitted = [...Astro.url.searchParams.entries()]
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Date picker</title>
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body class="bg-background p-8 text-foreground">
+    <main class="mx-auto flex max-w-2xl flex-col gap-10">
+      <header class="flex flex-col gap-1">
+        <h1 class="text-2xl font-medium">Date picker</h1>
+        <p class="text-sm text-muted-foreground">
+          Submit to see what each field posts. Disable JavaScript and submit
+          again — the names and the values should be identical.
+        </p>
+      </header>
+
+      {
+        submitted.length > 0 && (
+          <pre class="overflow-x-auto rounded-2xl bg-muted p-4 text-xs">
+            {submitted.map(([name, value]) => `${name} = ${value || "(empty)"}\n`)}
+          </pre>
+        )
+      }
+
+      <form method="get" class="flex flex-col gap-8">
+        <section class="flex flex-col gap-2">
+          <h2 class="text-sm font-medium">Single — <code>departureDate</code></h2>
+          <DatePicker
+            client:load
+            name="departureDate"
+            ariaLabel="Departure date"
+            placeholder="Pick a departure"
+            min="2026-01-01"
+            max="2027-12-31"
+          />
+        </section>
+
+        <section class="flex flex-col gap-2">
+          <h2 class="text-sm font-medium">
+            Interval — <code>stayFrom</code> / <code>stayTo</code>
+          </h2>
+          <DatePicker
+            client:load
+            mode="range"
+            name="stay"
+            ariaLabel="Stay dates"
+            placeholder="Pick your dates"
+            endPlaceholder="Check out"
+          />
+        </section>
+
+        <section class="flex flex-col gap-2">
+          <h2 class="text-sm font-medium">
+            Interval, explicit names — <code>checkIn</code> / <code>checkOut</code>
+          </h2>
+          <DatePicker
+            client:load
+            mode="range"
+            startName="checkIn"
+            endName="checkOut"
+            ariaLabel="Check in and check out"
+            defaultValue={{ from: "2026-05-14", to: "2026-05-21" }}
+          />
+        </section>
+
+        <section class="flex flex-col gap-2">
+          <h2 class="text-sm font-medium">Romanian — week starts Monday</h2>
+          <DatePicker
+            client:load
+            mode="range"
+            startName="roFrom"
+            endName="roTo"
+            locale="ro"
+            ariaLabel="Interval"
+            placeholder="Alege perioada"
+            endPlaceholder="Până la"
+            clearLabel="Șterge"
+          />
+        </section>
+
+        <section class="flex flex-col gap-2">
+          <h2 class="text-sm font-medium">Date of birth — dropdown caption</h2>
+          <DatePicker
+            client:load
+            name="birthday"
+            ariaLabel="Date of birth"
+            placeholder="Date of birth"
+            captionLayout="dropdown"
+            min="1920-01-01"
+            max="2026-12-31"
+          />
+        </section>
+
+        <div class="flex gap-3">
+          <button
+            type="submit"
+            class="h-9 rounded-4xl bg-primary px-4 text-sm text-primary-foreground"
+          >
+            Submit
+          </button>
+          <a
+            href="/dev/date-picker"
+            class="flex h-9 items-center rounded-4xl border border-border px-4 text-sm"
+          >
+            Reset
+          </a>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>

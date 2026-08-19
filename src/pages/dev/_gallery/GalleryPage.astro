@@ -1,0 +1,35 @@
+---
+/**
+ * The document every gallery route renders: one React island, nothing else.
+ *
+ * `client:only` rather than `client:load` because the shell has no server
+ * rendering worth having — it is chrome around iframes, it is never indexed,
+ * and skipping SSR keeps it clear of the dependency-optimiser races that bite
+ * this project's islands during dev.
+ *
+ * Underscored directory: Astro does not route it, so none of this is a page.
+ */
+import type { ShellData } from "~/lib/gallery"
+import GalleryShell from "./GalleryShell"
+import "~/styles/global.css"
+
+interface Props {
+  title: string
+  data: ShellData
+}
+
+const { title, data } = Astro.props
+---
+
+<!doctype html>
+<html lang="en" class="dark h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body class="h-full overflow-hidden bg-background text-foreground antialiased">
+    <GalleryShell client:only="react" data={data} />
+  </body>
+</html>

@@ -15,7 +15,7 @@
  */
 export const KNOWN_SECTIONS = [
   "hero",
-  "journey-search",
+  "travel-search",
   "feature-grid",
   "callout",
   "journey-cards",

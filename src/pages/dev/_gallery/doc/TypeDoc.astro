@@ -1,0 +1,160 @@
+---
+/**
+ * What the type actually is.
+ *
+ * Every sample is set with the utility it documents, so the specimen and the
+ * component always agree. Change `.u-display` in `global.css` and this page
+ * changes with it.
+ */
+interface Props {
+  variant: string
+}
+
+const { variant } = Astro.props
+
+const SCALE = [
+  {
+    utility: "u-display",
+    use: "Page-opening headlines. Fraunces with optical sizing, so it is drawn for the size rather than scaled to it.",
+    sample: "Travel stories, given room to breathe",
+    class: "u-display text-[2.75rem] md:text-[4rem]",
+  },
+  {
+    utility: "u-display-sm",
+    use: "Section headings and card titles — the same voice, at a size that sits inside a layout.",
+    sample: "Itineraries leaving soon",
+    class: "u-display-sm text-[1.75rem]",
+  },
+  {
+    utility: "u-serif-body",
+    use: "Standfirsts and pull quotes: body copy that wants the display voice.",
+    sample:
+      "Each one is a starting point. We take it apart and rebuild it around your dates.",
+    class: "u-serif-body text-[1.25rem] leading-[1.55]",
+  },
+  {
+    utility: "(default)",
+    use: "Body copy. The sans face, set at the size sections use for prose.",
+    sample:
+      "Sixteen days following the herds from the Serengeti to the Mara, with two nights in a camp that moves when they do.",
+    class: "text-[0.9375rem] leading-relaxed",
+  },
+  {
+    utility: "u-eyebrow",
+    use: "The label above a heading. Letterspaced, uppercase, never a sentence.",
+    sample: "This season",
+    class: "u-eyebrow",
+  },
+]
+
+const WEIGHTS = [300, 400, 500, 600, 700]
+const PANGRAM = "Sphinx of black quartz, judge my vow"
+---
+
+<div class="u-shell py-12">
+  {
+    variant === "scale" && (
+      <>
+        <h1 class="u-display-sm text-[1.5rem]">Type scale</h1>
+        <p class="mt-2 max-w-[46rem] text-[0.9375rem] leading-relaxed text-ink-muted">
+          Five roles, not a numbered ramp. Each is a utility a component asks
+          for by name, so a heading is chosen by what it is rather than by how
+          big it should be.
+        </p>
+
+        <div class="mt-10 grid gap-10">
+          {SCALE.map((entry) => (
+            <div class="border-t border-line pt-5">
+              <div class="flex flex-wrap items-baseline gap-3">
+                <code class="text-[0.8125rem] text-accent">.{entry.utility}</code>
+                <span class="text-[0.8125rem] text-ink-subtle">{entry.use}</span>
+              </div>
+              <p class={`mt-4 text-ink ${entry.class}`}>{entry.sample}</p>
+            </div>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  {
+    variant === "specimens" && (
+      <>
+        <h1 class="u-display-sm text-[1.5rem]">Specimens</h1>
+        <p class="mt-2 max-w-[46rem] text-[0.9375rem] leading-relaxed text-ink-muted">
+          Both families are variable and self-hosted, so the whole weight range
+          costs one file per subset. Nothing is fetched from a font CDN: the
+          theme is served from the operator's own hostname, and a third-party
+          font request would add a connection on the critical path and a consent
+          question nobody asked for.
+        </p>
+
+        <section class="mt-10 border-t border-line pt-5">
+          <div class="flex flex-wrap items-baseline gap-3">
+            <h2 class="u-display-sm text-[1.25rem]">Fraunces</h2>
+            <code class="text-[0.8125rem] text-accent">--font-display</code>
+            <span class="text-[0.8125rem] text-ink-subtle">
+              The display voice. Real optical sizing.
+            </span>
+          </div>
+          <div class="mt-5 grid gap-3">
+            {WEIGHTS.map((weight) => (
+              <p
+                class="u-display-sm text-[1.5rem] text-ink"
+                style={`font-weight:${weight}`}
+              >
+                <span class="mr-4 align-middle text-[0.75rem] font-normal text-ink-subtle">
+                  {weight}
+                </span>
+                {PANGRAM}
+              </p>
+            ))}
+            <p class="u-display-sm text-[1.5rem] italic text-ink">
+              <span class="mr-4 align-middle text-[0.75rem] not-italic text-ink-subtle">
+                italic
+              </span>
+              {PANGRAM}
+            </p>
+          </div>
+        </section>
+
+        <section class="mt-10 border-t border-line pt-5">
+          <div class="flex flex-wrap items-baseline gap-3">
+            <h2 class="u-display-sm text-[1.25rem]">Sans</h2>
+            <code class="text-[0.8125rem] text-accent">--font-sans</code>
+            <span class="text-[0.8125rem] text-ink-subtle">
+              Body, labels and interface.
+            </span>
+          </div>
+          <div class="mt-5 grid gap-3">
+            {WEIGHTS.map((weight) => (
+              <p class="text-[1.0625rem] text-ink" style={`font-weight:${weight}`}>
+                <span class="mr-4 text-[0.75rem] text-ink-subtle">{weight}</span>
+                {PANGRAM}
+              </p>
+            ))}
+          </div>
+        </section>
+
+        <section class="mt-10 border-t border-line pt-5">
+          <h2 class="u-display-sm text-[1.25rem]">Prose</h2>
+          <p class="mt-1 text-[0.8125rem] text-ink-subtle">
+            The <code>.prose</code> block, which is what operator-authored
+            richtext lands in.
+          </p>
+          <div class="prose mt-5 max-w-[42rem]">
+            <p>
+              Every journey is drafted from scratch by the person who will look
+              after you. There is no template underneath it, and no two
+              itineraries are the same.
+            </p>
+            <p>
+              We only sell what we have seen: every property on the list was
+              visited in the last three years by someone on this staff.
+            </p>
+          </div>
+        </section>
+      </>
+    )
+  }
+</div>

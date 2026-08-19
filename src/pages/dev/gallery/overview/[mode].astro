@@ -1,0 +1,63 @@
+---
+/**
+ * A sweep: every section this build can render, pinned to one variant.
+ *
+ * Kept alongside the single-section canvas because it answers a different
+ * question. The canvas is for working on one section; this is for seeing
+ * whether a change held across all nineteen — and `empty` is the only view
+ * that shows, at a glance, which sections break the rule
+ * `src/theme/sections.ts` sets for them.
+ */
+import {
+  GALLERY_SECTIONS,
+  OVERVIEW_MODES,
+  overviewMode,
+  primaryVariant,
+  readFrame,
+  shellChrome,
+  variantLabel,
+  variantsFor,
+  type ShellData,
+} from "~/lib/gallery"
+import GalleryPage from "../../_gallery/GalleryPage.astro"
+
+if (!import.meta.env.DEV) return new Response(null, { status: 404 })
+
+const mode = overviewMode(Astro.params.mode)
+if (!mode) {
+  return new Response(
+    `Unknown overview. Try: ${OVERVIEW_MODES.map((m) => m.id).join(", ")}`,
+    { status: 404, headers: { "content-type": "text/plain" } },
+  )
+}
+
+const frame = readFrame(Astro.url.searchParams)
+
+const data: ShellData = {
+  ...shellChrome(),
+  frame,
+  overrides: {},
+  view: {
+    kind: "overview",
+    mode: mode.id,
+    label: mode.label,
+    note: mode.note,
+    items: GALLERY_SECTIONS.map((section) => {
+      const variant = mode.id === "primary" ? primaryVariant(section) : mode.id
+      return {
+        sectionId: section.id,
+        name: section.name ?? section.id,
+        description: section.description,
+        variant,
+        label: variantLabel(section, variant),
+        variantCount: variantsFor(section).length,
+      }
+    }),
+  },
+}
+---
+
+<GalleryPage
+  title={`Overview · ${mode.label} — ${GALLERY_SECTIONS.length} sections`}
+  data={data}
+/>

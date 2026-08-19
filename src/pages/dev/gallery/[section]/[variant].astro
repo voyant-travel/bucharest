@@ -1,0 +1,102 @@
+---
+/**
+ * One section — or one piece of site chrome — with rail, canvas and controls.
+ *
+ * The variant is chosen from the rail the way a story is chosen in Storybook:
+ * the thing is what exists, the variant is the state worth looking at.
+ *
+ * Chrome parts share this route rather than getting one of their own. They are
+ * places in exactly the same sense a section is, and `site-header` cannot
+ * collide with a section id because no section is called that.
+ */
+import {
+  GALLERY_SECTIONS,
+  chromeOverridesFrom,
+  chromePart,
+  chromeSettings,
+  chromeSiteSettings,
+  foundationPage,
+  instanceFor,
+  overrideStrings,
+  overridesFrom,
+  readFrame,
+  sectionDecl,
+  shellChrome,
+  variantsFor,
+  type ShellData,
+} from "~/lib/gallery"
+import GalleryPage from "../../_gallery/GalleryPage.astro"
+
+if (!import.meta.env.DEV) return new Response(null, { status: 404 })
+
+const params = Astro.url.searchParams
+const frame = readFrame(params)
+
+const doc = foundationPage(Astro.params.section)
+const part = doc ? undefined : chromePart(Astro.params.section)
+const decl = doc || part ? undefined : sectionDecl(Astro.params.section)
+
+if (!doc && !part && !decl) {
+  return new Response(
+    `Unknown entry. Sections: ${GALLERY_SECTIONS.map((s) => s.id).join(", ")}`,
+    { status: 404, headers: { "content-type": "text/plain" } },
+  )
+}
+
+const variants = doc ? doc.variants : part ? part.variants : variantsFor(decl!)
+const focused = variants.find((variant) => variant.id === Astro.params.variant)
+if (!focused) {
+  return new Response(
+    `Unknown variant. ${Astro.params.section} has: ${variants.map((v) => v.id).join(", ")}`,
+    { status: 404, headers: { "content-type": "text/plain" } },
+  )
+}
+
+/*
+ * All three shapes resolve to the same envelope, so the controls panel needs
+ * no branch of its own: a section resolves to its instance, a chrome part to
+ * the site settings it renders with, a foundations page to nothing.
+ */
+const resolved = doc
+  ? { type: doc.id, data: { id: doc.id, settings: {}, blocks: [] } }
+  : part
+    ? {
+        type: part.id,
+        data: {
+          id: part.id,
+          settings: chromeSiteSettings(
+            part,
+            focused.id,
+            chromeOverridesFrom(params, part),
+          ),
+          blocks: [],
+        },
+      }
+    : instanceFor(decl!, focused.id, overridesFrom(params, decl!))
+
+const entry = doc ?? part ?? decl!
+const name = doc ? doc.name : part ? part.name : (decl!.name ?? decl!.id)
+
+const data: ShellData = {
+  ...shellChrome(),
+  frame,
+  overrides: overrideStrings(params),
+  view: {
+    kind: "section",
+    group: doc ? "foundation" : part ? "chrome" : "section",
+    sectionId: entry.id,
+    name,
+    description: entry.description,
+    variants,
+    variantId: focused.id,
+    variantLabel: focused.label,
+    variantNote: focused.note,
+    settings: doc ? [] : part ? chromeSettings(part) : (decl!.settings ?? []),
+    blocks: doc || part ? [] : (decl!.blocks ?? []),
+    maxBlocks: doc || part ? undefined : decl!.max_blocks,
+    resolved,
+  },
+}
+---
+
+<GalleryPage title={`${name} · ${focused.label} — gallery`} data={data} />
