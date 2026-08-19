@@ -1,7 +1,7 @@
 # Bucharest
 
-The first Voyant storefront theme. Astro, built and served as a Cloudflare
-Worker through the Voyant theme pipeline.
+The first public Voyant Theme. It is an Astro project built and served as a
+Cloudflare Worker through the Voyant Theme pipeline.
 
 ## Develop
 
@@ -10,14 +10,37 @@ npm install
 npm run dev
 ```
 
-`npm run dev` serves the fixtures declared in `theme.config.ts`. A published
-site resolves page context from an immutable publication snapshot instead,
-through the same `resolveThemeContext` call.
+For isolated work, `npm run dev` serves the fixtures declared in
+`theme.config.ts`. A published Site resolves page context from an immutable
+publication snapshot through the same `resolveThemeContext` call.
 
-The `/tours` and `/tours/:slug` fixtures demonstrate the v1alpha4 split:
+For normal development, connect this local Theme to a Theme installed on a
+remote Voyant Site:
+
+```sh
+npm run theme:link -- \
+  --theme <theme-id-or-slug> \
+  --site <site-id-or-slug> \
+  --installation <installation-id>
+npm run dev
+```
+
+`theme link` records only the Voyant development target. `theme dev` creates a
+short-lived session and starts Astro with remote content, Site data, and the
+editor configuration for the local manifest. Use `npm run theme:status` to
+inspect the link and `npm run theme:unlink` to remove it. Use `npm run
+dev:local` when fixture-only development is intentional.
+
+External hosting is independent. Deploying this Astro Theme to Vercel,
+Cloudflare, or another host is the developer's responsibility and is not
+registered back in Voyant. Configure that deployment with its own Content API
+and Public API credentials and allowed origins.
+
+The `/tours` and `/tours/:slug` fixtures demonstrate the v1 contract split:
 editorial product identity and presentation are immutable page context, while
 search, dates, prices, booking sessions, and checkout use platform-generated
-same-origin capabilities. No provider endpoint or credential reaches the theme.
+same-origin capabilities. On a Voyant-managed Site, no provider endpoint or
+credential reaches the Theme.
 
 Bucharest is presentation-only. Its booking controls retain opaque session and
 revision handles in memory for the current page attempt, then hand payment and
@@ -51,9 +74,9 @@ theme without one cannot be built.
 
 ## Publishing
 
-Bucharest is published to the Voyant theme catalog as a public theme, so every
-operator can select it without connecting a repository of their own. Git is the
-theme author's concern, not the operator's.
+Bucharest is published to the Voyant Theme marketplace as a public Theme, so
+every operator can install it on a Site without connecting a repository of
+their own. Git is the Theme author's concern, not the operator's.
 
 ## Version pinning
 

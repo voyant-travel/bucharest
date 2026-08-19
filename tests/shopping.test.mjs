@@ -521,7 +521,7 @@ test("keeps an unpriced Trip retryable without changing its exact request", asyn
   assert.deepEqual(bodies[0], bodies[1])
 })
 
-test("refuses a provider-origin endpoint and keeps authority on the storefront", async () => {
+test("refuses a provider-origin endpoint and keeps authority on the Site", async () => {
   let called = false
   const client = createShoppingClient({
     searchEndpoint: "https://provider.example/search",
@@ -532,7 +532,7 @@ test("refuses a provider-origin endpoint and keeps authority on the storefront",
       return response({})
     },
   })
-  await assert.rejects(client.search({ kind: "indexed-inspiration", groups: [] }), /storefront origin/)
+  await assert.rejects(client.search({ kind: "indexed-inspiration", groups: [] }), /Site origin/)
   assert.equal(called, false)
 })
 

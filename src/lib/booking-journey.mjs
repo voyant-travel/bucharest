@@ -151,13 +151,13 @@ export function createBookingJourney({
     ? reduceBookingState(productId ? { productId } : {}, initialOutcome)
     : productId ? { productId } : {}
   const pendingKeys = new Map()
-  const storefrontOrigin = origin ? new URL(origin).origin : undefined
+  const siteOrigin = origin ? new URL(origin).origin : undefined
 
   function capabilityEndpoint(value) {
-    if (!storefrontOrigin) return value
-    const resolved = new URL(value, storefrontOrigin)
-    if (resolved.origin !== storefrontOrigin) {
-      throw new Error("The managed capability must use this storefront origin")
+    if (!siteOrigin) return value
+    const resolved = new URL(value, siteOrigin)
+    if (resolved.origin !== siteOrigin) {
+      throw new Error("The managed capability must use this Site origin")
     }
     return resolved.toString()
   }

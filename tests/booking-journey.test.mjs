@@ -348,7 +348,7 @@ test("accepts only credential-free secure checkout handoffs", () => {
   })
 })
 
-test("refuses a capability endpoint outside the storefront origin", async () => {
+test("refuses a capability endpoint outside the Site origin", async () => {
   let called = false
   const journey = createBookingJourney({
     endpoint: "https://provider.example/booking",
@@ -359,7 +359,7 @@ test("refuses a capability endpoint outside the storefront origin", async () => 
       return response({})
     },
   })
-  await assert.rejects(journey.perform("create"), /storefront origin/)
+  await assert.rejects(journey.perform("create"), /Site origin/)
   assert.equal(called, false)
 })
 

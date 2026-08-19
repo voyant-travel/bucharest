@@ -75,7 +75,7 @@ const products = context.products.map((product) => {
       <form
         class="mt-12 rounded-card border border-line bg-surface p-2 md:rounded-pill"
         data-tour-search
-        data-endpoint={search.endpoint}
+        data-legacy-endpoint={search.endpoint}
         data-locale={context.locale}
         data-messages={searchMessages}
       >
@@ -140,6 +140,11 @@ const products = context.products.map((product) => {
 </div>
 
 <script>
+  import { createPublicApiClient } from "@voyant-travel/public-api-client"
+  import {
+    isPublicApiCompatibilityUnavailable,
+    searchPublicTours,
+  } from "../lib/public-api-catalog"
   import { responseRows, rowText } from "../lib/tour-capabilities"
 
   const form = document.querySelector("[data-tour-search]")
@@ -165,45 +170,79 @@ const products = context.products.map((product) => {
     form.addEventListener("submit", async (event) => {
       event.preventDefault()
       if (!(status instanceof HTMLElement) || !(results instanceof HTMLUListElement)) return
-      const endpoint = form.dataset.endpoint
-      if (!endpoint) return
       const data = new FormData(form)
       const query = String(data.get("query") ?? "").trim()
-      const url = new URL(endpoint, window.location.origin)
-      if (query) url.searchParams.set("query", query)
-      if (form.dataset.locale) url.searchParams.set("locale", form.dataset.locale)
       status.textContent = copy.searching
       results.hidden = true
       try {
-        const response = await fetch(url, { headers: { Accept: "application/json" } })
-        if (!response.ok) throw new Error(fill(copy.failed, { status: response.status }))
-        const rows = responseRows(await response.json())
+        let rows: Awaited<ReturnType<typeof searchPublicTours>>
+        try {
+          const client = createPublicApiClient({
+            managed: true,
+            baseUrl: window.location.origin,
+          })
+          rows = await searchPublicTours(client, {
+            query,
+            languageTag: form.dataset.locale,
+          })
+        } catch (canonicalError) {
+          // Managed production does not yet route canonical Public API calls.
+          // Keep the release-compatible capability until that dispatcher seam
+          // lands; connected development succeeds through the call above.
+          const endpoint = form.dataset.legacyEndpoint
+          if (
+            !endpoint ||
+            !isPublicApiCompatibilityUnavailable(canonicalError)
+          ) throw canonicalError
+          const url = new URL(endpoint, window.location.origin)
+          if (query) url.searchParams.set("query", query)
+          if (form.dataset.locale) {
+            url.searchParams.set("locale", form.dataset.locale)
+          }
+          const response = await fetch(url, {
+            headers: { Accept: "application/json" },
+          })
+          if (!response.ok) {
+            throw new Error(fill(copy.failed, { status: response.status }))
+          }
+          rows = responseRows(await response.json()).map((row) => {
+            const slug = rowText(row, "slug")
+            const summary = rowText(
+              row,
+              "shortDescription",
+              "summary",
+              "description",
+            )
+            return {
+              id: rowText(row, "id", "productId") ?? "",
+              ...(slug ? { slug } : {}),
+              name: rowText(row, "name", "title") ?? copy.untitled,
+              ...(summary ? { summary } : {}),
+            }
+          })
+        }
         results.replaceChildren(
           ...rows.map((row) => {
             const item = document.createElement("li")
             item.className = "border-t border-line pt-4"
             const heading = document.createElement("h3")
             heading.className = "u-display-sm text-[1.0625rem] leading-snug"
-            const id = rowText(row, "id", "productId")
-            const slug = rowText(row, "slug")
-            const name = rowText(row, "name", "title") ?? copy.untitled
-            if (slug) {
+            if (row.slug) {
               const link = document.createElement("a")
-              link.href = `/tours/${encodeURIComponent(slug)}`
-              link.textContent = name
+              link.href = `/tours/${encodeURIComponent(row.slug)}`
+              link.textContent = row.name || copy.untitled
               heading.append(link)
             } else {
-              heading.textContent = name
+              heading.textContent = row.name || copy.untitled
             }
             item.append(heading)
-            const summary = rowText(row, "shortDescription", "summary", "description")
-            if (summary) {
+            if (row.summary) {
               const blurb = document.createElement("p")
               blurb.className = "mt-2 text-[0.875rem] leading-relaxed text-ink-muted"
-              blurb.textContent = summary
+              blurb.textContent = row.summary
               item.append(blurb)
             }
-            if (!slug && id) item.dataset.productId = id
+            if (!row.slug) item.dataset.productId = row.id
             return item
           }),
         )

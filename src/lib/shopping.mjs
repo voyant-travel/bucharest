@@ -48,7 +48,7 @@ const DICTIONARIES = {
     remove: "Remove",
     moveUp: "Move up",
     moveDown: "Move down",
-    unavailable: "Managed shopping is not available on this storefront yet.",
+    unavailable: "Managed shopping is not available on this Site yet.",
     partial: "Some sources could not respond. Available results are shown.",
     conflict:
       "This trip changed somewhere else. Its stale copy was cleared; search again to rebuild it safely.",
@@ -269,7 +269,7 @@ function safeEndpoint(endpoint, origin) {
   if (typeof endpoint !== "string" || !endpoint) throw new Error("Managed shopping is unavailable")
   const base = new URL(origin)
   const resolved = new URL(endpoint, base)
-  if (resolved.origin !== base.origin) throw new Error("Capability endpoint must use the storefront origin")
+  if (resolved.origin !== base.origin) throw new Error("Capability endpoint must use the Site origin")
   return resolved.href
 }
 
@@ -373,14 +373,14 @@ async function responseBody(response) {
 }
 
 /**
- * Browser adapter for the managed Storefront boundary. It only submits public
+ * Browser adapter for the managed Site boundary. It only submits public
  * scope preferences and opaque references. Provider, customer, booking,
  * payment, and FX authority have no representation in this client.
  */
 export function createShoppingClient(options) {
   const fetchImpl = options.fetchImpl ?? globalThis.fetch
   const origin = options.origin ?? globalThis.location?.origin
-  if (!origin) throw new Error("A storefront origin is required")
+  if (!origin) throw new Error("A Site origin is required")
   let scope = { locale: options.locale }
   let trip
   let booking
