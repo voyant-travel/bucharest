@@ -899,7 +899,7 @@ export default defineTheme({
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.10.0",
+    version: "0.11.0",
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/pages/[...path]", context: "content" },
@@ -947,6 +947,11 @@ export default defineTheme({
      * provides for exactly this.
      */
     templates: [
+      {
+        id: "landing-page",
+        name: "Landing page",
+        context: "content",
+      },
       { id: "destination", name: "Destination", context: "content" },
       {
         id: "destination-index",
@@ -1363,7 +1368,7 @@ export default defineTheme({
             ],
           },
         ],
-        templates: ["home"],
+        templates: ["home", "content", "landing-page"],
       },
       {
         id: "journey-search",
@@ -1406,7 +1411,7 @@ export default defineTheme({
             },
           },
         ],
-        templates: ["home"],
+        templates: ["home", "content", "landing-page"],
       },
       {
         id: "feature-grid",
@@ -1485,7 +1490,7 @@ export default defineTheme({
             ],
           },
         ],
-        templates: ["home"],
+        templates: ["home", "content", "landing-page"],
       },
       {
         id: "callout",
@@ -1510,9 +1515,15 @@ export default defineTheme({
             },
           },
         ],
-        templates: ["home"],
+        templates: ["home", "content", "landing-page"],
       },
-      ...editorialSections,
+      ...editorialSections.map((section) => ({
+        ...section,
+        // These renderers all use the same section registry. The declaration
+        // is what lets an agency compose an ordinary page or landing page in
+        // the visual editor without a developer changing this Theme.
+        templates: ["home", "content", "landing-page"],
+      })),
     ],
     /**
      * The collection shape this theme renders, named in ITS OWN terms.
