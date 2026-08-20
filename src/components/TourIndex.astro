@@ -175,7 +175,7 @@ const products = context.products.map((product) => {
       status.textContent = copy.searching
       results.hidden = true
       try {
-        let rows: Awaited<ReturnType<typeof searchPublicTours>>
+        let rows
         try {
           const client = createPublicApiClient({
             managed: true,
