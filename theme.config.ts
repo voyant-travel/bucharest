@@ -899,10 +899,20 @@ export default defineTheme({
   manifest: {
     id: "bucharest",
     name: "Bucharest",
-    version: "0.11.2",
+    version: "0.11.3",
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/pages/[...path]", context: "content" },
+      {
+        id: "collection-index",
+        pattern: "/[collection]",
+        context: "collectionIndex",
+      },
+      {
+        id: "collection-entry",
+        pattern: "/[collection]/[slug]",
+        context: "collectionEntry",
+      },
       { id: "tours", pattern: "/tours", context: "tourIndex" },
       /*
        * The one product-detail route. The contract permits exactly one
