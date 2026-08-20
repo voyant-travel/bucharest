@@ -16,7 +16,7 @@ import { readDestination } from "../lib/destination"
 import { readDestinationIndex } from "../lib/destination-index"
 import { fill, messagesFor } from "../lib/messages"
 import { readSettings } from "../lib/site"
-import { sectionInstances } from "../lib/sections"
+import { composedPageSections } from "../lib/sections"
 import { isKnownSection, opensFullBleed } from "../lib/section-registry"
 import { resolveThemeContext } from "virtual:voyant-theme"
 
@@ -60,18 +60,20 @@ const { phone: sitePhone, bookingUrl: siteBookingUrl } = readSettings(
   context.settings,
 )
 
-const homeSections =
-  context.kind === "home"
-    ? sectionInstances(context.sections).filter((section) =>
-        isKnownSection(section.type),
-      )
-    : []
+const authoredSections = composedPageSections(context).filter((section) =>
+  isKnownSection(section.type),
+)
+const rendersAuthoredContent =
+  context.kind === "content" &&
+  authoredSections.length > 0 &&
+  !isDestination &&
+  !isDestinationIndex
 /**
  * Whether the header may sit over the page rather than above it. Only true
  * when the first thing on the page is a hero that actually carries a
  * photograph filling the top of the window.
  */
-const firstSection = homeSections[0]
+const firstSection = authoredSections[0]
 const overHero = firstSection
   ? opensFullBleed(firstSection.type, firstSection.data.settings)
   : false
@@ -87,19 +89,19 @@ const overHero = firstSection
 
 <Layout
   context={context}
-  authoredHome={homeSections.length > 0}
+  authoredHome={authoredSections.length > 0}
   overHero={overHero}
 >
-  {context.kind === "home" && homeSections.length > 0 && (
+  {(context.kind === "home" || rendersAuthoredContent) && authoredSections.length > 0 && (
     <HomeSections
-      sections={homeSections}
+      sections={authoredSections}
       locale={context.locale}
     />
   )}
-  {context.kind === "home" && homeSections.length === 0 && <h1>{context.title}</h1>}
+  {context.kind === "home" && authoredSections.length === 0 && <h1>{context.title}</h1>}
   {["content", "notFound", "collectionIndex", "collectionEntry"].includes(
     context.kind,
-  ) && !isDestination && !isDestinationIndex && (
+  ) && !isDestination && !isDestinationIndex && !rendersAuthoredContent && (
     <PageLead
       title={context.title}
       eyebrow={context.kind === "collectionIndex" ? collection?.name : undefined}
@@ -128,7 +130,7 @@ const overHero = firstSection
       locale={context.locale}
     />
   )}
-  {context.kind === "content" && !isDestination && !isDestinationIndex && (
+  {context.kind === "content" && !isDestination && !isDestinationIndex && !rendersAuthoredContent && (
     <div class="u-shell pb-24 md:pb-32">
       {context.summary && (
         <p class="u-serif-body max-w-[42rem] text-[1.25rem] leading-[1.55] text-ink md:text-[1.4375rem]">

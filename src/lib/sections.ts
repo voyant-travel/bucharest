@@ -58,6 +58,16 @@ export function sectionInstances(input: unknown): SectionInstance[] {
   })
 }
 
+/** Pages agencies can compose visually; system and catalog contexts stay fixed. */
+export function composedPageSections(context: {
+  kind: string
+  sections?: unknown
+}): SectionInstance[] {
+  return context.kind === "home" || context.kind === "content"
+    ? sectionInstances(context.sections)
+    : []
+}
+
 /** Visible strings stay untouched so draft stega provenance reaches a text node. */
 export function visibleSetting(
   settings: SectionSettings,
