@@ -1,0 +1,104 @@
+---
+/**
+ * Editorial shell for an operator-defined Content entry.
+ *
+ * The Theme does not own the Content type or its field ids. It therefore uses
+ * the published field definitions and optional semantic bindings, preserving
+ * the agency's labels and order while still providing a considered article
+ * layout. A type without a mapped image, summary, or author simply omits that
+ * part of the shell instead of inventing content.
+ */
+import type { ThemeCollectionEntryContext } from "@voyant-travel/theme"
+import CollectionValue from "../CollectionValue.astro"
+import PageLead from "../primitives/PageLead.astro"
+import {
+  entryBlurb,
+  entryByline,
+  entryFields,
+  plainText,
+} from "../../lib/collection-values"
+
+interface Props {
+  context: ThemeCollectionEntryContext
+  backHref: string
+  backLabel: string
+}
+
+const { context, backHref, backLabel } = Astro.props
+const fields = entryFields(context.entry.values, context.collection.fields)
+const cover = fields.find((field) => field.value.kind === "image")
+const blurb = entryBlurb(context.entry, context.collection.fields)
+const byline = entryByline(context.entry)
+const details = fields.filter((field) => field !== cover)
+const blurbField = blurb
+  ? details.find(
+      (field) =>
+        (field.value.kind === "text" && field.value.text === blurb) ||
+        (field.value.kind === "markup" &&
+          plainText(field.value.markup) === blurb),
+    )
+  : undefined
+const bylineField =
+  byline?.kind === "reference"
+    ? details.find(
+        (field) =>
+          field.value.kind === "reference" &&
+          field.value.reference.title === byline.reference.title &&
+          field.value.reference.path === byline.reference.path,
+      )
+    : undefined
+const articleFields = details.filter(
+  (field) => field !== blurbField && field !== bylineField,
+)
+---
+
+<article>
+  <PageLead
+    title={context.title}
+    eyebrow={context.collection.name}
+    backHref={backHref}
+    backLabel={backLabel}
+    image={cover?.value.kind === "image" ? cover.value.image.src : undefined}
+    imageAlt={cover?.value.kind === "image" ? cover.value.image.alt : undefined}
+  />
+
+  <div class="u-shell grid gap-12 pb-24 md:grid-cols-12 md:gap-16 md:pb-32">
+    <div class="md:col-span-8">
+      {
+        blurb && (
+          <p class="u-serif-body max-w-[42rem] text-[1.25rem] leading-[1.55] text-ink md:text-[1.4375rem]">
+            {blurb}
+          </p>
+        )
+      }
+
+      {
+        articleFields.length > 0 && (
+          <dl class:list={["max-w-[52rem] border-t border-line", blurb && "mt-10"]}>
+            {articleFields.map((field) => (
+              <div class="grid gap-2 border-b border-line py-6 md:grid-cols-12 md:gap-8">
+                <dt class="u-eyebrow text-ink-subtle md:col-span-3 md:pt-1">
+                  {field.label}
+                </dt>
+                <dd class="m-0 text-[0.975rem] leading-[1.75] text-ink md:col-span-9">
+                  <CollectionValue value={field.value} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )
+      }
+    </div>
+
+    {
+      byline && (
+        <aside class="border-t border-line pt-6 md:col-span-3 md:col-start-10">
+          <p class="u-eyebrow mb-3 text-ink-subtle">By</p>
+          <div class="text-[0.9375rem] leading-relaxed text-ink-muted">
+            <CollectionValue value={byline} />
+          </div>
+        </aside>
+      )
+    }
+  </div>
+</article>

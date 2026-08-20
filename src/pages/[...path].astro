@@ -1,5 +1,6 @@
 ---
 import CollectionValue from "../components/CollectionValue.astro"
+import ArticleEntryPage from "../components/collection/ArticleEntryPage.astro"
 import DestinationPage from "../components/destination/DestinationPage.astro"
 import DestinationIndexPage from "../components/destination-index/DestinationIndexPage.astro"
 import CruisePage from "../components/CruisePage.astro"
@@ -39,6 +40,8 @@ const entryParent =
   context.kind === "collectionEntry"
     ? context.path.slice(0, context.path.lastIndexOf("/")) || "/"
     : undefined
+const isArticleEntry =
+  context.kind === "collectionEntry" && context.templateId === "article"
 
 /*
  * A destination page is a content page the platform assigned an alternate
@@ -101,7 +104,11 @@ const overHero = firstSection
   {context.kind === "home" && authoredSections.length === 0 && <h1>{context.title}</h1>}
   {["content", "notFound", "collectionIndex", "collectionEntry"].includes(
     context.kind,
-  ) && !isDestination && !isDestinationIndex && !rendersAuthoredContent && (
+  ) &&
+    !isDestination &&
+    !isDestinationIndex &&
+    !rendersAuthoredContent &&
+    !isArticleEntry && (
     <PageLead
       title={context.title}
       eyebrow={context.kind === "collectionIndex" ? collection?.name : undefined}
@@ -128,6 +135,13 @@ const overHero = firstSection
       title={context.title}
       phone={sitePhone}
       locale={context.locale}
+    />
+  )}
+  {context.kind === "collectionEntry" && isArticleEntry && entryParent && (
+    <ArticleEntryPage
+      context={context}
+      backHref={entryParent}
+      backLabel={fill(t.backTo, { name: context.collection.name })}
     />
   )}
   {context.kind === "content" && !isDestination && !isDestinationIndex && !rendersAuthoredContent && (
@@ -261,7 +275,7 @@ const overHero = firstSection
   }
 
   {
-    context.kind === "collectionEntry" && (
+    context.kind === "collectionEntry" && !isArticleEntry && (
       <div class="u-shell pb-24 md:pb-32">
         <dl class="max-w-[52rem] border-t border-line">
           {entryFields(context.entry.values, context.collection.fields).map((field) => (

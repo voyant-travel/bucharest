@@ -958,6 +958,11 @@ export default defineTheme({
         name: "Destinations index",
         context: "content",
       },
+      {
+        id: "article",
+        name: "Article",
+        context: "collectionEntry",
+      },
     ],
     // Declared in the order an operator should meet them, because the editor
     // renders this list as written rather than sorting it.
