@@ -624,7 +624,7 @@ const sectionHeading = "u-display-sm text-[1.625rem] md:text-[2rem]"
       status.textContent = copy.checking
       result.replaceChildren()
       try {
-        let rows: Awaited<ReturnType<typeof loadPublicTourAvailability>>
+        let rows
         try {
           const client = createPublicApiClient({
             managed: true,
