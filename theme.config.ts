@@ -1,4 +1,5 @@
 import { defineTheme } from "@voyant-travel/theme"
+import { collectionRoutes } from "./src/lib/collection-routes"
 import { navigation as fixtureNavigation } from "./src/theme/navigation"
 import { sections as editorialSections } from "./src/theme/sections"
 
@@ -902,6 +903,7 @@ export default defineTheme({
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/pages/[...path]", context: "content" },
+      ...collectionRoutes,
       { id: "tours", pattern: "/tours", context: "tourIndex" },
       /*
        * The one product-detail route. The contract permits exactly one

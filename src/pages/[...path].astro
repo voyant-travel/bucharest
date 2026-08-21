@@ -12,6 +12,7 @@ import {
   entryBlurb,
   entryFields,
 } from "../lib/collection-values"
+import { resolveCollectionRenderer } from "../lib/collection-routes"
 import { readDestination } from "../lib/destination"
 import { readDestinationIndex } from "../lib/destination-index"
 import { fill, messagesFor } from "../lib/messages"
@@ -26,6 +27,16 @@ import { resolveThemeContext } from "virtual:voyant-theme"
 // rather than serving fixtures publicly.
 const context = await resolveThemeContext(Astro.url)
 if (context.kind === "notFound") Astro.response.status = 404
+const collectionRenderer =
+  context.kind === "collectionIndex" || context.kind === "collectionEntry"
+    ? resolveCollectionRenderer(context)
+    : null
+if (
+  (context.kind === "collectionIndex" || context.kind === "collectionEntry") &&
+  !collectionRenderer
+) {
+  throw new Error(`Unsupported Collection template: ${context.templateId}`)
+}
 
 const t = messagesFor(context.locale)
 
@@ -211,7 +222,7 @@ const overHero = firstSection
   }
 
   {
-    context.kind === "collectionIndex" && (
+    collectionRenderer === "index" && context.kind === "collectionIndex" && (
       <div class="u-shell pb-24 md:pb-32">
         {context.entries.length === 0 ? (
           <p class="u-serif-body text-[1.125rem] text-ink-subtle">
@@ -259,7 +270,7 @@ const overHero = firstSection
   }
 
   {
-    context.kind === "collectionEntry" && (
+    collectionRenderer === "entry" && context.kind === "collectionEntry" && (
       <div class="u-shell pb-24 md:pb-32">
         <dl class="max-w-[52rem] border-t border-line">
           {entryFields(context.entry.values, context.collection.fields).map((field) => (
