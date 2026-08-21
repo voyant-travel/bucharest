@@ -1,4 +1,5 @@
 import { defineTheme } from "@voyant-travel/theme"
+import { collectionRoutes } from "./src/lib/collection-routes"
 import { navigation as fixtureNavigation } from "./src/theme/navigation"
 import { sections as editorialSections } from "./src/theme/sections"
 import { PUBLIC_API_PATHS } from "./src/lib/public-api-contracts"
@@ -903,16 +904,7 @@ export default defineTheme({
     routes: [
       { id: "home", pattern: "/", context: "home" },
       { id: "content", pattern: "/pages/[...path]", context: "content" },
-      {
-        id: "collection-index",
-        pattern: "/[collection]",
-        context: "collectionIndex",
-      },
-      {
-        id: "collection-entry",
-        pattern: "/[collection]/[slug]",
-        context: "collectionEntry",
-      },
+      ...collectionRoutes,
       { id: "tours", pattern: "/tours", context: "tourIndex" },
       /*
        * The one product-detail route. The contract permits exactly one
