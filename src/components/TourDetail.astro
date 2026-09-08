@@ -33,7 +33,7 @@ import {
   productSections,
 } from "~/lib/catalog"
 import { counted, fill, messagesFor } from "~/lib/messages"
-import { STAY_NIGHTS, load } from "~/lib/product/adapter"
+import { STAY_NIGHTS, unavailableProductCommerce } from "~/lib/product/adapter"
 import { personalityOf, typeLabelOf } from "~/lib/product/mode"
 import { readSettings } from "~/lib/site"
 import { availableCapability } from "~/lib/tour-capabilities"
@@ -72,15 +72,12 @@ const personality = personalityOf(product)
 const typeLabel = typeLabelOf(product)
 
 /*
- * The commercial half of the page. A publication snapshot carries no prices and
- * no departures by contract, so this comes from the live layer — fixture-backed
- * until an operator's endpoints are reachable, and swappable behind one call.
- *
- * The clock is read once here rather than inside the adapter so that everything
- * on a single render agrees about what "today" is; a module that asked the
- * clock itself could straddle midnight and date two sections differently.
+ * A publication snapshot carries no prices or departures by contract. Start
+ * empty and let the live capability surface below supply what the platform can
+ * prove; a missing or refused endpoint must not become a plausible fixture on
+ * a published product page.
  */
-const commerce = load(product, new Date())
+const commerce = unavailableProductCommerce()
 const { phone, bookingUrl } = readSettings(context.settings)
 
 const facts = [

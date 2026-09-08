@@ -7,18 +7,13 @@
  * fetch, and until an operator's endpoints are reachable there is nothing to
  * fetch from.
  *
- * This module is that seam. It returns the shapes the live capabilities return,
- * derived deterministically from the product itself, so the page can be built
- * and reviewed against realistic data today and switched to real endpoints by
- * replacing the body of `load()` alone. It is the same arrangement, and for the
- * same reason, as `src/lib/search/engine.ts`.
- *
- * The numbers here are worked examples, not an operator's prices. Nothing in
- * this module may ever reach a published page: `load()` refuses unless the
- * caller passes a live capability it could not have had in production.
+ * This module owns the presentation shapes only. Until a live capability has
+ * returned commercial data, its factories deliberately return empty values.
+ * A missing endpoint must never turn into a plausible-looking fare, departure,
+ * or scarcity claim on a published page.
  */
 import type { PriceBasis } from "../search/contract"
-import type { AvailabilityState, BookingMode } from "./mode"
+import type { AvailabilityState } from "./mode"
 
 export interface Money {
   amount: number
@@ -144,254 +139,24 @@ export interface CruiseCommerce {
   serviceChargePerDay?: Money
 }
 
-const GRADE_WORDS: [RegExp, CabinGrade["code"]][] = [
-  [/suit|yacht/i, "suite"],
-  [/balcon|verand/i, "balcony"],
-  [/exterior|ocean|panorama|window|hublou|fereastr/i, "oceanview"],
-  [/interior|inside/i, "interior"],
-]
-
-function gradeCode(name: string): CabinGrade["code"] {
-  for (const [pattern, code] of GRADE_WORDS) if (pattern.test(name)) return code
-  return "other"
-}
-
 /**
- * Prices for the cabin grades of one sailing.
+ * Commercial data before a live capability has answered.
  *
- * Per person on the double-occupancy basis, which is the convention every
- * cruise line quotes in and the reason the single supplement has to be a
- * visible field rather than a footnote: a solo traveller reading the headline
- * is reading someone else's price.
+ * Return a fresh value so an island cannot accidentally leak one request's
+ * client-side state into another render. Currency is presentation fallback
+ * only; without a price it is never shown as a commercial claim.
  */
-export function loadCruise(
-  sailingId: string,
-  cabins: readonly { id: string; name: string; maxOccupancy?: number | null; deckNames?: readonly string[] | null }[],
-): CruiseCommerce {
-  const currency = "EUR"
-  if (cabins.length === 0) return { currency, grades: [] }
-
-  const n = seed(sailingId)
-  const base = 780 + (n % 8) * 60
-
-  const grades: CabinGrade[] = cabins.map((cabin, index) => {
-    const code = gradeCode(cabin.name)
-    /* Ordered by what the market charges for the view, not by publication order. */
-    const uplift = { interior: 0, oceanview: 180, balcony: 340, suite: 720, other: 90 }[code]
-    const state: AvailabilityState =
-      index === 1 && cabins.length > 2 ? "few_left" : "available"
-    return {
-      id: cabin.id,
-      name: cabin.name,
-      code,
-      maxOccupancy: cabin.maxOccupancy ?? 2,
-      deckNames: [...(cabin.deckNames ?? [])],
-      price: { amount: base + uplift, currency, basis: "per_person" },
-      state,
-      singleSupplementPct: 75,
-    }
-  })
-
-  const cheapest = grades
-    .filter((grade) => grade.state !== "sold_out")
-    .reduce<number | undefined>(
-      (low, grade) => (low === undefined ? grade.price.amount : Math.min(low, grade.price.amount)),
-      undefined,
-    )
-
+export function unavailableProductCommerce(currency = "EUR"): ProductCommerce {
   return {
     currency,
-    ...(cheapest === undefined
-      ? {}
-      : { from: { amount: cheapest, currency, basis: "per_person" as PriceBasis } }),
-    grades: [...grades].sort((left, right) => left.price.amount - right.price.amount),
-    portTax: { amount: 180, currency, basis: "per_person" },
-    serviceChargePerDay: { amount: 12, currency, basis: "per_person" },
+    departures: [],
+    roomTypes: [],
+    options: [],
+    availableDates: [],
   }
 }
 
-const EMPTY: ProductCommerce = {
-  currency: "EUR",
-  departures: [],
-  roomTypes: [],
-  options: [],
-  availableDates: [],
-}
-
-/**
- * A small deterministic spread, so two products do not price identically and
- * the same product prices the same on every render. Seeded from the id because
- * a random figure would change under the reviewer's feet and make a screenshot
- * impossible to compare against the next one.
- */
-function seed(id: string): number {
-  let total = 0
-  for (let index = 0; index < id.length; index += 1) {
-    total = (total * 31 + id.charCodeAt(index)) | 0
-  }
-  return Math.abs(total)
-}
-
-function isoAdd(from: Date, days: number): string {
-  const next = new Date(from)
-  next.setDate(next.getDate() + days)
-  return next.toISOString().slice(0, 10)
-}
-
-/**
- * The commercial data for a product.
- *
- * `today` is passed in rather than read from the clock so that a render is
- * reproducible: a page built twice from the same inputs must produce the same
- * dates, or every screenshot comparison becomes noise.
- */
-export function load(product: {
-  id: string
-  bookingMode: string
-  capacityMode?: string | null | undefined
-}, today: Date): ProductCommerce {
-  const mode = product.bookingMode as BookingMode
-  const n = seed(product.id)
-  const currency = "EUR"
-
-  if (mode === "itinerary") {
-    const base = 620 + (n % 9) * 45
-    const departures: Departure[] = Array.from({ length: 8 }, (_, index) => {
-      const offset = 21 + index * 14
-      const drift = ((n + index * 7) % 5) * 40
-      const amount = base + drift
-      /*
-       * States are assigned by position rather than at random so that every
-       * state a reviewer needs to see is guaranteed to appear once, and appears
-       * in the same row each time.
-       */
-      const state: AvailabilityState =
-        index === 2 ? "few_left" : index === 5 ? "sold_out" : index === 6 ? "guaranteed" : "available"
-      return {
-        id: `dep_${product.id}_${index}`,
-        startsOn: isoAdd(today, offset),
-        endsOn: isoAdd(today, offset + 7),
-        nights: 7,
-        from: ["Bucharest", "Cluj-Napoca", "Timisoara"][(n + index) % 3] ?? "Bucharest",
-        price: { amount, currency, basis: "per_person" },
-        ...(index === 0 ? { was: amount + 120 } : {}),
-        state,
-        ...(state === "few_left" ? { seatsLeft: 3 } : {}),
-        singleSupplement: 180 + (n % 4) * 25,
-      }
-    })
-    const cheapest = departures
-      .filter((departure) => departure.state !== "sold_out")
-      .reduce<number | undefined>(
-        (low, departure) => (low === undefined ? departure.price.amount : Math.min(low, departure.price.amount)),
-        undefined,
-      )
-    return {
-      currency,
-      ...(cheapest === undefined ? {} : { from: { amount: cheapest, currency, basis: "per_person" as PriceBasis } }),
-      departures,
-      roomTypes: [],
-      options: [],
-      availableDates: departures.filter((d) => d.state !== "sold_out").map((d) => d.startsOn),
-    }
-  }
-
-  if (mode === "stay") {
-    const nights = STAY_NIGHTS
-    const perNightBase = 68 + (n % 7) * 11
-    const roomTypes: RoomType[] = [
-      { key: "Standard double room", occupancy: 2, sqm: 22, beds: "1 double bed", bump: 0 },
-      { key: "Superior double, mountain view", occupancy: 2, sqm: 28, beds: "1 double bed", bump: 24 },
-      { key: "Apartment", occupancy: 4, sqm: 45, beds: "1 double bed + sofa bed", bump: 62 },
-    ].map((room, index) => {
-      const nightly = perNightBase + room.bump
-      /*
-       * Two rates per room, refundable first and dearer. The pair is the point:
-       * a single "from" price hides the trade the reader is actually making.
-       */
-      const rates: Rate[] = [
-        {
-          id: `rate_${product.id}_${index}_flex`,
-          board: "BB",
-          refundable: true,
-          cancelBy: isoAdd(today, 12),
-          payAtProperty: true,
-          price: { amount: nightly * nights, currency, basis: "per_stay" },
-          perNight: nightly,
-          state: index === 2 ? "few_left" : "available",
-          ...(index === 2 ? { roomsLeft: 1 } : {}),
-        },
-        {
-          id: `rate_${product.id}_${index}_saver`,
-          board: "BB",
-          refundable: false,
-          payAtProperty: false,
-          price: { amount: Math.round(nightly * nights * 0.88), currency, basis: "per_stay" },
-          perNight: Math.round(nightly * 0.88),
-          was: nightly * nights,
-          state: "available",
-        },
-      ]
-      return {
-        id: `room_${product.id}_${index}`,
-        name: room.key,
-        sizeSqm: room.sqm,
-        maxOccupancy: room.occupancy,
-        beds: room.beds,
-        rates,
-      }
-    })
-    const cheapest = Math.min(...roomTypes.flatMap((room) => room.rates.map((rate) => rate.price.amount)))
-    return {
-      currency,
-      from: { amount: cheapest, currency, basis: "per_stay" },
-      departures: [],
-      roomTypes,
-      options: [],
-      availableDates: Array.from({ length: 45 }, (_, index) => isoAdd(today, index + 1)).filter(
-        (_, index) => (n + index) % 7 !== 3,
-      ),
-    }
-  }
-
-  if (mode === "date" || mode === "date_time" || mode === "open") {
-    const base = 24 + (n % 6) * 7
-    const withTimes = mode === "date_time"
-    const options: ActivityOption[] = [
-      { name: "Group tour in English", bump: 0, langs: ["EN"], badges: ["Small group (max. 15)", "Live guide"] },
-      { name: "Group tour in Romanian", bump: 6, langs: ["RO"], badges: ["Small group (max. 15)", "Live guide"] },
-      { name: "Private tour", bump: 48, langs: ["EN", "RO"], badges: ["Your group only", "Flexible start"] },
-    ].map((option, index) => ({
-      id: `opt_${product.id}_${index}`,
-      name: option.name,
-      durationMinutes: 150,
-      languages: option.langs,
-      groupSizeMax: index === 2 ? undefined : 15,
-      refundable: true,
-      cancelBy: isoAdd(today, 2),
-      price: { amount: base + option.bump, currency, basis: "per_person" as PriceBasis },
-      badges: option.badges,
-      slots: withTimes
-        ? [
-            { time: "10:00", state: "available" as AvailabilityState },
-            { time: "13:00", state: index === 0 ? "few_left" : "available", ...(index === 0 ? { seatsLeft: 2 } : {}) },
-            { time: "17:00", state: index === 1 ? "sold_out" : "available" },
-          ]
-        : [],
-    }))
-    return {
-      currency,
-      from: { amount: base, currency, basis: "per_person" },
-      departures: [],
-      roomTypes: [],
-      options,
-      availableDates: Array.from({ length: 30 }, (_, index) => isoAdd(today, index + 1)).filter(
-        (_, index) => (n + index) % 6 !== 2,
-      ),
-    }
-  }
-
-  /* `transfer` and `other` have no modelled commerce yet. Say so by returning
-   * nothing rather than by inventing a shape the page would render as real. */
-  return EMPTY
+/** Commercial state for a sailing until live cabin pricing has answered. */
+export function unavailableCruiseCommerce(currency = "EUR"): CruiseCommerce {
+  return { currency, grades: [] }
 }
