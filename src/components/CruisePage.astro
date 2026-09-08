@@ -27,7 +27,7 @@ import { coverOf, dayPhotoOf, illustrated, placesOf } from "~/lib/catalog"
 import { cn } from "~/lib/cn"
 import { formatDate, formatDateRange } from "~/lib/dates"
 import { counted, fill, messagesFor } from "~/lib/messages"
-import { loadCruise } from "~/lib/product/adapter"
+import { unavailableCruiseCommerce } from "~/lib/product/adapter"
 import { readSettings } from "~/lib/site"
 import CabinGradeSelector from "~/components/islands/product/cruise/CabinGradeSelector"
 
@@ -57,15 +57,15 @@ const shipCover = ship ? coverOf(ship) : undefined
 const sailingCover = sailing ? coverOf(sailing) : undefined
 
 /*
- * Cabin prices for this sailing. Fixture-backed like every other commercial
- * value in the theme, because the contract strips fares from a snapshot and
- * `cruise.pricing.v1` is what will fill this in production.
+ * Cabin prices are absent until a live capability supplies them. The
+ * publication contract strips fares from snapshots, so deriving plausible
+ * prices from the sailing identity would turn fixture data into a quotation.
  *
  * `bookingUrl` is undefined on every cruise context by contract — the validator
  * classes it as live commercial state — so the selector's CTAs resolve to an
  * enquiry here. That is the intended behaviour, not a gap.
  */
-const cruiseCommerce = loadCruise(sailing?.id ?? "", sailing?.cabinCategories ?? [])
+const cruiseCommerce = unavailableCruiseCommerce()
 const siteSettings = readSettings(context.settings)
 const bookingUrl = siteSettings.bookingUrl
 
@@ -575,7 +575,7 @@ const sailingFacts = sailing
                * `client:visible` because it sits well below the fold on every
                * screen and is the heaviest thing on the page.
                */
-              sailing.cabinCategories.length > 0 && (
+              cruiseCommerce.grades.length > 0 && (
                 <section class="mt-16">
                   <h2 class={heading}>{t.cabinCategories}</h2>
                   <div class="mt-8">
